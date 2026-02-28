@@ -139,7 +139,7 @@ export default async function ProgramsPage({
                 <div className="flex items-center justify-between mt-auto pt-3 border-t border-border">
                   <div>
                     <p className="text-sm font-bold text-primary">
-                      {p.price_cents === 0 ? 'Free' : `KES ${(p.price_cents / 100).toLocaleString()}`}
+                      {p.price_cents === 0 ? 'Free' : `KES ${(p.price_cents / 100).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`}
                     </p>
                     <p className="text-[10px] text-muted-foreground flex items-center gap-1">
                       <Clock className="h-2.5 w-2.5" />{p.duration_weeks} weeks
