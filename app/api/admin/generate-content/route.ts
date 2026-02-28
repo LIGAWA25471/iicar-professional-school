@@ -89,7 +89,7 @@ Return ONLY the JSON array. No other text.`
 
   try {
     const result = streamText({
-      model: xai('grok-2-1212'),
+      model: xai('grok-3-mini-beta'),
       system: systemPrompt,
       prompt: userPrompt,
       maxTokens: 6000,
