@@ -57,7 +57,7 @@ export default function RegisterPageClient() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-primary px-4">
         <div className="w-full max-w-md rounded-2xl bg-card p-10 shadow-xl text-center flex flex-col items-center gap-4">
-          <Image src="/logo.jpg" alt="IICAR" width={64} height={64} className="rounded-xl" />
+          <Image src="/logo.jpg" alt="IICAR" width={64} height={64} className="rounded-xl" priority />
           <h2 className="text-xl font-bold text-primary">Check Your Email</h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
             We sent a confirmation link to <strong>{email}</strong>. Please verify your email to activate your account.
@@ -75,7 +75,7 @@ export default function RegisterPageClient() {
       <div className="w-full max-w-md">
         <div className="mb-8 flex flex-col items-center gap-3 text-center">
           <Link href="/">
-            <Image src="/logo.jpg" alt="IICAR" width={72} height={72} className="rounded-xl" />
+            <Image src="/logo.jpg" alt="IICAR" width={72} height={72} className="rounded-xl" priority />
           </Link>
           <h1 className="text-xl font-bold text-primary-foreground">Create Your IICAR Account</h1>
           <p className="text-sm text-primary-foreground/60">Start your journey to professional certification</p>

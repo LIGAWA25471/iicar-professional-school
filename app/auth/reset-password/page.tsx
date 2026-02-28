@@ -31,7 +31,7 @@ export default function ResetPasswordPage() {
     <div className="flex min-h-screen items-center justify-center bg-primary px-4">
       <div className="w-full max-w-md">
         <div className="mb-8 flex flex-col items-center gap-3 text-center">
-          <Link href="/"><Image src="/logo.jpg" alt="IICAR" width={72} height={72} className="rounded-xl" /></Link>
+          <Link href="/"><Image src="/logo.jpg" alt="IICAR" width={72} height={72} className="rounded-xl" priority /></Link>
           <h1 className="text-xl font-bold text-primary-foreground">Reset Your Password</h1>
         </div>
         <div className="rounded-2xl bg-card p-8 shadow-xl border border-border">
