@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from 'next'
 import { Inter, Lato } from 'next/font/google'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
-const lato = Lato({ subsets: ['latin'], weight: ['400', '700', '900'], variable: '--font-body' })
+const inter = Inter({ subsets: ['latin'], variable: '--font-sans', display: 'swap' })
+const lato = Lato({ subsets: ['latin'], weight: ['400', '700', '900'], variable: '--font-body', display: 'swap' })
 
 export const metadata: Metadata = {
   title: 'IICAR Global College – Professional Certification',
@@ -21,7 +21,9 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${inter.variable} ${lato.variable}`}>
-      <body className="font-sans antialiased bg-background text-foreground">{children}</body>
+      <body className="font-sans antialiased bg-background text-foreground">
+        {children}
+      </body>
     </html>
   )
 }

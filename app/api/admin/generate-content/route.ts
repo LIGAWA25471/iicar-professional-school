@@ -1,8 +1,6 @@
+// v5 — Vercel AI Gateway (zero-config, credit card added)
 import { streamText } from 'ai'
-import { createXai } from '@ai-sdk/xai'
 import { NextRequest } from 'next/server'
-
-const xai = createXai({ apiKey: process.env.XAI_API_KEY })
 
 export async function POST(request: NextRequest) {
   const { title, description, level, duration_weeks, type } = await request.json()
@@ -61,15 +59,15 @@ Return only the JSON array, nothing else.`
 
   try {
     const result = streamText({
-      model: xai('grok-3-mini'),
+      model: 'openai/gpt-4o-mini',
       system: systemPrompt,
       prompt: userPrompt,
       maxOutputTokens: 4000,
     })
-
     return result.toTextStreamResponse()
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
+    console.error('[v0] generate-content error:', msg)
     return new Response(JSON.stringify({ error: msg }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
