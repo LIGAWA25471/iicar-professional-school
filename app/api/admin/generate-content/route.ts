@@ -94,7 +94,6 @@ Return ONLY the JSON array. No other text.`
     return result.toTextStreamResponse()
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
-    console.error('[v0] AI generation error:', msg)
     return new Response(JSON.stringify({ error: msg }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
