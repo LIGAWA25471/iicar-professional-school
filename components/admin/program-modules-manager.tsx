@@ -158,7 +158,8 @@ export default function ProgramModulesManager({
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Save failed')
-      setSuccess(`${modules.length} modules saved successfully.`)
+      const lessonNote = data.lessons > 0 ? ` and ${data.lessons} lessons` : ''
+      setSuccess(`${modules.length} modules${lessonNote} saved — students can now access the content.`)
       router.refresh()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Save failed')

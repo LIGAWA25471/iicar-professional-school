@@ -88,12 +88,21 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
           const lessons = (module.lessons ?? [])
             .filter(l => l.is_published)
             .sort((a, b) => a.sort_order - b.sort_order)
+
+          // description is stored as JSON — extract the human-readable summary
+          let moduleDesc = module.description ?? ''
+          try {
+            const parsed = JSON.parse(module.description ?? '{}')
+            if (parsed.summary) moduleDesc = parsed.summary
+          } catch { /* plain text */ }
+
           return (
             <div key={module.id} className="rounded-xl border border-border bg-card overflow-hidden">
               <div className="flex items-center justify-between bg-primary/5 px-5 py-4 border-b border-border">
                 <div>
                   <h3 className="font-semibold text-sm text-foreground">{module.title}</h3>
-                  {module.description && <p className="text-xs text-muted-foreground mt-0.5">{module.description}</p>}
+                  {moduleDesc && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{moduleDesc}</p>}
+                  <p className="text-xs text-muted-foreground/60 mt-1">{lessons.length} lesson{lessons.length !== 1 ? 's' : ''}</p>
                 </div>
                 {isEnrolled && (
                   <Button asChild variant="outline" size="sm" className="text-xs">
