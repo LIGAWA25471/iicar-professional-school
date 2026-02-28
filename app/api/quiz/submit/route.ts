@@ -1,5 +1,6 @@
-import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { redirect } from 'next/navigation'
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -8,10 +9,8 @@ export async function POST(request: Request) {
 
   const { programId, moduleId, answers, type } = await request.json()
 
-  // Use admin client to bypass RLS on questions (correct_answer must not be exposed to client)
-  const adminDb = createAdminClient()
-
-  let query = adminDb
+  // Fetch questions with correct answers (server-side only)
+  let query = supabase
     .from('questions')
     .select('id, correct_answer, question_type')
     .eq('question_type', type)
@@ -33,7 +32,7 @@ export async function POST(request: Request) {
   }
   const score = Math.round((correct / questions.length) * 100)
 
-  const { data: program } = await adminDb
+  const { data: program } = await supabase
     .from('programs')
     .select('passing_score, max_attempts')
     .eq('id', programId)
@@ -42,7 +41,7 @@ export async function POST(request: Request) {
   const passingScore = program?.passing_score ?? 70
   const passed = score >= passingScore
 
-  // Record attempt — use user-scoped client so RLS insert check passes (student_id = auth.uid())
+  // Record attempt
   await supabase.from('exam_attempts').insert({
     student_id: user.id,
     program_id: programId,
@@ -53,11 +52,11 @@ export async function POST(request: Request) {
     answers,
   })
 
-  // If final exam passed: issue certificate + complete enrollment via admin client
+  // If final exam passed: issue certificate + complete enrollment
   if (type === 'final_exam' && passed) {
     const certId = `IICAR-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 10).toUpperCase()}`
 
-    await adminDb.from('certificates').upsert({
+    await supabase.from('certificates').upsert({
       student_id: user.id,
       program_id: programId,
       cert_id: certId,
@@ -65,7 +64,7 @@ export async function POST(request: Request) {
       issued_at: new Date().toISOString(),
     }, { onConflict: 'student_id,program_id' })
 
-    await adminDb.from('enrollments')
+    await supabase.from('enrollments')
       .update({ status: 'completed', completed_at: new Date().toISOString() })
       .eq('student_id', user.id)
       .eq('program_id', programId)

@@ -1,8 +1,5 @@
-import { createXai } from '@ai-sdk/xai'
 import { streamText } from 'ai'
 import { NextRequest } from 'next/server'
-
-const xai = createXai({ apiKey: process.env.XAI_API_KEY! })
 
 export async function POST(request: NextRequest) {
   const { title, description, level, duration_weeks, type, module_title, module_topics } = await request.json()
@@ -89,10 +86,10 @@ Return ONLY the JSON array. No other text.`
 
   try {
     const result = streamText({
-      model: xai('grok-3-mini-beta'),
+      model: 'openai/gpt-4o-mini',
       system: systemPrompt,
       prompt: userPrompt,
-      maxTokens: 6000,
+      maxOutputTokens: 6000,
     })
     return result.toTextStreamResponse()
   } catch (err) {
