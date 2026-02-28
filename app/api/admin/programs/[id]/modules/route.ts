@@ -34,15 +34,17 @@ export async function POST(
       learning_outcomes: string[]
       duration_hours: number
       topics: string[]
+      content?: object | null
     }) => ({
       program_id: programId,
       title: m.title,
-      // Encode extra AI data as JSON in description for storage
+      // Encode all AI-generated data as JSON in the description column
       description: JSON.stringify({
         summary: m.description,
         topics: m.topics ?? [],
         learning_outcomes: m.learning_outcomes ?? [],
         duration_hours: m.duration_hours ?? 0,
+        content: m.content ?? null,
       }),
       sort_order: m.module_number,
     }))
