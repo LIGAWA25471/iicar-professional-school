@@ -12,7 +12,9 @@ export default async function QuizPage({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const { data: enrollment } = await supabase
+  const adminDb = createAdminClient()
+
+  const { data: enrollment } = await adminDb
     .from('enrollments')
     .select('status')
     .eq('student_id', user.id)
@@ -21,7 +23,6 @@ export default async function QuizPage({
   if (!enrollment || enrollment.status !== 'active') redirect(`/dashboard/programs/${programId}`)
 
   // Use admin client to fetch module + questions — bypasses RLS on questions table
-  const adminDb = createAdminClient()
 
   const { data: module_ } = await adminDb
     .from('modules')
