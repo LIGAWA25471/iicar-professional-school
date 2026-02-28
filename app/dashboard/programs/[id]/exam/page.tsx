@@ -12,7 +12,10 @@ export default async function FinalExamPage({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const { data: enrollment } = await supabase
+  // Use admin client to bypass RLS — enrollment check still scoped to user.id
+  const adminDb = createAdminClient()
+
+  const { data: enrollment } = await adminDb
     .from('enrollments')
     .select('status')
     .eq('student_id', user.id)
@@ -20,8 +23,7 @@ export default async function FinalExamPage({
     .single()
   if (!enrollment || enrollment.status !== 'active') redirect(`/dashboard/programs/${programId}`)
 
-  // Use admin client to fetch program + questions — bypasses RLS on questions table
-  const adminDb = createAdminClient()
+  // Fetch program + questions — bypasses RLS on questions table
 
   const { data: program } = await adminDb
     .from('programs')
