@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import QuizEngine from '@/components/quiz-engine'
 
@@ -20,22 +20,26 @@ export default async function QuizPage({
     .single()
   if (!enrollment || enrollment.status !== 'active') redirect(`/dashboard/programs/${programId}`)
 
-  const { data: module_ } = await supabase
+  // Use admin client to fetch module + questions — bypasses RLS on questions table
+  const adminDb = createAdminClient()
+
+  const { data: module_ } = await adminDb
     .from('modules')
     .select('id, title')
     .eq('id', moduleId)
     .single()
   if (!module_) notFound()
 
-  const { data: questions } = await supabase
+  const { data: questions } = await adminDb
     .from('questions')
     .select('id, question_text, option_a, option_b, option_c, option_d')
     .eq('module_id', moduleId)
     .eq('question_type', 'module_quiz')
+
   if (!questions || questions.length === 0) {
     return (
       <div className="flex flex-col items-center gap-4 py-20 text-center">
-        <p className="text-muted-foreground">No quiz questions for this module yet.</p>
+        <p className="text-sm text-muted-foreground">No assessment questions available for this module yet. Check back after your instructor publishes the assessment.</p>
       </div>
     )
   }

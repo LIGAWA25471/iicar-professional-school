@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Sparkles, Loader2, ChevronDown, ChevronUp, Save, RefreshCw, BookOpen } from 'lucide-react'
+import { Sparkles, Loader2, ChevronDown, ChevronUp, Save, RefreshCw, BookOpen, ClipboardList, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 
 interface TopicContent {
   title: string
@@ -19,6 +20,13 @@ interface ModuleContent {
   further_reading: string[]
 }
 
+interface QuizQuestion {
+  question: string
+  options: string[]
+  correct_answer: number
+  explanation?: string
+}
+
 interface Module {
   id?: string
   module_number: number
@@ -28,6 +36,8 @@ interface Module {
   duration_hours: number
   topics: string[]
   content?: ModuleContent | null
+  quiz?: QuizQuestion[] | null
+  quizSaved?: boolean
 }
 
 function parseDbModules(raw: { id: string; title: string; description: string | null; sort_order: number }[]): Module[] {
@@ -68,6 +78,8 @@ export default function ProgramModulesManager({
   const [modules, setModules] = useState<Module[]>(() => parseDbModules(initialModules))
   const [generating, setGenerating] = useState(false)
   const [generatingContentFor, setGeneratingContentFor] = useState<number | null>(null)
+  const [generatingQuizFor, setGeneratingQuizFor] = useState<number | null>(null)
+  const [savingQuizFor, setSavingQuizFor] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [expandedIdx, setExpandedIdx] = useState<number | null>(modules.length > 0 ? 0 : null)
   const [expandedTopicIdx, setExpandedTopicIdx] = useState<Record<number, number | null>>({})
@@ -143,6 +155,60 @@ export default function ProgramModulesManager({
       setError(e instanceof Error ? e.message : 'Failed to generate content. Try again.')
     } finally {
       setGeneratingContentFor(null)
+    }
+  }
+
+  async function generateQuiz(idx: number) {
+    const mod = modules[idx]
+    if (!mod.topics?.length) {
+      setError('Generate module topics first before creating an assessment.')
+      return
+    }
+    setGeneratingQuizFor(idx)
+    setError('')
+    setSuccess('')
+    try {
+      const raw = await streamJSON({
+        title: programTitle,
+        level: programLevel,
+        type: 'quiz',
+        module_title: mod.title,
+        module_topics: mod.topics,
+      })
+      const parsed = JSON.parse(raw)
+      if (!Array.isArray(parsed)) throw new Error('Unexpected response format from AI')
+      setModules(prev => prev.map((m, i) => i === idx ? { ...m, quiz: parsed, quizSaved: false } : m))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to generate assessment. Try again.')
+    } finally {
+      setGeneratingQuizFor(null)
+    }
+  }
+
+  async function saveQuiz(idx: number) {
+    const mod = modules[idx]
+    if (!mod.quiz?.length) return
+    if (!mod.id) {
+      setError('Save the modules first before publishing the assessment.')
+      return
+    }
+    setSavingQuizFor(idx)
+    setError('')
+    setSuccess('')
+    try {
+      const res = await fetch(`/api/admin/programs/${programId}/assessments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ moduleId: mod.id, questions: mod.quiz, type: 'module_quiz' }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Failed to save assessment')
+      setModules(prev => prev.map((m, i) => i === idx ? { ...m, quizSaved: true } : m))
+      setSuccess(`Assessment published — ${data.saved} questions are now available to enrolled students.`)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to save assessment')
+    } finally {
+      setSavingQuizFor(null)
     }
   }
 
@@ -369,6 +435,99 @@ export default function ProgramModulesManager({
                       </p>
                     )}
                   </div>
+
+                  {/* ── Assessment section ── */}
+                  <div className="border-t border-border pt-4 flex flex-col gap-4">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div>
+                        <p className="text-xs font-semibold text-foreground uppercase tracking-wide">Module Assessment</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {mod.quiz
+                            ? mod.quizSaved
+                              ? `${mod.quiz.length} questions published`
+                              : `${mod.quiz.length} questions generated — not yet saved`
+                            : 'No assessment yet'}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {mod.quiz && mod.quiz.length > 0 && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => saveQuiz(idx)}
+                            disabled={savingQuizFor === idx || !mod.id}
+                            className="h-7 text-xs border-emerald-300 text-emerald-700 hover:bg-emerald-50">
+                            {savingQuizFor === idx
+                              ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" />Saving…</>
+                              : mod.quizSaved
+                                ? <><RefreshCw className="h-3 w-3 mr-1" />Re-publish</>
+                                : <><CheckCircle2 className="h-3 w-3 mr-1" />Publish Assessment</>}
+                          </Button>
+                        )}
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => generateQuiz(idx)}
+                          disabled={generatingQuizFor !== null || generatingContentFor !== null}
+                          className="h-7 text-xs bg-primary text-primary-foreground hover:bg-primary/90">
+                          {generatingQuizFor === idx
+                            ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" />Generating…</>
+                            : mod.quiz
+                              ? <><RefreshCw className="h-3 w-3 mr-1" />Regenerate</>
+                              : <><ClipboardList className="h-3 w-3 mr-1" />Generate Assessment</>}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {generatingQuizFor === idx && (
+                      <div className="flex items-center gap-2 py-6 justify-center">
+                        <Loader2 className="h-5 w-5 text-primary animate-spin" />
+                        <p className="text-sm text-muted-foreground">AI is writing assessment questions…</p>
+                      </div>
+                    )}
+
+                    {mod.quiz && mod.quiz.length > 0 && generatingQuizFor !== idx && (
+                      <div className="flex flex-col gap-2">
+                        {mod.quizSaved && (
+                          <div className="flex items-center gap-2 rounded-md bg-emerald-50 border border-emerald-200 px-3 py-2">
+                            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                            <p className="text-xs text-emerald-700">Assessment published — visible to enrolled students</p>
+                          </div>
+                        )}
+                        {!mod.id && (
+                          <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2">
+                            <p className="text-xs text-amber-700">Save modules first, then click &quot;Publish Assessment&quot; to make questions available.</p>
+                          </div>
+                        )}
+                        {mod.quiz.map((q, qi) => (
+                          <div key={qi} className="rounded-lg border border-border bg-muted/20 px-4 py-3">
+                            <div className="flex items-start gap-2 mb-2">
+                              <Badge variant="outline" className="text-xs shrink-0 mt-0.5">Q{qi + 1}</Badge>
+                              <p className="text-sm text-foreground">{q.question}</p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-1.5 ml-7">
+                              {q.options.map((opt, oi) => (
+                                <div key={oi} className={`text-xs px-2.5 py-1.5 rounded-md border ${oi === q.correct_answer ? 'bg-emerald-50 text-emerald-800 border-emerald-200 font-medium' : 'text-muted-foreground border-transparent'}`}>
+                                  {String.fromCharCode(65 + oi)}. {opt}
+                                </div>
+                              ))}
+                            </div>
+                            {q.explanation && (
+                              <p className="mt-2 ml-7 text-xs text-muted-foreground italic">{q.explanation}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {!mod.quiz && generatingQuizFor !== idx && (
+                      <p className="text-xs text-muted-foreground text-center py-5 border border-dashed border-border rounded-lg">
+                        Click &quot;Generate Assessment&quot; to create 10 multiple-choice questions for this module.
+                      </p>
+                    )}
+                  </div>
+
                 </div>
               )}
             </div>

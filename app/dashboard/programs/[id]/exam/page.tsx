@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import QuizEngine from '@/components/quiz-engine'
 
@@ -20,14 +20,17 @@ export default async function FinalExamPage({
     .single()
   if (!enrollment || enrollment.status !== 'active') redirect(`/dashboard/programs/${programId}`)
 
-  const { data: program } = await supabase
+  // Use admin client to fetch program + questions — bypasses RLS on questions table
+  const adminDb = createAdminClient()
+
+  const { data: program } = await adminDb
     .from('programs')
     .select('id, title, passing_score, max_attempts')
     .eq('id', programId)
     .single()
   if (!program) notFound()
 
-  const { data: questions } = await supabase
+  const { data: questions } = await adminDb
     .from('questions')
     .select('id, question_text, option_a, option_b, option_c, option_d')
     .eq('program_id', programId)
