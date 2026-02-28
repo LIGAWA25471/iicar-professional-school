@@ -3,9 +3,10 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ChevronLeft, Users, BookOpen, Sparkles } from 'lucide-react'
+import { ChevronLeft, Users, BookOpen } from 'lucide-react'
 import ProgramPublishToggle from '@/components/admin/program-publish-toggle'
 import ProgramModulesManager from '@/components/admin/program-modules-manager'
+import AdminManualEnrollModal from '@/components/admin/manual-enroll-modal'
 
 export default async function AdminProgramDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -23,27 +24,30 @@ export default async function AdminProgramDetailPage({ params }: { params: Promi
 
   if (!program) notFound()
 
-  // Load modules from the correct table
   const { data: modules } = await adminDb
     .from('modules')
     .select('*')
     .eq('program_id', id)
     .order('sort_order', { ascending: true })
 
-  // Enrollment count
   const { count: enrollmentCount } = await adminDb
     .from('enrollments')
     .select('id', { count: 'exact', head: true })
     .eq('program_id', id)
 
+  // All non-admin students for the enroll modal
+  const { data: students } = await adminDb
+    .from('profiles')
+    .select('id, full_name, phone')
+    .eq('is_admin', false)
+    .order('full_name', { ascending: true })
+
   return (
     <div className="flex flex-col gap-8 max-w-5xl">
-      {/* BREADCRUMB */}
       <Button asChild variant="ghost" size="sm" className="self-start text-muted-foreground -ml-2">
         <Link href="/admin/programs"><ChevronLeft className="h-4 w-4 mr-1" />All Programs</Link>
       </Button>
 
-      {/* HEADER */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-2">
@@ -61,12 +65,17 @@ export default async function AdminProgramDetailPage({ params }: { params: Promi
             <span className="font-medium text-foreground">{program.price_cents === 0 ? 'Free' : `KES ${(program.price_cents / 100).toLocaleString()}`}</span>
           </div>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-3 shrink-0 flex-wrap">
+          <AdminManualEnrollModal
+            fixedProgramId={id}
+            fixedProgramTitle={program.title}
+            fixedPriceCents={program.price_cents}
+            students={students ?? []}
+          />
           <ProgramPublishToggle programId={id} isPublished={program.is_published} />
         </div>
       </div>
 
-      {/* MODULES MANAGER */}
       <ProgramModulesManager
         programId={id}
         programTitle={program.title}
