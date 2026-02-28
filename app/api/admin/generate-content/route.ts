@@ -57,12 +57,17 @@ Return a JSON array where each item has:
 Return only the JSON array, nothing else.`
   }
 
-  const result = streamText({
-    model: xai('grok-3'),
-    system: systemPrompt,
-    prompt: userPrompt,
-    maxTokens: 4000,
-  })
+  try {
+    const result = streamText({
+      model: xai('grok-2-latest'),
+      system: systemPrompt,
+      prompt: userPrompt,
+      maxTokens: 4000,
+    })
 
-  return result.toTextStreamResponse()
+    return result.toTextStreamResponse()
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    return new Response(JSON.stringify({ error: msg }), { status: 500, headers: { 'Content-Type': 'application/json' } })
+  }
 }
