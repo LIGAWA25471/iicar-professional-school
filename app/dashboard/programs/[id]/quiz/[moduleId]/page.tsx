@@ -31,11 +31,13 @@ export default async function QuizPage({
     .single()
   if (!module_) notFound()
 
-  const { data: questions } = await adminDb
+  const { data: questions, error: questionsError } = await adminDb
     .from('questions')
     .select('id, question_text, option_a, option_b, option_c, option_d')
     .eq('module_id', moduleId)
     .eq('question_type', 'module_quiz')
+
+  console.log('[v0] Quiz page query - moduleId:', moduleId, 'question_count:', questions?.length ?? 0, 'error:', questionsError)
 
   if (!questions || questions.length === 0) {
     return (
