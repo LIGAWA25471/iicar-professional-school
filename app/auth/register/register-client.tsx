@@ -9,14 +9,20 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
+const COUNTRIES = [
+  'Kenya', 'Uganda', 'Tanzania', 'Rwanda', 'Ethiopia', 'Ghana', 'Nigeria',
+  'South Africa', 'Egypt', 'United Kingdom', 'United States', 'Canada',
+  'Australia', 'India', 'Other',
+]
+
 export default function RegisterPageClient() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const programId = searchParams.get('program')
 
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [phone, setPhone] = useState('')
   const [country, setCountry] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -28,7 +34,7 @@ export default function RegisterPageClient() {
     setLoading(true)
     const supabase = createClient()
     const redirectTo = typeof window !== 'undefined'
-      ? `${window.location.origin}/auth/confirm`
+      ? `${window.location.origin}/auth/confirm${programId ? `?program=${programId}` : ''}`
       : '/auth/confirm'
 
     const { error } = await supabase.auth.signUp({
@@ -36,7 +42,7 @@ export default function RegisterPageClient() {
       password,
       options: {
         emailRedirectTo: redirectTo,
-        data: { full_name: fullName, country },
+        data: { full_name: fullName, phone, country },
       },
     })
     if (error) {
@@ -76,27 +82,49 @@ export default function RegisterPageClient() {
         </div>
         <div className="rounded-2xl bg-card p-8 shadow-xl border border-border">
           <form onSubmit={handleRegister} className="flex flex-col gap-5">
+
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="fullName">Full Name</Label>
               <Input id="fullName" placeholder="John Doe" value={fullName}
                 onChange={e => setFullName(e.target.value)} required />
             </div>
+
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="email">Email Address</Label>
               <Input id="email" type="email" placeholder="you@example.com" value={email}
                 onChange={e => setEmail(e.target.value)} required />
             </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input id="phone" type="tel" placeholder="e.g. +254712345678" value={phone}
+                onChange={e => setPhone(e.target.value)} required />
+            </div>
+
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="country">Country</Label>
-              <Input id="country" placeholder="e.g. Nigeria" value={country}
-                onChange={e => setCountry(e.target.value)} required />
+              <select
+                id="country"
+                value={country}
+                onChange={e => setCountry(e.target.value)}
+                required
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              >
+                <option value="">Select your country…</option>
+                {COUNTRIES.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
             </div>
+
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" placeholder="Min. 8 characters" value={password}
                 onChange={e => setPassword(e.target.value)} required minLength={8} />
             </div>
+
             {error && <p className="rounded-lg bg-destructive/10 px-4 py-2 text-xs text-destructive">{error}</p>}
+
             <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold" disabled={loading}>
               {loading ? 'Creating account…' : 'Create Account'}
             </Button>

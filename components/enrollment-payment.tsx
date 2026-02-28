@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Loader2, Phone, AlertCircle } from 'lucide-react'
+import { Loader2, Phone, AlertCircle, CheckCircle2, Clock } from 'lucide-react'
 
 export function EnrollmentPayment({
   programId,
@@ -21,7 +21,10 @@ export function EnrollmentPayment({
   const [phoneNumber, setPhoneNumber] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState(false)
+  const [promptSent, setPromptSent] = useState(false)
+  const [paymentId, setPaymentId] = useState<string | null>(null)
+  const [pollStatus, setPollStatus] = useState<'pending' | 'paid' | 'failed'>('pending')
+  const [pollCount, setPollCount] = useState(0)
 
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -38,24 +41,17 @@ export function EnrollmentPayment({
       const response = await fetch('/api/payments/initiate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          programId,
-          phoneNumber,
-          amount,
-        }),
+        body: JSON.stringify({ programId, phoneNumber, amount }),
       })
 
+      const data = await response.json()
+
       if (!response.ok) {
-        const data = await response.json()
         throw new Error(data.error || 'Payment failed')
       }
 
-      setSuccess(true)
-      if (onSuccess) onSuccess()
-      
-      setTimeout(() => {
-        router.refresh()
-      }, 3000)
+      setPaymentId(data.paymentId)
+      setPromptSent(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Payment processing failed')
     } finally {
@@ -63,20 +59,99 @@ export function EnrollmentPayment({
     }
   }
 
-  if (success) {
+  // Poll payment status every 5 seconds after prompt is sent
+  const checkStatus = useCallback(async () => {
+    if (!paymentId) return
+    try {
+      const res = await fetch(`/api/payments/status?paymentId=${paymentId}`)
+      if (!res.ok) return
+      const data = await res.json()
+      if (data.status === 'paid') {
+        setPollStatus('paid')
+        if (onSuccess) onSuccess()
+        setTimeout(() => router.refresh(), 1500)
+      } else if (data.status === 'failed') {
+        setPollStatus('failed')
+      }
+    } catch { /* silent */ }
+  }, [paymentId, onSuccess, router])
+
+  useEffect(() => {
+    if (!promptSent || !paymentId || pollStatus !== 'pending') return
+    // Poll up to 24 times (2 minutes)
+    if (pollCount >= 24) return
+    const timer = setTimeout(() => {
+      checkStatus()
+      setPollCount(c => c + 1)
+    }, 5000)
+    return () => clearTimeout(timer)
+  }, [promptSent, paymentId, pollStatus, pollCount, checkStatus])
+
+  if (pollStatus === 'paid') {
     return (
       <div className="rounded-xl border border-green-200 bg-green-50 p-6">
-        <div className="flex gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-200">
-            <span className="text-lg">✓</span>
-          </div>
+        <div className="flex gap-3 items-start">
+          <CheckCircle2 className="h-6 w-6 text-green-600 shrink-0 mt-0.5" />
           <div>
-            <h3 className="font-semibold text-green-900">M-Pesa Prompt Sent</h3>
+            <h3 className="font-semibold text-green-900">Payment Confirmed</h3>
             <p className="mt-1 text-sm text-green-800">
-              Enter your M-Pesa PIN on your phone to complete the payment for {programTitle}.
+              You are now enrolled in {programTitle}. Redirecting...
             </p>
           </div>
         </div>
+      </div>
+    )
+  }
+
+  if (pollStatus === 'failed') {
+    return (
+      <div className="rounded-xl border border-red-200 bg-red-50 p-6">
+        <div className="flex gap-3 items-start">
+          <AlertCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+          <div>
+            <h3 className="font-semibold text-red-900">Payment Failed</h3>
+            <p className="mt-1 text-sm text-red-800">
+              The payment was not completed. Please try again.
+            </p>
+            <Button
+              size="sm"
+              variant="outline"
+              className="mt-3"
+              onClick={() => { setPromptSent(false); setPaymentId(null); setPollStatus('pending'); setPollCount(0); setError('') }}
+            >
+              Try Again
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (promptSent) {
+    return (
+      <div className="rounded-xl border border-border bg-card p-6 flex flex-col gap-4">
+        <div className="flex gap-3 items-start">
+          <Clock className="h-5 w-5 text-primary shrink-0 mt-0.5 animate-pulse" />
+          <div>
+            <h3 className="font-semibold text-foreground">M-Pesa Prompt Sent</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Check your phone <span className="font-mono font-semibold">{phoneNumber}</span> and enter your M-Pesa PIN to pay{' '}
+              <span className="font-semibold text-foreground">KES {amount.toLocaleString()}</span> for {programTitle}.
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          Waiting for payment confirmation...
+        </div>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="self-start text-xs text-muted-foreground"
+          onClick={() => { setPromptSent(false); setPaymentId(null); setPollStatus('pending'); setPollCount(0); setError('') }}
+        >
+          Use a different number
+        </Button>
       </div>
     )
   }
@@ -93,10 +168,10 @@ export function EnrollmentPayment({
       <div>
         <label className="text-sm font-medium text-foreground">M-Pesa Phone Number</label>
         <div className="mt-2 flex items-center gap-2">
-          <Phone className="h-4 w-4 text-muted-foreground" />
+          <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
           <Input
             type="tel"
-            placeholder="254712345678 or 0712345678"
+            placeholder="0712345678 or 254712345678"
             value={phoneNumber}
             onChange={(e) => setPhoneNumber(e.target.value)}
             disabled={loading}
@@ -104,13 +179,13 @@ export function EnrollmentPayment({
           />
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
-          We'll send an M-Pesa prompt to this number
+          We will send an M-Pesa STK push prompt to this number
         </p>
       </div>
 
       {error && (
         <div className="flex gap-2 rounded-lg border border-red-200 bg-red-50 p-3">
-          <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
+          <AlertCircle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
           <p className="text-sm text-red-700">{error}</p>
         </div>
       )}
@@ -123,10 +198,10 @@ export function EnrollmentPayment({
         {loading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Processing...
+            Sending M-Pesa Prompt...
           </>
         ) : (
-          `Send M-Pesa Prompt - KES ${amount.toLocaleString()}`
+          `Pay KES ${amount.toLocaleString()} via M-Pesa`
         )}
       </Button>
     </form>

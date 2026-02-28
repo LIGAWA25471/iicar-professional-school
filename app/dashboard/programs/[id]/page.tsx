@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { BookOpen, CheckCircle, Circle, ChevronRight, Lock } from 'lucide-react'
@@ -11,7 +11,9 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const { data: program } = await supabase
+  // Use service-role to bypass RLS for reading program content
+  const adminDb = createAdminClient()
+  const { data: program } = await adminDb
     .from('programs')
     .select('*, modules(id, title, description, sort_order, lessons(id, title, is_published, sort_order))')
     .eq('id', id)
@@ -73,7 +75,7 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
           <p className="text-sm text-muted-foreground">Enroll to access lessons and assessments</p>
           <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
             <Link href={`/dashboard/programs/${id}/enroll`}>
-              {program.price_cents === 0 ? 'Enroll Free' : `Enroll — $${(program.price_cents / 100).toFixed(0)}`}
+              {program.price_cents === 0 ? 'Enroll Free' : `Enroll — KES ${(program.price_cents / 100).toLocaleString()}`}
             </Link>
           </Button>
         </div>
@@ -86,12 +88,21 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
           const lessons = (module.lessons ?? [])
             .filter(l => l.is_published)
             .sort((a, b) => a.sort_order - b.sort_order)
+
+          // description is stored as JSON — extract the human-readable summary
+          let moduleDesc = module.description ?? ''
+          try {
+            const parsed = JSON.parse(module.description ?? '{}')
+            if (parsed.summary) moduleDesc = parsed.summary
+          } catch { /* plain text */ }
+
           return (
             <div key={module.id} className="rounded-xl border border-border bg-card overflow-hidden">
               <div className="flex items-center justify-between bg-primary/5 px-5 py-4 border-b border-border">
                 <div>
                   <h3 className="font-semibold text-sm text-foreground">{module.title}</h3>
-                  {module.description && <p className="text-xs text-muted-foreground mt-0.5">{module.description}</p>}
+                  {moduleDesc && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{moduleDesc}</p>}
+                  <p className="text-xs text-muted-foreground/60 mt-1">{lessons.length} lesson{lessons.length !== 1 ? 's' : ''}</p>
                 </div>
                 {isEnrolled && (
                   <Button asChild variant="outline" size="sm" className="text-xs">

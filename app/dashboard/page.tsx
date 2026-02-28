@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { BookOpen, Award, Clock, ChevronRight } from 'lucide-react'
+import { BookOpen, Award, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export default async function DashboardPage() {

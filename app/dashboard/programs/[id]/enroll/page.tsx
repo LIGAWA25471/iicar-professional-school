@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -11,7 +11,9 @@ export default async function EnrollPage({ params }: { params: Promise<{ id: str
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const { data: program } = await supabase
+  // Use service-role to bypass RLS when fetching the program
+  const adminDb = createAdminClient()
+  const { data: program } = await adminDb
     .from('programs')
     .select('id, title, description, price_cents, duration_weeks, level, passing_score')
     .eq('id', programId)

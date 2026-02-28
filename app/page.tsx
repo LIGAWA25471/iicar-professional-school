@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { BookOpen, Award, Globe, Shield, ChevronRight, Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -11,10 +11,13 @@ export default async function HomePage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (user) redirect('/dashboard')
 
-  const { data: programs } = await supabase
+  // Use service-role client to bypass RLS — programs are public content
+  const adminDb = createAdminClient()
+  const { data: programs } = await adminDb
     .from('programs')
     .select('id, title, description, price_cents, duration_weeks, level')
     .eq('is_published', true)
+    .order('created_at', { ascending: true })
     .limit(6)
 
   return (
@@ -48,13 +51,10 @@ export default async function HomePage() {
       {/* HERO */}
       <section className="relative bg-primary text-primary-foreground overflow-hidden">
         <div className="absolute inset-0 opacity-20">
-          <Image src="/hero-certification.jpg" alt="" fill className="object-cover" />
+          <Image src="/hero-certification.jpg" alt="" fill className="object-cover" priority />
         </div>
         <div className="relative mx-auto max-w-7xl px-6 py-24 md:py-32">
           <div className="mx-auto max-w-3xl text-center">
-            <Badge className="mb-6 bg-accent/20 text-accent border-accent/30 text-xs tracking-widest uppercase px-4 py-1">
-              AI-Powered Certification
-            </Badge>
             <h1 className="text-4xl font-bold leading-tight tracking-tight text-balance md:text-5xl lg:text-6xl">
               Advance Your Career with Globally Recognised Certifications
             </h1>
@@ -65,7 +65,7 @@ export default async function HomePage() {
               <Button asChild size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold px-10">
                 <Link href="/auth/register">Get Started</Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="border-white/30 text-primary-foreground hover:bg-white/10">
+              <Button asChild size="lg" className="border border-white/50 bg-transparent text-primary-foreground hover:bg-white/10">
                 <Link href="#programs">Browse Programs <ChevronRight className="ml-1 h-4 w-4" /></Link>
               </Button>
             </div>
@@ -143,7 +143,7 @@ export default async function HomePage() {
                     <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">{program.description}</p>
                     <div className="mt-auto flex items-center justify-between pt-4 border-t border-border">
                       <span className="text-lg font-bold text-primary">
-                        {program.price_cents === 0 ? 'Free' : `$${(program.price_cents / 100).toFixed(0)}`}
+                        {program.price_cents === 0 ? 'Free' : `KES ${(program.price_cents / 100).toLocaleString()}`}
                       </span>
                       <Button asChild size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
                         <Link href={`/auth/register?program=${program.id}`}>Enroll</Link>
@@ -234,7 +234,7 @@ export default async function HomePage() {
             <Button asChild size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold px-10">
               <Link href="/auth/register">Create Free Account</Link>
             </Button>
-            <Button asChild size="lg" variant="outline" className="border-white/30 text-primary-foreground hover:bg-white/10">
+            <Button asChild size="lg" className="border border-white/50 bg-transparent text-primary-foreground hover:bg-white/10">
               <Link href="/verify">Verify a Certificate</Link>
             </Button>
           </div>

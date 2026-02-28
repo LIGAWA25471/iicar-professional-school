@@ -65,7 +65,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       </aside>
 
       {/* MOBILE NAV */}
-      <DashboardMobileNav navItems={navItems} profile={profile} user={user} />
+      <DashboardMobileNav profile={profile} user={user} />
 
       {/* MAIN */}
       <div className="w-full md:ml-64 flex flex-1 flex-col">

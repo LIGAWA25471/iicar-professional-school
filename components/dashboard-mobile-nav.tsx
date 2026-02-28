@@ -1,23 +1,23 @@
 'use client'
 
 import { useState } from 'react'
-import { Menu, X, LogOut } from 'lucide-react'
+import { Menu, X, LogOut, LayoutDashboard, BookOpen, Award, User } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 
-interface NavItem {
-  href: string
-  icon: React.ComponentType<{ className?: string }>
-  label: string
-}
+const navItems = [
+  { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { href: '/dashboard/programs', icon: BookOpen, label: 'My Programs' },
+  { href: '/dashboard/certificates', icon: Award, label: 'Certificates' },
+  { href: '/dashboard/profile', icon: User, label: 'Profile' },
+]
 
 interface Props {
-  navItems: NavItem[]
   profile: { full_name: string | null; is_admin: boolean | null } | null
   user: { email?: string }
 }
 
-export function DashboardMobileNav({ navItems, profile, user }: Props) {
+export function DashboardMobileNav({ profile, user }: Props) {
   const [isOpen, setIsOpen] = useState(false)
 
   return (
@@ -59,7 +59,7 @@ export function DashboardMobileNav({ navItems, profile, user }: Props) {
                   onClick={() => setIsOpen(false)}
                   className="mt-2 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-sidebar-primary hover:bg-sidebar-accent transition-colors"
                 >
-                  <Menu className="h-4 w-4" />
+                  <LayoutDashboard className="h-4 w-4" />
                   Admin Panel
                 </Link>
               )}

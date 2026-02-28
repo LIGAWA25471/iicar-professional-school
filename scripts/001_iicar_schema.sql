@@ -164,17 +164,25 @@ CREATE POLICY "attempts_admin_all"  ON public.exam_attempts FOR ALL     USING (E
 
 -- ─── payments ────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.payments (
-  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  student_id          UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-  program_id          UUID NOT NULL REFERENCES public.programs(id) ON DELETE CASCADE,
-  stripe_session_id   TEXT UNIQUE,
+  id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  student_id           UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  program_id           UUID NOT NULL REFERENCES public.programs(id) ON DELETE CASCADE,
+  stripe_session_id    TEXT UNIQUE,
   stripe_payment_intent TEXT,
-  amount_cents        INTEGER NOT NULL,
-  currency            TEXT NOT NULL DEFAULT 'usd',
-  status              TEXT CHECK (status IN ('pending','paid','failed','refunded')) NOT NULL DEFAULT 'pending',
-  paid_at             TIMESTAMPTZ,
-  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  amount_cents         INTEGER NOT NULL,
+  currency             TEXT NOT NULL DEFAULT 'KES',
+  status               TEXT CHECK (status IN ('pending','paid','failed','refunded')) NOT NULL DEFAULT 'pending',
+  phone_number         TEXT,
+  kopokopo_location    TEXT,
+  kopokopo_reference   TEXT,
+  paid_at              TIMESTAMPTZ,
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Add KopoKopo columns if this is run against an existing DB
+ALTER TABLE public.payments ADD COLUMN IF NOT EXISTS phone_number       TEXT;
+ALTER TABLE public.payments ADD COLUMN IF NOT EXISTS kopokopo_location  TEXT;
+ALTER TABLE public.payments ADD COLUMN IF NOT EXISTS kopokopo_reference TEXT;
 
 ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "payments_own"        ON public.payments FOR SELECT  USING (auth.uid() = student_id);

@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Users, BookOpen, Award, TrendingUp, ChevronRight } from 'lucide-react'
@@ -8,16 +8,19 @@ export default async function AdminPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
+  // Use service-role client to bypass RLS for all admin stat queries
+  const adminDb = createAdminClient()
+
   const [
     { count: studentCount },
     { count: programCount },
     { count: certCount },
     { count: enrollCount },
   ] = await Promise.all([
-    supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_admin', false),
-    supabase.from('programs').select('*', { count: 'exact', head: true }),
-    supabase.from('certificates').select('*', { count: 'exact', head: true }).eq('revoked', false),
-    supabase.from('enrollments').select('*', { count: 'exact', head: true }).eq('status', 'active'),
+    adminDb.from('profiles').select('*', { count: 'exact', head: true }).eq('is_admin', false),
+    adminDb.from('programs').select('*', { count: 'exact', head: true }),
+    adminDb.from('certificates').select('*', { count: 'exact', head: true }).eq('revoked', false),
+    adminDb.from('enrollments').select('*', { count: 'exact', head: true }).eq('status', 'active'),
   ])
 
   const stats = [
@@ -27,14 +30,14 @@ export default async function AdminPage() {
     { label: 'Certificates Issued', value: certCount ?? 0, icon: Award, href: '/admin/certificates' },
   ]
 
-  const { data: recentStudents } = await supabase
+  const { data: recentStudents } = await adminDb
     .from('profiles')
     .select('id, full_name, country, created_at')
     .eq('is_admin', false)
     .order('created_at', { ascending: false })
     .limit(5)
 
-  const { data: recentCerts } = await supabase
+  const { data: recentCerts } = await adminDb
     .from('certificates')
     .select('id, cert_id, issued_at, profiles(full_name), programs(title)')
     .eq('revoked', false)

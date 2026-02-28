@@ -1,23 +1,23 @@
 'use client'
 
 import { useState } from 'react'
-import { Menu, X, LogOut, ChevronRight } from 'lucide-react'
+import { Menu, X, LogOut, ChevronRight, LayoutDashboard, BookOpen, Users, Award } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 
-interface NavItem {
-  href: string
-  icon: React.ComponentType<{ className?: string }>
-  label: string
-}
+const navItems = [
+  { href: '/admin', icon: LayoutDashboard, label: 'Overview' },
+  { href: '/admin/programs', icon: BookOpen, label: 'Programs' },
+  { href: '/admin/students', icon: Users, label: 'Students' },
+  { href: '/admin/certificates', icon: Award, label: 'Certificates' },
+]
 
 interface Props {
-  navItems: NavItem[]
   profile: { full_name: string | null; is_admin: boolean | null } | null
   user: { email?: string }
 }
 
-export function AdminMobileNav({ navItems, profile, user }: Props) {
+export function AdminMobileNav({ profile, user }: Props) {
   const [isOpen, setIsOpen] = useState(false)
 
   return (
