@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 
@@ -8,11 +8,16 @@ export const metadata: Metadata = {
   title: 'IICAR Global College – Professional Certification Platform',
   description:
     'Institute of International Career Advancement and Recognition — AI-powered, self-paced professional certification programs recognised globally.',
-  generator: 'v0.app',
   icons: {
     icon: '/logo.jpg',
     apple: '/logo.jpg',
   },
+}
+
+export const viewport: Viewport = {
+  themeColor: '#0f172a',
+  width: 'device-width',
+  initialScale: 1,
 }
 
 export default function RootLayout({
