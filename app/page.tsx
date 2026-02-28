@@ -51,7 +51,7 @@ export default async function HomePage() {
       {/* HERO */}
       <section className="relative bg-primary text-primary-foreground overflow-hidden">
         <div className="absolute inset-0 opacity-20">
-          <Image src="/hero-certification.jpg" alt="" fill className="object-cover" />
+          <Image src="/hero-certification.jpg" alt="" fill className="object-cover" priority />
         </div>
         <div className="relative mx-auto max-w-7xl px-6 py-24 md:py-32">
           <div className="mx-auto max-w-3xl text-center">
