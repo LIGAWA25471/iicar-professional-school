@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { generateText } from 'ai'
+import { xai } from '@ai-sdk/xai'
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -22,31 +24,20 @@ The lesson should include:
 Write in a clear, professional academic tone suitable for working professionals. Length: approximately 600-900 words. Use clear paragraphs — do not use markdown headers or bullet points.`
 
   try {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 1200,
-        temperature: 0.7,
+    const { text } = await generateText({
+      model: xai('grok-4', {
+        apiKey: process.env.XAI_API_KEY,
       }),
+      prompt,
+      maxTokens: 1200,
+      temperature: 0.7,
     })
 
-    if (!res.ok) {
-      const errText = await res.text()
-      return NextResponse.json({ content: `AI generation unavailable. Please add your lesson content manually.\n\nError: ${errText}` })
-    }
-
-    const data = await res.json()
-    const content = data.choices?.[0]?.message?.content ?? 'No content generated.'
-    return NextResponse.json({ content })
+    return NextResponse.json({ content: text || 'No content generated.' })
   } catch (err) {
+    console.error('[v0] AI generation error:', err)
     return NextResponse.json({
-      content: `AI generation requires an OPENAI_API_KEY environment variable. Please add your lesson content manually.\n\nLesson: ${lessonTitle}`,
+      content: `AI generation unavailable. Please add your lesson content manually.\n\nLesson: ${lessonTitle}`,
     })
   }
 }
