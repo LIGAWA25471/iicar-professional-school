@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Users, BookOpen, Award, TrendingUp, ChevronRight } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { SeedProgramsButton } from '@/components/admin/seed-programs-button'
 
 export default async function AdminPage() {
   const supabase = await createClient()
@@ -43,9 +45,14 @@ export default async function AdminPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-2xl font-bold text-primary">Admin Overview</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Platform snapshot and recent activity</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-primary">Admin Overview</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Platform snapshot and recent activity</p>
+        </div>
+        {(programCount ?? 0) === 0 && (
+          <SeedProgramsButton />
+        )}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
