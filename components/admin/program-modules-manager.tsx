@@ -294,53 +294,12 @@ export default function ProgramModulesManager({
   }
 
   return (
-    <section className="rounded-xl border border-border bg-card p-6 flex flex-col gap-5">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h2 className="font-semibold text-foreground">Course Modules</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {modules.length > 0
-              ? `${modules.length} modules · ${modules.reduce((s, m) => s + (m.duration_hours ?? 0), 0)}h total study time`
-              : 'No modules yet — generate them with AI'}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {modules.length > 0 && (
-            <Button onClick={saveModules} disabled={saving} size="sm" variant="outline"
-              className="border-primary/40 text-primary hover:bg-primary/5">
-              {saving
-                ? <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />Saving…</>
-                : <><Save className="h-3.5 w-3.5 mr-1.5" />Save</>}
-            </Button>
-          )}
-          <Button onClick={generateModules} disabled={generating || generatingContentFor !== null} size="sm"
-            className="bg-primary text-primary-foreground hover:bg-primary/90">
-            {generating
-              ? <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />Generating…</>
-              : modules.length > 0
-                ? <><RefreshCw className="h-3.5 w-3.5 mr-1.5" />Regenerate Modules</>
-                : <><Sparkles className="h-3.5 w-3.5 mr-1.5" />Generate Modules</>}
-          </Button>
-        </div>
-      </div>
-
-      {error && (
-        <div className="rounded-lg bg-destructive/10 px-4 py-2 text-sm text-destructive border border-destructive/20">
-          {error}
-        </div>
-      )}
-      {success && (
-        <div className="rounded-lg bg-emerald-50 px-4 py-2 text-sm text-emerald-700 border border-emerald-200">
-          {success}
-        </div>
-      )}
-
-      {/* Final Exam Section */}
-      <div className="rounded-lg border border-border bg-muted/20 p-5 flex flex-col gap-4">
+    <section className="flex flex-col gap-5">
+      {/* Final Exam Section - Top Priority */}
+      <div className="rounded-xl border border-border bg-card p-6 flex flex-col gap-4">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <p className="text-xs font-semibold text-foreground uppercase tracking-wide">Program Final Exam</p>
+            <p className="text-sm font-semibold text-foreground">Program Final Exam</p>
             <p className="text-xs text-muted-foreground mt-0.5">
               {exam.exam
                 ? exam.examSaved
@@ -388,7 +347,7 @@ export default function ProgramModulesManager({
         )}
 
         {exam.exam && exam.exam.length > 0 && generatingExam !== true && (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 max-h-96 overflow-y-auto">
             {exam.examSaved && (
               <div className="flex items-center gap-2 rounded-md bg-emerald-50 border border-emerald-200 px-3 py-2">
                 <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
@@ -422,6 +381,49 @@ export default function ProgramModulesManager({
           </p>
         )}
       </div>
+
+      {/* Modules Section */}
+      <div className="rounded-xl border border-border bg-card p-6 flex flex-col gap-5">
+        {/* Header */}
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h2 className="font-semibold text-foreground">Course Modules</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {modules.length > 0
+              ? `${modules.length} modules · ${modules.reduce((s, m) => s + (m.duration_hours ?? 0), 0)}h total study time`
+              : 'No modules yet — generate them with AI'}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          {modules.length > 0 && (
+            <Button onClick={saveModules} disabled={saving} size="sm" variant="outline"
+              className="border-primary/40 text-primary hover:bg-primary/5">
+              {saving
+                ? <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />Saving…</>
+                : <><Save className="h-3.5 w-3.5 mr-1.5" />Save</>}
+            </Button>
+          )}
+          <Button onClick={generateModules} disabled={generating || generatingContentFor !== null} size="sm"
+            className="bg-primary text-primary-foreground hover:bg-primary/90">
+            {generating
+              ? <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />Generating…</>
+              : modules.length > 0
+                ? <><RefreshCw className="h-3.5 w-3.5 mr-1.5" />Regenerate Modules</>
+                : <><Sparkles className="h-3.5 w-3.5 mr-1.5" />Generate Modules</>}
+          </Button>
+        </div>
+      </div>
+
+      {error && (
+        <div className="rounded-lg bg-destructive/10 px-4 py-2 text-sm text-destructive border border-destructive/20">
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="rounded-lg bg-emerald-50 px-4 py-2 text-sm text-emerald-700 border border-emerald-200">
+          {success}
+        </div>
+      )}
 
       {generating && (
         <div className="flex flex-col items-center gap-3 py-14">
@@ -692,6 +694,7 @@ export default function ProgramModulesManager({
           </div>
         </div>
       )}
+      </div>
     </section>
   )
 }
