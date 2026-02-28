@@ -24,7 +24,7 @@ export default async function ProgramsPage({
   // Use service-role to bypass RLS for published program reads
   const adminDb = createAdminClient()
 
-  const { data: enrollments } = await supabase
+  const { data: enrollments } = await adminDb
     .from('enrollments')
     .select('id, status, enrolled_at, programs(id, title, description, duration_weeks, level, price_cents)')
     .eq('student_id', user.id)
