@@ -3,7 +3,6 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { LayoutDashboard, BookOpen, Users, Award, Settings, LogOut, ChevronRight, FileText } from 'lucide-react'
-import { AdminNav } from '@/components/admin-nav'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -26,9 +25,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   ]
 
   return (
-    <div className="flex min-h-screen flex-col bg-background md:flex-row">
-      {/* SIDEBAR - DESKTOP */}
-      <aside className="hidden md:flex fixed inset-y-0 left-0 z-40 w-64 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
+    <div className="flex min-h-screen bg-background">
+      <aside className="fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-sidebar text-sidebar-foreground">
         <div className="flex items-center gap-3 border-b border-sidebar-border px-6 py-5">
           <Image src="/logo.jpg" alt="IICAR" width={40} height={40} className="rounded-lg" />
           <div>
@@ -65,13 +63,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </form>
         </div>
       </aside>
-
-      {/* MOBILE NAV */}
-      <AdminNav navItems={navItems} profile={profile} user={user} />
-
-      {/* MAIN */}
-      <div className="w-full md:ml-64 flex flex-1 flex-col">
-        <main className="flex-1 px-4 py-6 md:px-8 md:py-8">{children}</main>
+      <div className="ml-64 flex flex-1 flex-col">
+        <main className="flex-1 px-8 py-8">{children}</main>
       </div>
     </div>
   )
