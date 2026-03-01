@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     // Fetch student profile including email
     const { data: studentProfile, error: profileError } = await adminDb
       .from('profiles')
-      .select('id, full_name, phone, email')
+      .select('id, full_name, phone')
       .eq('id', studentId)
       .single()
     console.log('[v0] Student profile query:', { studentId, found: !!studentProfile, error: profileError?.message })
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
     // Get student email from auth
     const { data: authUsers } = await adminDb.auth.admin.listUsers()
     const studentAuthUser = authUsers?.users.find(u => u.id === studentId)
-    const studentEmail = studentAuthUser?.email || studentProfile.email
+    const studentEmail = studentAuthUser?.email
 
     if (paymentMethod === 'already_paid') {
       // Upsert enrollment as active immediately
