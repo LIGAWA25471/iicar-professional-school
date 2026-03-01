@@ -1,8 +1,18 @@
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Lazy initialization - only create client when needed at runtime
+function getResendClient() {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('[v0] RESEND_API_KEY not configured - emails will not be sent')
+    return null
+  }
+  return new Resend(process.env.RESEND_API_KEY)
+}
 
 export async function sendEnrollmentEmail(email: string, studentName: string, programTitle: string) {
+  const resend = getResendClient()
+  if (!resend) return false
+  
   try {
     await resend.emails.send({
       from: 'noreply@iicar.org',
@@ -45,6 +55,9 @@ export async function sendEnrollmentEmail(email: string, studentName: string, pr
 }
 
 export async function sendExamCompletionEmail(email: string, studentName: string, programTitle: string, score: number) {
+  const resend = getResendClient()
+  if (!resend) return false
+  
   try {
     const passed = score >= 70
     await resend.emails.send({
@@ -91,6 +104,9 @@ export async function sendExamCompletionEmail(email: string, studentName: string
 }
 
 export async function sendCertificateEmail(email: string, studentName: string, programTitle: string, certificatePdfUrl: string) {
+  const resend = getResendClient()
+  if (!resend) return false
+  
   try {
     await resend.emails.send({
       from: 'noreply@iicar.org',
