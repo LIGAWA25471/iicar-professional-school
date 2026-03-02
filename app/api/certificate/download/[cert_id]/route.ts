@@ -119,16 +119,30 @@ export async function GET(
     doc.setTextColor(100, 100, 100)
     doc.text(`Certificate ID: ${cert.cert_id}`, pageWidth / 2, 148, { align: 'center' })
 
-    // Signature lines
+    // Signature section with principal name
     doc.setLineWidth(0.5)
+    
+    // Left signature line (Authorized)
     doc.line(30, 165, 60, 165)
-    doc.line(pageWidth - 60, 165, pageWidth - 30, 165)
-
     doc.setFont('times', 'normal')
     doc.setFontSize(10)
     doc.setTextColor(0, 0, 0)
     doc.text('Authorized Signature', 45, 170, { align: 'center' })
-    doc.text('Principal: Malinar Hellen', pageWidth - 45, 170, { align: 'center' })
+    
+    // Right signature area (Principal Malinar Hellen)
+    // Add signature line
+    doc.line(pageWidth - 60, 160, pageWidth - 30, 160)
+    
+    // Add principal name and title
+    doc.setFont('times', 'bold')
+    doc.setFontSize(11)
+    doc.setTextColor(0, 0, 0)
+    doc.text('Malinar Hellen', pageWidth - 45, 168, { align: 'center' })
+    
+    doc.setFont('times', 'normal')
+    doc.setFontSize(9)
+    doc.setTextColor(50, 50, 50)
+    doc.text('Principal, IICAR', pageWidth - 45, 175, { align: 'center' })
 
     // Generate PDF buffer
     const pdfBuffer = Buffer.from(doc.output('arraybuffer'))

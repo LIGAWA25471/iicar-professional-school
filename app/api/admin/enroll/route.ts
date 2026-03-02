@@ -2,18 +2,6 @@ import { NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { initiateSTKPush } from '@/lib/kopokopo'
 
-async function sendEnrollmentNotification(email: string, studentName: string, programTitle: string) {
-  try {
-    await fetch(`${process.env.NEXT_PUBLIC_APP_URL ?? 'https://iicar.org'}/api/email/enrollment`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, studentName, programTitle }),
-    })
-  } catch (err) {
-    console.error('[v0] Failed to send enrollment notification:', err)
-  }
-}
-
 export async function POST(request: Request) {
   try {
     const supabase = await createClient()
@@ -95,7 +83,22 @@ export async function POST(request: Request) {
 
       // Send enrollment email
       if (studentEmail) {
-        await sendEnrollmentNotification(studentEmail, studentProfile.full_name || 'Student', program.title)
+        console.log('[v0] Attempting to send enrollment email to:', studentEmail)
+        try {
+          const emailRes = await fetch(`${process.env.NEXT_PUBLIC_APP_URL ?? 'https://iicar.org'}/api/email/enrollment`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              email: studentEmail, 
+              studentName: studentProfile.full_name || 'Student', 
+              programTitle: program.title 
+            }),
+          })
+          const emailData = await emailRes.json()
+          console.log('[v0] Enrollment email response:', { status: emailRes.status, data: emailData })
+        } catch (emailErr) {
+          console.error('[v0] Failed to send enrollment email:', emailErr)
+        }
       }
 
       return NextResponse.json({

@@ -3,11 +3,14 @@ import { NextResponse } from 'next/server'
 
 async function sendExamNotification(email: string, studentName: string, programTitle: string, score: number) {
   try {
-    await fetch(`${process.env.NEXT_PUBLIC_APP_URL ?? 'https://iicar.org'}/api/email/exam-completion`, {
+    console.log('[v0] Sending exam completion email to:', email)
+    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL ?? 'https://iicar.org'}/api/email/exam-completion`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, studentName, programTitle, score }),
     })
+    const data = await res.json()
+    console.log('[v0] Exam notification response:', { status: res.status, data })
   } catch (err) {
     console.error('[v0] Failed to send exam notification:', err)
   }
@@ -15,11 +18,14 @@ async function sendExamNotification(email: string, studentName: string, programT
 
 async function sendCertificateNotification(email: string, studentName: string, programTitle: string, certificatePdfUrl: string) {
   try {
-    await fetch(`${process.env.NEXT_PUBLIC_APP_URL ?? 'https://iicar.org'}/api/email/certificate`, {
+    console.log('[v0] Sending certificate email to:', email)
+    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL ?? 'https://iicar.org'}/api/email/certificate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, studentName, programTitle, certificatePdfUrl }),
     })
+    const data = await res.json()
+    console.log('[v0] Certificate notification response:', { status: res.status, data })
   } catch (err) {
     console.error('[v0] Failed to send certificate notification:', err)
   }
