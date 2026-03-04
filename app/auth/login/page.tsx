@@ -36,7 +36,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="mb-8 flex flex-col items-center gap-3 text-center">
           <Link href="/">
-            <Image src="/logo.jpg" alt="IICAR" width={72} height={72} className="rounded-xl" />
+            <Image src="/logo.jpg" alt="IICAR" width={72} height={72} className="rounded-xl" priority />
           </Link>
           <h1 className="text-xl font-bold text-primary-foreground">Sign in to IICAR</h1>
           <p className="text-sm text-primary-foreground/60">Access your student portal</p>

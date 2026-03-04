@@ -26,7 +26,7 @@ export default async function HomePage() {
       <header className="sticky top-0 z-50 border-b border-primary/20 bg-primary text-primary-foreground">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <Link href="/" className="flex items-center gap-3">
-            <Image src="/logo.jpg" alt="IICAR logo" width={44} height={44} className="rounded-lg" />
+            <Image src="/logo.jpg" alt="IICAR logo" width={44} height={44} className="rounded-lg" priority />
             <div className="hidden sm:block">
               <p className="text-xs font-bold uppercase tracking-widest text-accent">IICAR Global College</p>
               <p className="text-[10px] text-primary-foreground/50 leading-tight">Institute of International Career Advancement</p>

@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { generateText } from 'ai'
-import { xai } from '@ai-sdk/xai'
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -25,9 +24,7 @@ Write in a clear, professional academic tone suitable for working professionals.
 
   try {
     const { text } = await generateText({
-      model: xai('grok-4', {
-        apiKey: process.env.XAI_API_KEY,
-      }),
+      model: 'openai/gpt-4o-mini',
       prompt,
       maxTokens: 1200,
       temperature: 0.7,
@@ -35,7 +32,7 @@ Write in a clear, professional academic tone suitable for working professionals.
 
     return NextResponse.json({ content: text || 'No content generated.' })
   } catch (err) {
-    console.error('[v0] AI generation error:', err)
+    console.error('[generate-lesson] AI generation error:', err)
     return NextResponse.json({
       content: `AI generation unavailable. Please add your lesson content manually.\n\nLesson: ${lessonTitle}`,
     })

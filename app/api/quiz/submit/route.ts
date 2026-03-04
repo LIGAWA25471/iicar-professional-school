@@ -1,6 +1,35 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { redirect } from 'next/navigation'
+
+async function sendExamNotification(email: string, studentName: string, programTitle: string, score: number) {
+  try {
+    console.log('[v0] Sending exam completion email to:', email)
+    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL ?? 'https://iicar.org'}/api/email/exam-completion`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, studentName, programTitle, score }),
+    })
+    const data = await res.json()
+    console.log('[v0] Exam notification response:', { status: res.status, data })
+  } catch (err) {
+    console.error('[v0] Failed to send exam notification:', err)
+  }
+}
+
+async function sendCertificateNotification(email: string, studentName: string, programTitle: string, certificatePdfUrl: string) {
+  try {
+    console.log('[v0] Sending certificate email to:', email)
+    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL ?? 'https://iicar.org'}/api/email/certificate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, studentName, programTitle, certificatePdfUrl }),
+    })
+    const data = await res.json()
+    console.log('[v0] Certificate notification response:', { status: res.status, data })
+  } catch (err) {
+    console.error('[v0] Failed to send certificate notification:', err)
+  }
+}
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -9,8 +38,10 @@ export async function POST(request: Request) {
 
   const { programId, moduleId, answers, type } = await request.json()
 
-  // Fetch questions with correct answers (server-side only)
-  let query = supabase
+  // Use admin client to fetch questions — bypasses RLS so correct_answer is never exposed to the client
+  const adminDb = createAdminClient()
+
+  let query = adminDb
     .from('questions')
     .select('id, correct_answer, question_type')
     .eq('question_type', type)
@@ -32,7 +63,7 @@ export async function POST(request: Request) {
   }
   const score = Math.round((correct / questions.length) * 100)
 
-  const { data: program } = await supabase
+  const { data: program } = await adminDb
     .from('programs')
     .select('passing_score, max_attempts')
     .eq('id', programId)
@@ -41,7 +72,14 @@ export async function POST(request: Request) {
   const passingScore = program?.passing_score ?? 70
   const passed = score >= passingScore
 
-  // Record attempt
+  // Fetch student info for emails
+  const { data: studentProfile } = await adminDb
+    .from('profiles')
+    .select('full_name, email')
+    .eq('id', user.id)
+    .single()
+
+  // Record attempt via user-scoped client (RLS: student_id = auth.uid())
   await supabase.from('exam_attempts').insert({
     student_id: user.id,
     program_id: programId,
@@ -52,11 +90,27 @@ export async function POST(request: Request) {
     answers,
   })
 
-  // If final exam passed: issue certificate + complete enrollment
+  // If final exam: send completion email
+  if (type === 'final_exam' && studentProfile) {
+    const programTitle = (await adminDb
+      .from('programs')
+      .select('title')
+      .eq('id', programId)
+      .single()).data?.title || 'Program'
+    
+    await sendExamNotification(
+      studentProfile.email || user.email || '',
+      studentProfile.full_name || 'Student',
+      programTitle,
+      score
+    )
+  }
+
+  // If final exam passed: issue certificate + complete enrollment via admin client
   if (type === 'final_exam' && passed) {
     const certId = `IICAR-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 10).toUpperCase()}`
 
-    await supabase.from('certificates').upsert({
+    await adminDb.from('certificates').upsert({
       student_id: user.id,
       program_id: programId,
       cert_id: certId,
@@ -64,10 +118,28 @@ export async function POST(request: Request) {
       issued_at: new Date().toISOString(),
     }, { onConflict: 'student_id,program_id' })
 
-    await supabase.from('enrollments')
+    await adminDb.from('enrollments')
       .update({ status: 'completed', completed_at: new Date().toISOString() })
       .eq('student_id', user.id)
       .eq('program_id', programId)
+
+    // Send certificate email
+    if (studentProfile) {
+      const programTitle = (await adminDb
+        .from('programs')
+        .select('title')
+        .eq('id', programId)
+        .single()).data?.title || 'Program'
+      
+      const certificatePdfUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://iicar.org'}/api/certificate/download/${certId}`
+      
+      await sendCertificateNotification(
+        studentProfile.email || user.email || '',
+        studentProfile.full_name || 'Student',
+        programTitle,
+        certificatePdfUrl
+      )
+    }
   }
 
   return NextResponse.json({ score, passed })

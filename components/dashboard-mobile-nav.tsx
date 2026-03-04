@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Menu, X, LogOut, LayoutDashboard, BookOpen, Award, User } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { ThemeSelector } from '@/components/theme-selector'
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -69,14 +70,17 @@ export function DashboardMobileNav({ profile, user }: Props) {
                 <p className="text-xs font-medium text-sidebar-foreground truncate">{profile?.full_name ?? user.email}</p>
                 <p className="text-[11px] text-sidebar-foreground/40 truncate">{user.email}</p>
               </div>
-              <form action="/auth/logout" method="post">
-                <button
-                  type="submit"
-                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-                >
-                  <LogOut className="h-3.5 w-3.5" /> Sign Out
-                </button>
-              </form>
+              <div className="flex gap-2">
+                <form action="/auth/logout" method="post" className="flex-1">
+                  <button
+                    type="submit"
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                  >
+                    <LogOut className="h-3.5 w-3.5" /> Sign Out
+                  </button>
+                </form>
+                <ThemeSelector />
+              </div>
             </div>
           </aside>
         </>

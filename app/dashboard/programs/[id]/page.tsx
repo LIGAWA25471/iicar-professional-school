@@ -21,7 +21,7 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
 
   if (!program) notFound()
 
-  const { data: enrollment } = await supabase
+  const { data: enrollment } = await adminDb
     .from('enrollments')
     .select('id, status')
     .eq('student_id', user.id)
@@ -30,7 +30,7 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
 
   const isEnrolled = enrollment?.status === 'active' || enrollment?.status === 'completed'
 
-  const { data: progressRows } = await supabase
+  const { data: progressRows } = await adminDb
     .from('lesson_progress')
     .select('lesson_id, completed')
     .eq('student_id', user.id)

@@ -1,8 +1,8 @@
 // KopoKopo API helper — STK Push via /api/v1/incoming_payments
 // Docs: https://api-docs.kopokopo.com/#receive-payments-from-m-pesa-users-via-stk-push
-// Set KOPOKOPO_BASE_URL env var to switch between sandbox/production:
-//   Sandbox:    https://sandbox.kopokopo.com  (default)
-//   Production: https://app.kopokopo.com
+//
+// PRODUCTION: Set KOPOKOPO_BASE_URL=https://app.kopokopo.com in your Vercel env vars
+// SANDBOX:    Set KOPOKOPO_BASE_URL=https://sandbox.kopokopo.com (or leave blank for sandbox default)
 
 const KOPOKOPO_BASE = (process.env.KOPOKOPO_BASE_URL ?? 'https://sandbox.kopokopo.com').replace(/\/$/, '')
 
@@ -10,7 +10,7 @@ const CLIENT_ID     = process.env.KOPOKOPO_CLIENT_ID!
 const CLIENT_SECRET = process.env.KOPOKOPO_CLIENT_SECRET!
 const TILL_NUMBER   = process.env.KOPOKOPO_TILL_NUMBER!
 
-// Simple in-memory token cache (works fine in serverless with short-lived functions)
+// Simple in-memory token cache
 let cachedToken: string | null = null
 let tokenExpiresAt = 0
 
@@ -19,19 +19,17 @@ async function getAccessToken(): Promise<string> {
     return cachedToken
   }
 
-  const body = new URLSearchParams({
-    client_id:     CLIENT_ID,
-    client_secret: CLIENT_SECRET,
-    grant_type:    'client_credentials',
-  })
+  // KopoKopo requires HTTP Basic Auth for token endpoint — NOT body params
+  const credentials = Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64')
 
   const res = await fetch(`${KOPOKOPO_BASE}/oauth/token`, {
     method:  'POST',
     headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'User-Agent':   'IICAR/1.0 NextJS',
+      'Content-Type':  'application/x-www-form-urlencoded',
+      'Authorization': `Basic ${credentials}`,
+      'Accept':        'application/json',
     },
-    body: body.toString(),
+    body: new URLSearchParams({ grant_type: 'client_credentials' }).toString(),
   })
 
   if (!res.ok) {

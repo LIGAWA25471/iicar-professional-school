@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { BookOpen, Award, ChevronRight } from 'lucide-react'
@@ -9,13 +9,17 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const { data: profile } = await supabase
+  // Use admin client to fetch enrollments & certificates — guarantees data
+  // is returned regardless of RLS session state, while still filtering by user.id
+  const adminDb = createAdminClient()
+
+  const { data: profile } = await adminDb
     .from('profiles')
     .select('full_name')
     .eq('id', user.id)
     .single()
 
-  const { data: enrollments } = await supabase
+  const { data: enrollments } = await adminDb
     .from('enrollments')
     .select('id, status, enrolled_at, programs(id, title, description, duration_weeks)')
     .eq('student_id', user.id)
@@ -23,7 +27,7 @@ export default async function DashboardPage() {
     .order('enrolled_at', { ascending: false })
     .limit(5)
 
-  const { data: certificates } = await supabase
+  const { data: certificates } = await adminDb
     .from('certificates')
     .select('id, cert_id, issued_at, programs(title)')
     .eq('student_id', user.id)

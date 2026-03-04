@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Sparkles, Loader2, ChevronDown, ChevronUp, Save, RefreshCw, BookOpen } from 'lucide-react'
+import { Sparkles, Loader2, ChevronDown, ChevronUp, Save, RefreshCw, BookOpen, ClipboardList, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 
 interface TopicContent {
   title: string
@@ -19,6 +20,13 @@ interface ModuleContent {
   further_reading: string[]
 }
 
+interface QuizQuestion {
+  question: string
+  options: string[]
+  correct_answer: number
+  explanation?: string
+}
+
 interface Module {
   id?: string
   module_number: number
@@ -28,6 +36,13 @@ interface Module {
   duration_hours: number
   topics: string[]
   content?: ModuleContent | null
+  quiz?: QuizQuestion[] | null
+  quizSaved?: boolean
+}
+
+interface ProgramExam {
+  exam?: QuizQuestion[] | null
+  examSaved?: boolean
 }
 
 function parseDbModules(raw: { id: string; title: string; description: string | null; sort_order: number }[]): Module[] {
@@ -66,8 +81,13 @@ export default function ProgramModulesManager({
 }: Props) {
   const router = useRouter()
   const [modules, setModules] = useState<Module[]>(() => parseDbModules(initialModules))
+  const [exam, setExam] = useState<ProgramExam>({})
   const [generating, setGenerating] = useState(false)
   const [generatingContentFor, setGeneratingContentFor] = useState<number | null>(null)
+  const [generatingQuizFor, setGeneratingQuizFor] = useState<number | null>(null)
+  const [savingQuizFor, setSavingQuizFor] = useState<number | null>(null)
+  const [generatingExam, setGeneratingExam] = useState(false)
+  const [savingExam, setSavingExam] = useState(false)
   const [saving, setSaving] = useState(false)
   const [expandedIdx, setExpandedIdx] = useState<number | null>(modules.length > 0 ? 0 : null)
   const [expandedTopicIdx, setExpandedTopicIdx] = useState<Record<number, number | null>>({})
@@ -146,6 +166,111 @@ export default function ProgramModulesManager({
     }
   }
 
+  async function generateQuiz(idx: number) {
+    const mod = modules[idx]
+    if (!mod.topics?.length) {
+      setError('Generate module topics first before creating an assessment.')
+      return
+    }
+    setGeneratingQuizFor(idx)
+    setError('')
+    setSuccess('')
+    try {
+      const raw = await streamJSON({
+        title: programTitle,
+        level: programLevel,
+        type: 'quiz',
+        module_title: mod.title,
+        module_topics: mod.topics,
+      })
+      const parsed = JSON.parse(raw)
+      if (!Array.isArray(parsed)) throw new Error('Unexpected response format from AI')
+      setModules(prev => prev.map((m, i) => i === idx ? { ...m, quiz: parsed, quizSaved: false } : m))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to generate assessment. Try again.')
+    } finally {
+      setGeneratingQuizFor(null)
+    }
+  }
+
+  async function saveQuiz(idx: number) {
+    const mod = modules[idx]
+    if (!mod.quiz?.length) return
+    if (!mod.id) {
+      setError('Save the modules first before publishing the assessment.')
+      return
+    }
+    setSavingQuizFor(idx)
+    setError('')
+    setSuccess('')
+    try {
+      console.log('[v0] Saving quiz for module:', mod.id, 'questions:', mod.quiz.length)
+      const res = await fetch(`/api/admin/programs/${programId}/assessments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ moduleId: mod.id, questions: mod.quiz, type: 'module_quiz' }),
+      })
+      console.log('[v0] Response status:', res.status)
+      const data = await res.json()
+      console.log('[v0] Response data:', data)
+      if (!res.ok) throw new Error(data.error ?? 'Failed to save assessment')
+      setModules(prev => prev.map((m, i) => i === idx ? { ...m, quizSaved: true } : m))
+      setSuccess(`Assessment published — ${data.saved} questions are now available to enrolled students.`)
+    } catch (e) {
+      console.error('[v0] Save quiz error:', e)
+      setError(e instanceof Error ? e.message : 'Failed to save assessment')
+    } finally {
+      setSavingQuizFor(null)
+    }
+  }
+
+  async function generateExam() {
+    setGeneratingExam(true)
+    setError('')
+    setSuccess('')
+    try {
+      const raw = await streamJSON({
+        title: programTitle,
+        description: programDescription,
+        level: programLevel,
+        type: 'final_exam',
+      })
+      const parsed = JSON.parse(raw)
+      if (!Array.isArray(parsed)) throw new Error('Unexpected response format from AI')
+      setExam({ exam: parsed, examSaved: false })
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to generate final exam. Try again.')
+    } finally {
+      setGeneratingExam(false)
+    }
+  }
+
+  async function saveExam() {
+    if (!exam.exam?.length) return
+    setSavingExam(true)
+    setError('')
+    setSuccess('')
+    try {
+      console.log('[v0] Saving final exam for program:', programId, 'questions:', exam.exam.length)
+      const res = await fetch(`/api/admin/programs/${programId}/assessments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ questions: exam.exam, type: 'final_exam' }),
+      })
+      console.log('[v0] Final exam response status:', res.status)
+      const data = await res.json()
+      console.log('[v0] Final exam response data:', data)
+      if (!res.ok) throw new Error(data.error ?? 'Failed to save final exam')
+      setExam({ ...exam, examSaved: true })
+      setSuccess(`Final exam published — ${data.saved} questions are now available to students who complete all modules.`)
+    } catch (e) {
+      console.error('[v0] Save exam error:', e)
+      setError(e instanceof Error ? e.message : 'Failed to save final exam')
+    } finally {
+      setSavingExam(false)
+    }
+  }
+
   async function saveModules() {
     setSaving(true)
     setError('')
@@ -169,9 +294,98 @@ export default function ProgramModulesManager({
   }
 
   return (
-    <section className="rounded-xl border border-border bg-card p-6 flex flex-col gap-5">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+    <section className="flex flex-col gap-5">
+      {/* Final Exam Section - Top Priority */}
+      <div className="rounded-xl border border-border bg-card p-6 flex flex-col gap-4">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <p className="text-sm font-semibold text-foreground">Program Final Exam</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {exam.exam
+                ? exam.examSaved
+                  ? `${exam.exam.length} questions published`
+                  : `${exam.exam.length} questions generated — not yet saved`
+                : 'No final exam yet'}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            {exam.exam && exam.exam.length > 0 && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={saveExam}
+                disabled={savingExam}
+                className="h-7 text-xs border-emerald-300 text-emerald-700 hover:bg-emerald-50">
+                {savingExam
+                  ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" />Saving…</>
+                  : exam.examSaved
+                    ? <><RefreshCw className="h-3 w-3 mr-1" />Re-publish</>
+                    : <><CheckCircle2 className="h-3 w-3 mr-1" />Publish Final Exam</>}
+              </Button>
+            )}
+            <Button
+              type="button"
+              size="sm"
+              onClick={generateExam}
+              disabled={generatingExam || generatingContentFor !== null}
+              className="h-7 text-xs bg-primary text-primary-foreground hover:bg-primary/90">
+              {generatingExam
+                ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" />Generating…</>
+                : exam.exam
+                  ? <><RefreshCw className="h-3 w-3 mr-1" />Regenerate</>
+                  : <><ClipboardList className="h-3 w-3 mr-1" />Generate Final Exam</>}
+            </Button>
+          </div>
+        </div>
+
+        {generatingExam && (
+          <div className="flex items-center gap-2 py-6 justify-center">
+            <Loader2 className="h-5 w-5 text-primary animate-spin" />
+            <p className="text-sm text-muted-foreground">AI is writing final exam questions…</p>
+          </div>
+        )}
+
+        {exam.exam && exam.exam.length > 0 && generatingExam !== true && (
+          <div className="flex flex-col gap-2 max-h-96 overflow-y-auto">
+            {exam.examSaved && (
+              <div className="flex items-center gap-2 rounded-md bg-emerald-50 border border-emerald-200 px-3 py-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                <p className="text-xs text-emerald-700">Final exam published — visible to students who complete all modules</p>
+              </div>
+            )}
+            {exam.exam.map((q, qi) => (
+              <div key={qi} className="rounded-lg border border-border bg-muted/20 px-4 py-3">
+                <div className="flex items-start gap-2 mb-2">
+                  <Badge variant="outline" className="text-xs shrink-0 mt-0.5">Q{qi + 1}</Badge>
+                  <p className="text-sm text-foreground">{q.question}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5 ml-7">
+                  {q.options.map((opt, oi) => (
+                    <div key={oi} className={`text-xs px-2.5 py-1.5 rounded-md border ${oi === q.correct_answer ? 'bg-emerald-50 text-emerald-800 border-emerald-200 font-medium' : 'text-muted-foreground border-transparent'}`}>
+                      {String.fromCharCode(65 + oi)}. {opt}
+                    </div>
+                  ))}
+                </div>
+                {q.explanation && (
+                  <p className="mt-2 ml-7 text-xs text-muted-foreground italic">{q.explanation}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!exam.exam && generatingExam !== true && (
+          <p className="text-xs text-muted-foreground text-center py-5 border border-dashed border-border rounded-lg">
+            Click &quot;Generate Final Exam&quot; to create 15 multiple-choice questions covering all program topics.
+          </p>
+        )}
+      </div>
+
+      {/* Modules Section */}
+      <div className="rounded-xl border border-border bg-card p-6 flex flex-col gap-5">
+        {/* Header */}
+        <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h2 className="font-semibold text-foreground">Course Modules</h2>
           <p className="text-xs text-muted-foreground mt-0.5">
@@ -369,6 +583,99 @@ export default function ProgramModulesManager({
                       </p>
                     )}
                   </div>
+
+                  {/* ── Assessment section ── */}
+                  <div className="border-t border-border pt-4 flex flex-col gap-4">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div>
+                        <p className="text-xs font-semibold text-foreground uppercase tracking-wide">Module Assessment</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {mod.quiz
+                            ? mod.quizSaved
+                              ? `${mod.quiz.length} questions published`
+                              : `${mod.quiz.length} questions generated — not yet saved`
+                            : 'No assessment yet'}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {mod.quiz && mod.quiz.length > 0 && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => saveQuiz(idx)}
+                            disabled={savingQuizFor === idx || !mod.id}
+                            className="h-7 text-xs border-emerald-300 text-emerald-700 hover:bg-emerald-50">
+                            {savingQuizFor === idx
+                              ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" />Saving…</>
+                              : mod.quizSaved
+                                ? <><RefreshCw className="h-3 w-3 mr-1" />Re-publish</>
+                                : <><CheckCircle2 className="h-3 w-3 mr-1" />Publish Assessment</>}
+                          </Button>
+                        )}
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => generateQuiz(idx)}
+                          disabled={generatingQuizFor !== null || generatingContentFor !== null}
+                          className="h-7 text-xs bg-primary text-primary-foreground hover:bg-primary/90">
+                          {generatingQuizFor === idx
+                            ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" />Generating…</>
+                            : mod.quiz
+                              ? <><RefreshCw className="h-3 w-3 mr-1" />Regenerate</>
+                              : <><ClipboardList className="h-3 w-3 mr-1" />Generate Assessment</>}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {generatingQuizFor === idx && (
+                      <div className="flex items-center gap-2 py-6 justify-center">
+                        <Loader2 className="h-5 w-5 text-primary animate-spin" />
+                        <p className="text-sm text-muted-foreground">AI is writing assessment questions…</p>
+                      </div>
+                    )}
+
+                    {mod.quiz && mod.quiz.length > 0 && generatingQuizFor !== idx && (
+                      <div className="flex flex-col gap-2">
+                        {mod.quizSaved && (
+                          <div className="flex items-center gap-2 rounded-md bg-emerald-50 border border-emerald-200 px-3 py-2">
+                            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                            <p className="text-xs text-emerald-700">Assessment published — visible to enrolled students</p>
+                          </div>
+                        )}
+                        {!mod.id && (
+                          <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2">
+                            <p className="text-xs text-amber-700">Save modules first, then click &quot;Publish Assessment&quot; to make questions available.</p>
+                          </div>
+                        )}
+                        {mod.quiz.map((q, qi) => (
+                          <div key={qi} className="rounded-lg border border-border bg-muted/20 px-4 py-3">
+                            <div className="flex items-start gap-2 mb-2">
+                              <Badge variant="outline" className="text-xs shrink-0 mt-0.5">Q{qi + 1}</Badge>
+                              <p className="text-sm text-foreground">{q.question}</p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-1.5 ml-7">
+                              {q.options.map((opt, oi) => (
+                                <div key={oi} className={`text-xs px-2.5 py-1.5 rounded-md border ${oi === q.correct_answer ? 'bg-emerald-50 text-emerald-800 border-emerald-200 font-medium' : 'text-muted-foreground border-transparent'}`}>
+                                  {String.fromCharCode(65 + oi)}. {opt}
+                                </div>
+                              ))}
+                            </div>
+                            {q.explanation && (
+                              <p className="mt-2 ml-7 text-xs text-muted-foreground italic">{q.explanation}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {!mod.quiz && generatingQuizFor !== idx && (
+                      <p className="text-xs text-muted-foreground text-center py-5 border border-dashed border-border rounded-lg">
+                        Click &quot;Generate Assessment&quot; to create 10 multiple-choice questions for this module.
+                      </p>
+                    )}
+                  </div>
+
                 </div>
               )}
             </div>
@@ -387,6 +694,7 @@ export default function ProgramModulesManager({
           </div>
         </div>
       )}
+      </div>
     </section>
   )
 }

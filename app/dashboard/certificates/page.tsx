@@ -1,7 +1,7 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Award, ExternalLink } from 'lucide-react'
+import { Award, ExternalLink, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export default async function CertificatesPage() {
@@ -9,7 +9,9 @@ export default async function CertificatesPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const { data: certificates } = await supabase
+  // Use admin client to bypass RLS — query still scoped to user.id
+  const adminDb = createAdminClient()
+  const { data: certificates } = await adminDb
     .from('certificates')
     .select('id, cert_id, issued_at, final_score, revoked, programs(title)')
     .eq('student_id', user.id)
@@ -41,17 +43,24 @@ export default async function CertificatesPage() {
                   <h3 className="font-semibold text-foreground">{program?.title}</h3>
                   <p className="mt-1 text-xs font-mono text-muted-foreground">{cert.cert_id}</p>
                 </div>
-                <div className="flex flex-wrap gap-3 text-xs text-muted-foreground border-t border-border pt-3">
+                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground border-t border-border pt-3">
                   <span>Issued: {new Date(cert.issued_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                   {cert.final_score && <span>Final Score: <strong className="text-foreground">{cert.final_score}%</strong></span>}
                 </div>
-                {!cert.revoked && (
-                  <Button asChild variant="outline" size="sm" className="w-fit text-xs">
-                    <Link href={`/verify?id=${cert.cert_id}`} target="_blank">
-                      Verify Certificate <ExternalLink className="ml-1.5 h-3 w-3" />
+                <div className="flex flex-wrap gap-2">
+                  <Button asChild variant="outline" size="sm" className="text-xs flex-1">
+                    <Link href={`/api/certificate/download/${cert.cert_id}`} download>
+                      <Download className="mr-1.5 h-3 w-3" /> Download PDF
                     </Link>
                   </Button>
-                )}
+                  {!cert.revoked && (
+                    <Button asChild variant="outline" size="sm" className="text-xs flex-1">
+                      <Link href={`/verify?id=${cert.cert_id}`} target="_blank">
+                        Verify <ExternalLink className="ml-1.5 h-3 w-3" />
+                      </Link>
+                    </Button>
+                  )}
+                </div>
               </div>
             )
           })}

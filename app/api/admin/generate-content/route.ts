@@ -82,6 +82,23 @@ Return a JSON array of 10 question objects, each with:
 - "explanation": brief explanation string of why the answer is correct
 
 Return ONLY the JSON array. No other text.`
+
+  } else if (type === 'final_exam') {
+    userPrompt = `Generate 15 comprehensive multiple-choice questions for the final exam of this professional certification program:
+
+Course Title: ${title}
+Description: ${description ?? ''}
+Level: ${level ?? 'intermediate'}
+
+The exam should test overall knowledge and competency gained throughout the entire program. Questions should cover key concepts, practical applications, and critical thinking.
+
+Return a JSON array of 15 question objects, each with:
+- "question": question text string
+- "options": array of exactly 4 strings (the answer choices)
+- "correct_answer": index integer (0, 1, 2, or 3) of the correct option
+- "explanation": brief explanation string of why the answer is correct
+
+Return ONLY the JSON array. No other text.`
   }
 
   try {

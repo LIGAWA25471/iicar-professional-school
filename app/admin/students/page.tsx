@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Input } from '@/components/ui/input'
@@ -16,7 +16,9 @@ export default async function AdminStudentsPage({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  let query = supabase
+  const adminDb = createAdminClient()
+
+  let query = adminDb
     .from('profiles')
     .select('id, full_name, country, phone, created_at, is_admin')
     .eq('is_admin', false)
