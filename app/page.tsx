@@ -2,7 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { BookOpen, Award, Globe, Shield, ChevronRight, Star } from 'lucide-react'
+import { BookOpen, Award, Globe, Shield, ChevronRight, Star, CheckCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 
@@ -190,6 +190,76 @@ export default async function HomePage() {
             {/* Visual */}
             <div className="relative rounded-2xl overflow-hidden shadow-lg border border-border h-96">
               <Image src="/global-recognition.jpg" alt="Global recognition and verification" width={500} height={500} className="w-full h-full object-cover" priority />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* INTERNATIONAL STANDARDS & CERTIFICATIONS */}
+      <section className="py-20 bg-gradient-to-b from-background to-muted/30">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="mb-14 text-center">
+            <h2 className="text-3xl font-bold text-primary">Internationally Recognised Standards</h2>
+            <p className="mt-3 text-muted-foreground">Our programmes align with global educational best practices and accreditations</p>
+          </div>
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 mb-16">
+            {[
+              {
+                icon: Shield,
+                title: 'Commonwealth of Learning (COL)',
+                desc: 'Our curriculum follows COL standards, ensuring educational excellence and consistency across Commonwealth nations. COL is an intergovernmental organisation that promotes open and distance learning globally.',
+                badge: 'COL Standard Aligned',
+              },
+              {
+                icon: Award,
+                title: 'GAOTE Certified',
+                desc: 'All programmes are certified by the Global Association of Online Trainers and Examiners (GAOTE), guaranteeing rigorous quality assurance and trainer excellence.',
+                badge: 'GAOTE Certified',
+              },
+              {
+                icon: Globe,
+                title: 'GAOTE Standard Approved',
+                desc: 'Our assessments and certification processes adhere to GAOTE Standard Approved guidelines, ensuring global recognition and professional credibility.',
+                badge: 'GAOTE Standard Approved',
+              },
+            ].map(({ icon: Icon, title, desc, badge }) => (
+              <div key={title} className="flex flex-col gap-6 p-8 rounded-xl border-2 border-primary/20 bg-card hover:border-primary/40 hover:shadow-md transition-all">
+                <div className="flex items-start justify-between">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-primary/10">
+                    <Icon className="h-7 w-7 text-primary" />
+                  </div>
+                  <Badge className="bg-primary/20 text-primary border-primary/30">{badge}</Badge>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground mb-3">{title}</h3>
+                  <p className="text-sm leading-relaxed text-muted-foreground">{desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Standards Info Box */}
+          <div className="rounded-xl bg-primary/5 border border-primary/20 p-10">
+            <div className="max-w-3xl mx-auto">
+              <h3 className="text-xl font-semibold text-primary mb-4 text-center">What This Means for You</h3>
+              <ul className="grid gap-4 md:grid-cols-2 text-sm text-muted-foreground">
+                <li className="flex items-start gap-3">
+                  <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>Credentials recognised by employers across Commonwealth nations</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>Adherence to international educational quality standards</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>Trainers and content meet GAOTE professional requirements</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span>Certified assessment processes ensure fairness and integrity</span>
+                </li>
+              </ul>
             </div>
           </div>
         </div>
