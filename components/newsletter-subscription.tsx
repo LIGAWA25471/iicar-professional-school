@@ -1,4 +1,3 @@
-import React from 'next'
 'use client'
 
 import { useState } from 'react'
