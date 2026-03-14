@@ -1,0 +1,25 @@
+User-agent: *
+Allow: /
+Allow: /verify
+Allow: /auth/login
+Allow: /auth/register
+Allow: /auth/reset-password
+Allow: /dashboard/programs
+Allow: /dashboard/certificates
+Disallow: /admin/
+Disallow: /auth/update-password
+Disallow: /dashboard/
+Disallow: /api/
+
+Sitemap: https://iicar.org/sitemap.xml
+Sitemap: https://iicar.org/sitemap-dynamic.xml
+
+# Crawl delay (optional - set if you want to limit bot activity)
+Crawl-delay: 1
+
+# User-agent specific rules
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
