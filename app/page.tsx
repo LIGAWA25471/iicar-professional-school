@@ -50,22 +50,23 @@ export default async function HomePage() {
 
       {/* HERO */}
       <section className="relative bg-primary text-primary-foreground overflow-hidden">
-        <div className="absolute inset-0 opacity-20">
-          <Image src="/hero-certification.jpg" alt="" fill className="object-cover" priority />
+        <div className="absolute inset-0 opacity-30">
+          <Image src="/campus-night.jpg" alt="" fill className="object-cover" priority />
         </div>
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/60 via-primary/70 to-primary" />
         <div className="relative mx-auto max-w-7xl px-6 py-24 md:py-32">
           <div className="mx-auto max-w-3xl text-center">
-            <h1 className="text-4xl font-bold leading-tight tracking-tight text-balance md:text-5xl lg:text-6xl">
+            <h1 className="animate-fade-in-up text-4xl font-bold leading-tight tracking-tight text-balance md:text-5xl lg:text-6xl">
               Advance Your Career with Globally Recognised Certifications
             </h1>
-            <p className="mt-6 text-lg leading-relaxed text-primary-foreground/90 text-pretty">
+            <p className="animate-fade-in-up animate-delay-200 mt-6 text-lg leading-relaxed text-primary-foreground/90 text-pretty">
               IICAR Global College delivers structured, self-paced professional certification programs powered by AI-assisted academic content. Learn at your pace — earn credentials that open doors.
             </p>
-            <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-              <Button asChild size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold px-10">
+            <div className="animate-fade-in-up animate-delay-400 mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+              <Button asChild size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold px-10 hover-lift">
                 <Link href="/auth/register">Get Started</Link>
               </Button>
-              <Button asChild size="lg" className="border border-white/50 bg-transparent text-primary-foreground hover:bg-white/10">
+              <Button asChild size="lg" className="border border-white/50 bg-transparent text-primary-foreground hover:bg-white/10 hover-lift">
                 <Link href="#programs">Browse Programs <ChevronRight className="ml-1 h-4 w-4" /></Link>
               </Button>
             </div>
@@ -78,8 +79,8 @@ export default async function HomePage() {
               { label: 'Students Enrolled', value: '5,000+' },
               { label: 'Countries Reached', value: '40+' },
               { label: 'Certificates Issued', value: '3,200+' },
-            ].map((stat) => (
-              <div key={stat.label} className="flex flex-col items-center border-r border-white/10 last:border-r-0 py-8 text-center">
+            ].map((stat, i) => (
+              <div key={stat.label} className={`animate-fade-in-up animate-delay-${(i + 1) * 100} flex flex-col items-center border-r border-white/10 last:border-r-0 py-8 text-center`}>
                 <span className="text-3xl font-bold text-accent">{stat.value}</span>
                 <span className="mt-1 text-xs text-primary-foreground/50 uppercase tracking-wide">{stat.label}</span>
               </div>
@@ -103,8 +104,8 @@ export default async function HomePage() {
                 { icon: Award, title: 'Verifiable Certificates', desc: 'Every certificate carries a unique ID instantly verifiable on our public portal.' },
                 { icon: Globe, title: 'Learn Anywhere', desc: 'Fully self-paced and accessible on any device from any country, 24/7.' },
                 { icon: Shield, title: 'Rigorous Standards', desc: 'Built on transparent academic standards with proctored assessments and structured grading.' },
-              ].map(({ icon: Icon, title, desc }) => (
-                <div key={title} className="flex flex-col gap-4 rounded-xl border border-border bg-card p-6 shadow-sm hover:shadow-md transition-shadow">
+              ].map(({ icon: Icon, title, desc }, i) => (
+                <div key={title} className={`animate-fade-in-up animate-delay-${i * 100} flex flex-col gap-4 rounded-xl border border-border bg-card p-6 shadow-sm hover:shadow-md hover-lift transition-all`}>
                   <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary">
                     <Icon className="h-6 w-6 text-accent" />
                   </div>
@@ -114,8 +115,8 @@ export default async function HomePage() {
               ))}
             </div>
             {/* Visual */}
-            <div className="relative rounded-2xl overflow-hidden shadow-lg border border-border">
-              <Image src="/ai-learning.jpg" alt="AI-powered learning platform" width={500} height={500} className="w-full h-full object-cover" priority />
+            <div className="relative rounded-2xl overflow-hidden shadow-lg border border-border image-zoom">
+              <Image src="/campus-main.jpg" alt="IICAR Global College Campus" width={600} height={500} className="w-full h-full object-cover" priority />
             </div>
           </div>
         </div>
@@ -130,8 +131,8 @@ export default async function HomePage() {
           </div>
           {programs && programs.length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {programs.map((program) => (
-                <div key={program.id} className="flex flex-col rounded-xl border border-border bg-card shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+              {programs.map((program, i) => (
+                <div key={program.id} className={`animate-fade-in-up animate-delay-${(i % 3) * 100} flex flex-col rounded-xl border border-border bg-card shadow-sm overflow-hidden hover:shadow-md hover-lift transition-all`}>
                   <div className="flex items-center justify-between bg-primary/5 px-6 py-3 border-b border-border">
                     <Badge variant="secondary" className="text-xs capitalize">{program.level}</Badge>
                     {program.duration_weeks && (
@@ -177,8 +178,8 @@ export default async function HomePage() {
                 { step: '02', title: 'Learn at Your Pace', desc: 'Access AI-assisted lessons organised by module. Study on any device, anytime.' },
                 { step: '03', title: 'Pass Assessments', desc: 'Complete module quizzes and a final exam to demonstrate your mastery.' },
                 { step: '04', title: 'Get Certified', desc: 'Receive a verifiable digital certificate with a unique IICAR ID upon completion.' },
-              ].map(({ step, title, desc }) => (
-                <div key={step} className="flex flex-col items-start text-left gap-4 p-6 rounded-xl bg-background border border-border">
+              ].map(({ step, title, desc }, i) => (
+                <div key={step} className={`animate-fade-in-up animate-delay-${i * 100} flex flex-col items-start text-left gap-4 p-6 rounded-xl bg-background border border-border hover-lift transition-all`}>
                   <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-accent bg-primary text-accent font-bold text-lg">
                     {step}
                   </div>
@@ -188,8 +189,8 @@ export default async function HomePage() {
               ))}
             </div>
             {/* Visual */}
-            <div className="relative rounded-2xl overflow-hidden shadow-lg border border-border h-96">
-              <Image src="/global-recognition.jpg" alt="Global recognition and verification" width={500} height={500} className="w-full h-full object-cover" priority />
+            <div className="relative rounded-2xl overflow-hidden shadow-lg border border-border h-96 image-zoom">
+              <Image src="/campus-students.jpg" alt="IICAR students on campus" width={600} height={500} className="w-full h-full object-cover" priority />
             </div>
           </div>
         </div>
@@ -204,7 +205,7 @@ export default async function HomePage() {
           </div>
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 mb-16">
             {/* COL Card */}
-            <div className="flex flex-col gap-6 p-8 rounded-xl border-2 border-primary/20 bg-card hover:border-primary/40 hover:shadow-md transition-all">
+            <div className="animate-fade-in-up flex flex-col gap-6 p-8 rounded-xl border-2 border-primary/20 bg-card hover:border-primary/40 hover:shadow-md hover-lift transition-all">
               <div className="flex items-start justify-between">
                 <Image src="/col-logo.png" alt="Commonwealth of Learning" width={180} height={60} className="h-14 w-auto object-contain" />
                 <Badge className="bg-primary/20 text-primary border-primary/30">COL Standard Aligned</Badge>
@@ -216,7 +217,7 @@ export default async function HomePage() {
             </div>
             
             {/* GAOTE Certified Card */}
-            <div className="flex flex-col gap-6 p-8 rounded-xl border-2 border-primary/20 bg-card hover:border-primary/40 hover:shadow-md transition-all">
+            <div className="animate-fade-in-up animate-delay-100 flex flex-col gap-6 p-8 rounded-xl border-2 border-primary/20 bg-card hover:border-primary/40 hover:shadow-md hover-lift transition-all">
               <div className="flex items-start justify-between">
                 <Image src="/gaote-logo.png" alt="GAOTE - Global Association of Online Trainers and Examiners" width={80} height={80} className="h-16 w-auto object-contain" />
                 <Badge className="bg-primary/20 text-primary border-primary/30">GAOTE Certified</Badge>
@@ -228,7 +229,7 @@ export default async function HomePage() {
             </div>
             
             {/* GAOTE Standard Approved Card */}
-            <div className="flex flex-col gap-6 p-8 rounded-xl border-2 border-primary/20 bg-card hover:border-primary/40 hover:shadow-md transition-all">
+            <div className="animate-fade-in-up animate-delay-200 flex flex-col gap-6 p-8 rounded-xl border-2 border-primary/20 bg-card hover:border-primary/40 hover:shadow-md hover-lift transition-all">
               <div className="flex items-start justify-between">
                 <Image src="/gaote-logo.png" alt="GAOTE Standard Approved" width={80} height={80} className="h-16 w-auto object-contain" />
                 <Badge className="bg-primary/20 text-primary border-primary/30">GAOTE Standard Approved</Badge>
