@@ -203,39 +203,41 @@ export default async function HomePage() {
             <p className="mt-3 text-muted-foreground">Our programmes align with global educational best practices and accreditations</p>
           </div>
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 mb-16">
-            {[
-              {
-                icon: Shield,
-                title: 'Commonwealth of Learning (COL)',
-                desc: 'Our curriculum follows COL standards, ensuring educational excellence and consistency across Commonwealth nations. COL is an intergovernmental organisation that promotes open and distance learning globally.',
-                badge: 'COL Standard Aligned',
-              },
-              {
-                icon: Award,
-                title: 'GAOTE Certified',
-                desc: 'All programmes are certified by the Global Association of Online Trainers and Examiners (GAOTE), guaranteeing rigorous quality assurance and trainer excellence.',
-                badge: 'GAOTE Certified',
-              },
-              {
-                icon: Globe,
-                title: 'GAOTE Standard Approved',
-                desc: 'Our assessments and certification processes adhere to GAOTE Standard Approved guidelines, ensuring global recognition and professional credibility.',
-                badge: 'GAOTE Standard Approved',
-              },
-            ].map(({ icon: Icon, title, desc, badge }) => (
-              <div key={title} className="flex flex-col gap-6 p-8 rounded-xl border-2 border-primary/20 bg-card hover:border-primary/40 hover:shadow-md transition-all">
-                <div className="flex items-start justify-between">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-primary/10">
-                    <Icon className="h-7 w-7 text-primary" />
-                  </div>
-                  <Badge className="bg-primary/20 text-primary border-primary/30">{badge}</Badge>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-foreground mb-3">{title}</h3>
-                  <p className="text-sm leading-relaxed text-muted-foreground">{desc}</p>
-                </div>
+            {/* COL Card */}
+            <div className="flex flex-col gap-6 p-8 rounded-xl border-2 border-primary/20 bg-card hover:border-primary/40 hover:shadow-md transition-all">
+              <div className="flex items-start justify-between">
+                <Image src="/col-logo.png" alt="Commonwealth of Learning" width={180} height={60} className="h-14 w-auto object-contain" />
+                <Badge className="bg-primary/20 text-primary border-primary/30">COL Standard Aligned</Badge>
               </div>
-            ))}
+              <div>
+                <h3 className="text-lg font-semibold text-foreground mb-3">Commonwealth of Learning (COL)</h3>
+                <p className="text-sm leading-relaxed text-muted-foreground">Our curriculum follows COL standards, ensuring educational excellence and consistency across Commonwealth nations. COL is an intergovernmental organisation that promotes open and distance learning globally.</p>
+              </div>
+            </div>
+            
+            {/* GAOTE Certified Card */}
+            <div className="flex flex-col gap-6 p-8 rounded-xl border-2 border-primary/20 bg-card hover:border-primary/40 hover:shadow-md transition-all">
+              <div className="flex items-start justify-between">
+                <Image src="/gaote-logo.png" alt="GAOTE - Global Association of Online Trainers and Examiners" width={80} height={80} className="h-16 w-auto object-contain" />
+                <Badge className="bg-primary/20 text-primary border-primary/30">GAOTE Certified</Badge>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-foreground mb-3">GAOTE Certified</h3>
+                <p className="text-sm leading-relaxed text-muted-foreground">All programmes are certified by the Global Association of Online Trainers and Examiners (GAOTE), guaranteeing rigorous quality assurance and trainer excellence.</p>
+              </div>
+            </div>
+            
+            {/* GAOTE Standard Approved Card */}
+            <div className="flex flex-col gap-6 p-8 rounded-xl border-2 border-primary/20 bg-card hover:border-primary/40 hover:shadow-md transition-all">
+              <div className="flex items-start justify-between">
+                <Image src="/gaote-logo.png" alt="GAOTE Standard Approved" width={80} height={80} className="h-16 w-auto object-contain" />
+                <Badge className="bg-primary/20 text-primary border-primary/30">GAOTE Standard Approved</Badge>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-foreground mb-3">GAOTE Standard Approved</h3>
+                <p className="text-sm leading-relaxed text-muted-foreground">Our assessments and certification processes adhere to GAOTE Standard Approved guidelines, ensuring global recognition and professional credibility.</p>
+              </div>
+            </div>
           </div>
           
           {/* Standards Info Box */}
