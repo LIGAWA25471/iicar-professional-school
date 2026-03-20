@@ -1,6 +1,8 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { jsPDF } from 'jspdf'
+import fs from 'fs'
+import path from 'path'
 
 export async function GET(
   request: Request,
@@ -13,12 +15,46 @@ export async function GET(
     const adminDb = createAdminClient()
     const { data: cert, error } = await adminDb
       .from('certificates')
-      .select('cert_id, issued_at, final_score, student_id, program_id, profiles(full_name), programs(title)')
+      .select(`
+        cert_id, issued_at, final_score, student_id, program_id, 
+        approval_status, approved_at,
+        profiles(full_name), 
+        programs(title),
+        primary_signature_id,
+        secondary_signature_id
+      `)
       .eq('cert_id', cert_id.toUpperCase())
       .single()
 
     if (error || !cert) {
       return NextResponse.json({ error: 'Certificate not found' }, { status: 404 })
+    }
+
+    // Only allow download of approved certificates
+    if (cert.approval_status !== 'approved') {
+      return NextResponse.json({ error: 'Certificate not yet approved' }, { status: 403 })
+    }
+
+    // Fetch signatures if present
+    let primarySignature = null
+    let secondarySignature = null
+
+    if (cert.primary_signature_id) {
+      const { data: sig } = await adminDb
+        .from('admin_signatures')
+        .select('signature_name, signature_title, signature_data')
+        .eq('id', cert.primary_signature_id)
+        .single()
+      primarySignature = sig
+    }
+
+    if (cert.secondary_signature_id) {
+      const { data: sig } = await adminDb
+        .from('admin_signatures')
+        .select('signature_name, signature_title, signature_data')
+        .eq('id', cert.secondary_signature_id)
+        .single()
+      secondarySignature = sig
     }
 
     // Generate PDF using jsPDF
@@ -35,114 +71,206 @@ export async function GET(
     doc.setFillColor(255, 251, 235)
     doc.rect(0, 0, pageWidth, pageHeight, 'F')
 
-    // Border (dark goldenrod)
+    // Outer border (dark goldenrod)
     doc.setDrawColor(184, 134, 11)
     doc.setLineWidth(3)
-    doc.rect(10, 10, pageWidth - 20, pageHeight - 20)
+    doc.rect(8, 8, pageWidth - 16, pageHeight - 16)
 
     // Inner border
     doc.setLineWidth(1)
-    doc.rect(12, 12, pageWidth - 24, pageHeight - 24)
+    doc.rect(11, 11, pageWidth - 22, pageHeight - 22)
+
+    // Add IICAR logo (if file exists)
+    try {
+      const logoPath = path.join(process.cwd(), 'public', 'logo.jpg')
+      if (fs.existsSync(logoPath)) {
+        const logoData = fs.readFileSync(logoPath)
+        const logoBase64 = `data:image/jpeg;base64,${logoData.toString('base64')}`
+        doc.addImage(logoBase64, 'JPEG', pageWidth / 2 - 12, 18, 24, 24)
+      }
+    } catch (logoErr) {
+      console.error('[v0] Logo not found, skipping:', logoErr)
+    }
 
     // School name (top)
     doc.setFont('times', 'bold')
-    doc.setFontSize(28)
-    doc.setTextColor(184, 134, 11)
-    doc.text('IICAR', pageWidth / 2, 35, { align: 'center' })
+    doc.setFontSize(24)
+    doc.setTextColor(15, 23, 42) // primary color
+    doc.text('IICAR GLOBAL COLLEGE', pageWidth / 2, 50, { align: 'center' })
 
     doc.setFont('times', 'normal')
-    doc.setFontSize(12)
-    doc.setTextColor(80, 80, 80)
-    doc.text('International Institute for Certified Administrative Resources', pageWidth / 2, 42, { align: 'center' })
+    doc.setFontSize(10)
+    doc.setTextColor(100, 100, 100)
+    doc.text('Institute of International Career Advancement and Recognition', pageWidth / 2, 57, { align: 'center' })
 
     // Certificate title
     doc.setFont('times', 'bold')
-    doc.setFontSize(32)
-    doc.setTextColor(0, 0, 0)
-    doc.text('Certificate of Completion', pageWidth / 2, 62, { align: 'center' })
+    doc.setFontSize(28)
+    doc.setTextColor(184, 134, 11) // gold color
+    doc.text('Certificate of Completion', pageWidth / 2, 72, { align: 'center' })
 
     // Decorative line
     doc.setDrawColor(184, 134, 11)
     doc.setLineWidth(0.5)
-    doc.line(50, 68, pageWidth - 50, 68)
+    doc.line(60, 78, pageWidth - 60, 78)
 
     // Certificate body text
     doc.setFont('times', 'normal')
-    doc.setFontSize(12)
-    doc.setTextColor(0, 0, 0)
-
-    doc.text('This is to certify that', pageWidth / 2, 80, { align: 'center' })
+    doc.setFontSize(11)
+    doc.setTextColor(60, 60, 60)
+    doc.text('This is to certify that', pageWidth / 2, 90, { align: 'center' })
 
     // Student name
     doc.setFont('times', 'bold')
-    doc.setFontSize(18)
-    doc.setTextColor(0, 0, 0)
+    doc.setFontSize(20)
+    doc.setTextColor(15, 23, 42)
     const studentName = cert.profiles && typeof cert.profiles === 'object' && 'full_name' in cert.profiles 
       ? cert.profiles.full_name 
       : 'Unknown Student'
-    doc.text(studentName, pageWidth / 2, 92, { align: 'center' })
+    doc.text(studentName, pageWidth / 2, 102, { align: 'center' })
 
     // Body text continued
     doc.setFont('times', 'normal')
-    doc.setFontSize(12)
-    doc.setTextColor(0, 0, 0)
-    doc.text('has successfully completed the professional certification program in', pageWidth / 2, 105, { align: 'center' })
+    doc.setFontSize(11)
+    doc.setTextColor(60, 60, 60)
+    doc.text('has successfully completed the professional certification program in', pageWidth / 2, 114, { align: 'center' })
 
     // Program title
     doc.setFont('times', 'bold')
     doc.setFontSize(14)
-    doc.setTextColor(0, 0, 0)
+    doc.setTextColor(15, 23, 42)
     const programTitle = cert.programs && typeof cert.programs === 'object' && 'title' in cert.programs
       ? cert.programs.title
       : 'Professional Development'
-    doc.text(programTitle, pageWidth / 2, 115, { align: 'center' })
+    doc.text(programTitle, pageWidth / 2, 125, { align: 'center' })
 
-    // Score
+    // Score and date
     doc.setFont('times', 'normal')
-    doc.setFontSize(11)
-    doc.setTextColor(80, 80, 80)
-    if (cert.final_score) {
-      doc.text(`Final Score: ${cert.final_score}%`, pageWidth / 2, 127, { align: 'center' })
-    }
+    doc.setFontSize(10)
+    doc.setTextColor(100, 100, 100)
 
-    // Date issued
-    const issueDate = new Date(cert.issued_at).toLocaleDateString('en-GB', {
+    const issueDate = cert.issued_at ? new Date(cert.issued_at).toLocaleDateString('en-GB', {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
-    })
-    doc.text(`Issued: ${issueDate}`, pageWidth / 2, 135, { align: 'center' })
+    }) : new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+
+    if (cert.final_score) {
+      doc.text(`Final Score: ${cert.final_score}%  |  Issued: ${issueDate}`, pageWidth / 2, 137, { align: 'center' })
+    } else {
+      doc.text(`Issued: ${issueDate}`, pageWidth / 2, 137, { align: 'center' })
+    }
 
     // Certificate ID
     doc.setFont('courier', 'normal')
     doc.setFontSize(9)
-    doc.setTextColor(100, 100, 100)
-    doc.text(`Certificate ID: ${cert.cert_id}`, pageWidth / 2, 148, { align: 'center' })
+    doc.setTextColor(120, 120, 120)
+    doc.text(`Certificate ID: ${cert.cert_id}`, pageWidth / 2, 145, { align: 'center' })
+    doc.text('Verify at: https://iicar.org/verify', pageWidth / 2, 150, { align: 'center' })
 
-    // Signature section with principal name
-    doc.setLineWidth(0.5)
-    
-    // Left signature line (Authorized)
-    doc.line(30, 165, 60, 165)
-    doc.setFont('times', 'normal')
-    doc.setFontSize(10)
-    doc.setTextColor(0, 0, 0)
-    doc.text('Authorized Signature', 45, 170, { align: 'center' })
-    
-    // Right signature area (Principal Malinar Hellen)
-    // Add signature line
-    doc.line(pageWidth - 60, 160, pageWidth - 30, 160)
-    
-    // Add principal name and title
-    doc.setFont('times', 'bold')
-    doc.setFontSize(11)
-    doc.setTextColor(0, 0, 0)
-    doc.text('Malinar Hellen', pageWidth - 45, 168, { align: 'center' })
-    
-    doc.setFont('times', 'normal')
-    doc.setFontSize(9)
-    doc.setTextColor(50, 50, 50)
-    doc.text('Principal, IICAR', pageWidth - 45, 175, { align: 'center' })
+    // Signature section
+    const sigY = 162
+    const sigLineY = sigY - 2
+
+    // Primary signature (left side)
+    if (primarySignature) {
+      // Add signature image
+      try {
+        doc.addImage(primarySignature.signature_data, 'PNG', 35, sigY - 18, 40, 15)
+      } catch (sigErr) {
+        console.error('[v0] Error adding primary signature:', sigErr)
+      }
+      
+      // Signature line
+      doc.setDrawColor(100, 100, 100)
+      doc.setLineWidth(0.3)
+      doc.line(30, sigLineY, 80, sigLineY)
+      
+      // Name and title
+      doc.setFont('times', 'bold')
+      doc.setFontSize(10)
+      doc.setTextColor(15, 23, 42)
+      doc.text(primarySignature.signature_name, 55, sigY + 5, { align: 'center' })
+      
+      doc.setFont('times', 'normal')
+      doc.setFontSize(8)
+      doc.setTextColor(100, 100, 100)
+      doc.text(primarySignature.signature_title, 55, sigY + 10, { align: 'center' })
+    } else {
+      // Default primary signature placeholder
+      doc.setDrawColor(100, 100, 100)
+      doc.setLineWidth(0.3)
+      doc.line(30, sigLineY, 80, sigLineY)
+      
+      doc.setFont('times', 'normal')
+      doc.setFontSize(9)
+      doc.setTextColor(100, 100, 100)
+      doc.text('Authorized Signature', 55, sigY + 5, { align: 'center' })
+    }
+
+    // Secondary signature (right side)
+    if (secondarySignature) {
+      // Add signature image
+      try {
+        doc.addImage(secondarySignature.signature_data, 'PNG', pageWidth - 75, sigY - 18, 40, 15)
+      } catch (sigErr) {
+        console.error('[v0] Error adding secondary signature:', sigErr)
+      }
+      
+      // Signature line
+      doc.line(pageWidth - 80, sigLineY, pageWidth - 30, sigLineY)
+      
+      // Name and title
+      doc.setFont('times', 'bold')
+      doc.setFontSize(10)
+      doc.setTextColor(15, 23, 42)
+      doc.text(secondarySignature.signature_name, pageWidth - 55, sigY + 5, { align: 'center' })
+      
+      doc.setFont('times', 'normal')
+      doc.setFontSize(8)
+      doc.setTextColor(100, 100, 100)
+      doc.text(secondarySignature.signature_title, pageWidth - 55, sigY + 10, { align: 'center' })
+    } else {
+      // Default secondary signature (Principal)
+      doc.setDrawColor(100, 100, 100)
+      doc.line(pageWidth - 80, sigLineY, pageWidth - 30, sigLineY)
+      
+      doc.setFont('times', 'bold')
+      doc.setFontSize(10)
+      doc.setTextColor(15, 23, 42)
+      doc.text('Malinar Hellen', pageWidth - 55, sigY + 5, { align: 'center' })
+      
+      doc.setFont('times', 'normal')
+      doc.setFontSize(8)
+      doc.setTextColor(100, 100, 100)
+      doc.text('Principal, IICAR', pageWidth - 55, sigY + 10, { align: 'center' })
+    }
+
+    // Add COL and GAOTE logos at bottom
+    try {
+      const colLogoPath = path.join(process.cwd(), 'public', 'col-logo.png')
+      const gaoteLogoPath = path.join(process.cwd(), 'public', 'gaote-logo.png')
+      
+      if (fs.existsSync(colLogoPath)) {
+        const colData = fs.readFileSync(colLogoPath)
+        const colBase64 = `data:image/png;base64,${colData.toString('base64')}`
+        doc.addImage(colBase64, 'PNG', 20, pageHeight - 25, 30, 12)
+      }
+      
+      if (fs.existsSync(gaoteLogoPath)) {
+        const gaoteData = fs.readFileSync(gaoteLogoPath)
+        const gaoteBase64 = `data:image/png;base64,${gaoteData.toString('base64')}`
+        doc.addImage(gaoteBase64, 'PNG', pageWidth - 40, pageHeight - 25, 20, 18)
+      }
+    } catch (partnerLogoErr) {
+      console.error('[v0] Partner logos not found, skipping:', partnerLogoErr)
+    }
+
+    // Bottom text
+    doc.setFont('times', 'italic')
+    doc.setFontSize(7)
+    doc.setTextColor(150, 150, 150)
+    doc.text('COL Standard Aligned | GAOTE Certified | GAOTE Standard Approved', pageWidth / 2, pageHeight - 12, { align: 'center' })
 
     // Generate PDF buffer
     const pdfBuffer = Buffer.from(doc.output('arraybuffer'))
@@ -160,4 +288,3 @@ export async function GET(
     return NextResponse.json({ error: 'Failed to generate certificate PDF' }, { status: 500 })
   }
 }
-
