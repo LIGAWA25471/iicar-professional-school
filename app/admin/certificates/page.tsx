@@ -1,11 +1,10 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Award, Download, Clock, CheckCircle, XCircle, Settings } from 'lucide-react'
+import { Award, Download, CheckCircle, XCircle, Settings } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import RevokeCertButton from '@/components/admin/revoke-cert-button'
-import { CertificateApprovalActions } from '@/components/admin/certificate-approval-actions'
 import ManualCertificateForm from '@/components/admin/manual-certificate-form'
 
 export default async function AdminCertificatesPage() {
@@ -106,28 +105,26 @@ export default async function AdminCertificatesPage() {
                       <Badge variant="default" className="text-xs bg-green-100 text-green-700 border-green-200">
                         <CheckCircle className="h-3 w-3 mr-1" /> Issued
                       </Badge>
-                    ) : (
-                      <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700 border-amber-200">
-                        <Clock className="h-3 w-3 mr-1" /> Pending
-                      </Badge>
-                    )}
+                    ) : null}
                   </td>
                   <td className="px-5 py-3 text-right flex items-center justify-end gap-2">
                     {cert.issued_at && !cert.revoked && (
                       <>
-                        <Button asChild variant="ghost" size="sm" className="text-xs">
-                          <Link href={`/api/certificate/download/${cert.cert_id}`} download>
-                            <Download className="h-3 w-3" />
-                          </Link>
+                        <Button variant="ghost" size="sm" className="text-xs" onClick={() => {
+                          const link = document.createElement('a')
+                          link.href = `/api/certificate/download/${cert.cert_id}`
+                          link.download = `${cert.cert_id}_certificate.pdf`
+                          document.body.appendChild(link)
+                          link.click()
+                          document.body.removeChild(link)
+                        }}>
+                          <Download className="h-3 w-3" />
                         </Button>
                         <Button asChild variant="ghost" size="sm" className="text-xs">
                           <Link href={`/verify?id=${cert.cert_id}`} target="_blank">Verify</Link>
                         </Button>
                         <RevokeCertButton certId={cert.id} />
                       </>
-                    )}
-                    {!cert.issued_at && (
-                      <span className="text-xs text-muted-foreground">Awaiting approval</span>
                     )}
                   </td>
                 </tr>
