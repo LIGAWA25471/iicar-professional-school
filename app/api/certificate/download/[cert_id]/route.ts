@@ -1,6 +1,8 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { jsPDF } from 'jspdf'
+import fs from 'fs'
+import path from 'path'
 
 export async function GET(
   request: Request,
@@ -13,7 +15,14 @@ export async function GET(
     const adminDb = createAdminClient()
     const { data: cert, error } = await adminDb
       .from('certificates')
-      .select('cert_id, issued_at, final_score, student_id, program_id, revoked, certificate_level')
+      .select(`
+        cert_id, issued_at, final_score, student_id, program_id, 
+        approval_status, approved_at,
+        profiles(full_name), 
+        programs(title),
+        primary_signature_id,
+        secondary_signature_id
+      `)
       .eq('cert_id', cert_id.toUpperCase())
       .single()
 
@@ -21,16 +30,32 @@ export async function GET(
       return NextResponse.json({ error: 'Certificate not found' }, { status: 404 })
     }
 
-    // Only allow download of issued certificates (issued_at is not null)
-    if (cert.issued_at === null) {
-      return NextResponse.json({ error: 'Certificate not yet issued' }, { status: 403 })
+    // Only allow download of approved certificates
+    if (cert.approval_status !== 'approved') {
+      return NextResponse.json({ error: 'Certificate not yet approved' }, { status: 403 })
     }
 
-    // Fetch student and program details
-    const [{ data: studentData }, { data: programData }] = await Promise.all([
-      adminDb.from('profiles').select('full_name').eq('id', cert.student_id).single(),
-      adminDb.from('programs').select('title').eq('id', cert.program_id).single(),
-    ])
+    // Fetch signatures if present
+    let primarySignature = null
+    let secondarySignature = null
+
+    if (cert.primary_signature_id) {
+      const { data: sig } = await adminDb
+        .from('admin_signatures')
+        .select('signature_name, signature_title, signature_data')
+        .eq('id', cert.primary_signature_id)
+        .single()
+      primarySignature = sig
+    }
+
+    if (cert.secondary_signature_id) {
+      const { data: sig } = await adminDb
+        .from('admin_signatures')
+        .select('signature_name, signature_title, signature_data')
+        .eq('id', cert.secondary_signature_id)
+        .single()
+      secondarySignature = sig
+    }
 
     // Generate PDF using jsPDF
     const doc = new jsPDF({
@@ -55,13 +80,17 @@ export async function GET(
     doc.setLineWidth(1)
     doc.rect(11, 11, pageWidth - 22, pageHeight - 22)
 
-    // Add IICAR logo (decorative element only - no file system access)
-    doc.setFillColor(184, 134, 11)
-    doc.circle(pageWidth / 2, 24, 8, 'F')
-    doc.setTextColor(255, 255, 255)
-    doc.setFont('times', 'bold')
-    doc.setFontSize(12)
-    doc.text('IICAR', pageWidth / 2, 25.5, { align: 'center' })
+    // Add IICAR logo (if file exists)
+    try {
+      const logoPath = path.join(process.cwd(), 'public', 'logo.jpg')
+      if (fs.existsSync(logoPath)) {
+        const logoData = fs.readFileSync(logoPath)
+        const logoBase64 = `data:image/jpeg;base64,${logoData.toString('base64')}`
+        doc.addImage(logoBase64, 'JPEG', pageWidth / 2 - 12, 18, 24, 24)
+      }
+    } catch (logoErr) {
+      console.error('[v0] Logo not found, skipping:', logoErr)
+    }
 
     // School name (top)
     doc.setFont('times', 'bold')
@@ -74,32 +103,11 @@ export async function GET(
     doc.setTextColor(100, 100, 100)
     doc.text('Institute of International Career Advancement and Recognition', pageWidth / 2, 57, { align: 'center' })
 
-    // Certificate title with level badge
+    // Certificate title
     doc.setFont('times', 'bold')
     doc.setFontSize(28)
     doc.setTextColor(184, 134, 11) // gold color
     doc.text('Certificate of Completion', pageWidth / 2, 72, { align: 'center' })
-
-    // Certificate level display
-    const levelNames = ['Foundation', 'Intermediate', 'Advanced', 'Professional', 'Expert']
-    const levelName = levelNames[(cert.certificate_level || 1) - 1]
-    const levelColors = {
-      1: { r: 100, g: 150, b: 200 }, // Blue
-      2: { r: 100, g: 200, b: 100 }, // Green
-      3: { r: 200, g: 150, b: 50 }, // Orange
-      4: { r: 200, g: 80, b: 80 }, // Red
-      5: { r: 184, g: 134, b: 11 }, // Gold
-    }
-    const levelColor = levelColors[cert.certificate_level as keyof typeof levelColors] || levelColors[1]
-
-    // Level badge box
-    doc.setFillColor(levelColor.r, levelColor.g, levelColor.b)
-    doc.rect(pageWidth / 2 - 25, 64, 50, 8, 'F')
-    
-    doc.setFont('times', 'bold')
-    doc.setFontSize(10)
-    doc.setTextColor(255, 255, 255)
-    doc.text(`Level ${cert.certificate_level}: ${levelName}`, pageWidth / 2, 68, { align: 'center' })
 
     // Decorative line
     doc.setDrawColor(184, 134, 11)
@@ -116,7 +124,9 @@ export async function GET(
     doc.setFont('times', 'bold')
     doc.setFontSize(20)
     doc.setTextColor(15, 23, 42)
-    const studentName = studentData?.full_name || 'Valued Graduate'
+    const studentName = cert.profiles && typeof cert.profiles === 'object' && 'full_name' in cert.profiles 
+      ? cert.profiles.full_name 
+      : 'Unknown Student'
     doc.text(studentName, pageWidth / 2, 102, { align: 'center' })
 
     // Body text continued
@@ -129,7 +139,9 @@ export async function GET(
     doc.setFont('times', 'bold')
     doc.setFontSize(14)
     doc.setTextColor(15, 23, 42)
-    const programTitle = programData?.title || 'Professional Development'
+    const programTitle = cert.programs && typeof cert.programs === 'object' && 'title' in cert.programs
+      ? cert.programs.title
+      : 'Professional Development'
     doc.text(programTitle, pageWidth / 2, 125, { align: 'center' })
 
     // Score and date
@@ -160,41 +172,105 @@ export async function GET(
     const sigY = 162
     const sigLineY = sigY - 2
 
-    // Primary signature (left side) - Default authorized signature
-    doc.setDrawColor(100, 100, 100)
-    doc.setLineWidth(0.3)
-    doc.line(30, sigLineY, 80, sigLineY)
-    
-    doc.setFont('times', 'normal')
-    doc.setFontSize(9)
-    doc.setTextColor(100, 100, 100)
-    doc.text('Authorized Signature', 55, sigY + 5, { align: 'center' })
+    // Primary signature (left side)
+    if (primarySignature) {
+      // Add signature image
+      try {
+        doc.addImage(primarySignature.signature_data, 'PNG', 35, sigY - 18, 40, 15)
+      } catch (sigErr) {
+        console.error('[v0] Error adding primary signature:', sigErr)
+      }
+      
+      // Signature line
+      doc.setDrawColor(100, 100, 100)
+      doc.setLineWidth(0.3)
+      doc.line(30, sigLineY, 80, sigLineY)
+      
+      // Name and title
+      doc.setFont('times', 'bold')
+      doc.setFontSize(10)
+      doc.setTextColor(15, 23, 42)
+      doc.text(primarySignature.signature_name, 55, sigY + 5, { align: 'center' })
+      
+      doc.setFont('times', 'normal')
+      doc.setFontSize(8)
+      doc.setTextColor(100, 100, 100)
+      doc.text(primarySignature.signature_title, 55, sigY + 10, { align: 'center' })
+    } else {
+      // Default primary signature placeholder
+      doc.setDrawColor(100, 100, 100)
+      doc.setLineWidth(0.3)
+      doc.line(30, sigLineY, 80, sigLineY)
+      
+      doc.setFont('times', 'normal')
+      doc.setFontSize(9)
+      doc.setTextColor(100, 100, 100)
+      doc.text('Authorized Signature', 55, sigY + 5, { align: 'center' })
+    }
 
-    // Secondary signature (right side) - Principal
-    doc.line(pageWidth - 80, sigLineY, pageWidth - 30, sigLineY)
-    
-    doc.setFont('times', 'bold')
-    doc.setFontSize(10)
-    doc.setTextColor(15, 23, 42)
-    doc.text('Malinar Hellen', pageWidth - 55, sigY + 5, { align: 'center' })
-    
-    doc.setFont('times', 'normal')
-    doc.setFontSize(8)
-    doc.setTextColor(100, 100, 100)
-    doc.text('Principal, IICAR', pageWidth - 55, sigY + 10, { align: 'center' })
+    // Secondary signature (right side)
+    if (secondarySignature) {
+      // Add signature image
+      try {
+        doc.addImage(secondarySignature.signature_data, 'PNG', pageWidth - 75, sigY - 18, 40, 15)
+      } catch (sigErr) {
+        console.error('[v0] Error adding secondary signature:', sigErr)
+      }
+      
+      // Signature line
+      doc.line(pageWidth - 80, sigLineY, pageWidth - 30, sigLineY)
+      
+      // Name and title
+      doc.setFont('times', 'bold')
+      doc.setFontSize(10)
+      doc.setTextColor(15, 23, 42)
+      doc.text(secondarySignature.signature_name, pageWidth - 55, sigY + 5, { align: 'center' })
+      
+      doc.setFont('times', 'normal')
+      doc.setFontSize(8)
+      doc.setTextColor(100, 100, 100)
+      doc.text(secondarySignature.signature_title, pageWidth - 55, sigY + 10, { align: 'center' })
+    } else {
+      // Default secondary signature (Principal)
+      doc.setDrawColor(100, 100, 100)
+      doc.line(pageWidth - 80, sigLineY, pageWidth - 30, sigLineY)
+      
+      doc.setFont('times', 'bold')
+      doc.setFontSize(10)
+      doc.setTextColor(15, 23, 42)
+      doc.text('Malinar Hellen', pageWidth - 55, sigY + 5, { align: 'center' })
+      
+      doc.setFont('times', 'normal')
+      doc.setFontSize(8)
+      doc.setTextColor(100, 100, 100)
+      doc.text('Principal, IICAR', pageWidth - 55, sigY + 10, { align: 'center' })
+    }
 
-    // Add decorative logos at bottom (text-based)
-    doc.setFont('times', 'normal')
-    doc.setFontSize(8)
-    doc.setTextColor(150, 150, 150)
-    doc.text('COL | GAOTE Certified | IICAR', 25, pageHeight - 20, { align: 'left' })
-    doc.text('Accredited', pageWidth - 35, pageHeight - 20, { align: 'right' })
+    // Add COL and GAOTE logos at bottom
+    try {
+      const colLogoPath = path.join(process.cwd(), 'public', 'col-logo.png')
+      const gaoteLogoPath = path.join(process.cwd(), 'public', 'gaote-logo.png')
+      
+      if (fs.existsSync(colLogoPath)) {
+        const colData = fs.readFileSync(colLogoPath)
+        const colBase64 = `data:image/png;base64,${colData.toString('base64')}`
+        doc.addImage(colBase64, 'PNG', 20, pageHeight - 25, 30, 12)
+      }
+      
+      if (fs.existsSync(gaoteLogoPath)) {
+        const gaoteData = fs.readFileSync(gaoteLogoPath)
+        const gaoteBase64 = `data:image/png;base64,${gaoteData.toString('base64')}`
+        doc.addImage(gaoteBase64, 'PNG', pageWidth - 40, pageHeight - 25, 20, 18)
+      }
+    } catch (partnerLogoErr) {
+      console.error('[v0] Partner logos not found, skipping:', partnerLogoErr)
+    }
 
-    // Certificate footer
+    // Bottom text
     doc.setFont('times', 'italic')
     doc.setFontSize(7)
     doc.setTextColor(150, 150, 150)
-    doc.text('COL Standard Aligned | GAOTE Certified | IICAR Standard Approved', pageWidth / 2, pageHeight - 8, { align: 'center' })
+    doc.text('COL Standard Aligned | GAOTE Certified | GAOTE Standard Approved', pageWidth / 2, pageHeight - 12, { align: 'center' })
 
     // Generate PDF buffer
     const pdfBuffer = Buffer.from(doc.output('arraybuffer'))

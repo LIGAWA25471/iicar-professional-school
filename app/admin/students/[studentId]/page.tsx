@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ChevronLeft, Award } from 'lucide-react'
 import AdminManualEnrollModal from '@/components/admin/manual-enroll-modal'
-import IssueCertFromEnrollment from '@/components/admin/issue-cert-from-enrollment'
 
 export default async function AdminStudentDetailPage({ params }: { params: Promise<{ studentId: string }> }) {
   const { studentId } = await params
@@ -15,48 +14,22 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
 
   const adminDb = createAdminClient()
 
-  const { data: profileData, error: profileError } = await adminDb
+  const { data: profile } = await adminDb
     .from('profiles')
-    .select('id, full_name, email, country, phone, created_at')
+    .select('id, full_name, country, phone, created_at')
     .eq('id', studentId)
-  
-  const profile = profileData && profileData.length > 0 ? profileData[0] : null
-  
-  console.log('[v0] Fetching student:', { studentId, error: profileError?.message, profileFound: !!profile, dataLength: profileData?.length })
-  
-  if (!profile) {
-    console.error('[v0] Student not found:', studentId, profileError?.message)
-    // Return a custom error page with helpful information
-    return (
-      <div className="flex flex-col gap-8 max-w-3xl">
-        <Button asChild variant="ghost" size="sm" className="w-fit text-muted-foreground">
-          <Link href="/admin/students"><ChevronLeft className="h-4 w-4 mr-1" /> Students</Link>
-        </Button>
-        <div className="rounded-xl border border-border bg-card p-6 text-center">
-          <h2 className="text-lg font-semibold text-foreground mb-2">Student Not Found</h2>
-          <p className="text-sm text-muted-foreground mb-2">
-            The student with ID <code className="bg-muted px-2 py-1 rounded text-xs">{studentId}</code> could not be found.
-          </p>
-          {profileError && (
-            <p className="text-xs text-red-600 mb-4">Error: {profileError.message}</p>
-          )}
-          <Button asChild>
-            <Link href="/admin/students">Back to Students</Link>
-          </Button>
-        </div>
-      </div>
-    )
-  }
+    .single()
+  if (!profile) notFound()
 
   const { data: enrollments } = await adminDb
     .from('enrollments')
-    .select('id, status, enrolled_at, completed_at, program_id, programs(title)')
+    .select('id, status, enrolled_at, completed_at, programs(title)')
     .eq('student_id', studentId)
     .order('enrolled_at', { ascending: false })
 
   const { data: certificates } = await adminDb
     .from('certificates')
-    .select('id, cert_id, issued_at, final_score, revoked, certificate_level, program_id, programs(title)')
+    .select('id, cert_id, issued_at, final_score, revoked, programs(title)')
     .eq('student_id', studentId)
     .order('issued_at', { ascending: false })
 
@@ -97,7 +70,6 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
                 <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Program</th>
                 <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Status</th>
                 <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Enrolled</th>
-                <th className="px-5 py-3 text-right text-xs font-semibold text-muted-foreground uppercase">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -117,21 +89,11 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
                     <td className="px-5 py-3 text-muted-foreground">
                       {e.enrolled_at ? new Date(e.enrolled_at).toLocaleDateString() : '—'}
                     </td>
-                    <td className="px-5 py-3 text-right">
-                      <IssueCertFromEnrollment
-                        studentId={studentId}
-                        studentName={profile.full_name ?? 'Student'}
-                        studentEmail={profile.email ?? ''}
-                        enrollmentId={e.id}
-                        programId={e.program_id}
-                        enrollmentStatus={e.status}
-                      />
-                    </td>
                   </tr>
                 )
               })}
               {(!enrollments || enrollments.length === 0) && (
-                <tr><td colSpan={4} className="px-5 py-6 text-center text-muted-foreground text-sm">No enrollments yet</td></tr>
+                <tr><td colSpan={3} className="px-5 py-6 text-center text-muted-foreground text-sm">No enrollments yet</td></tr>
               )}
             </tbody>
           </table>
@@ -143,8 +105,6 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
         <div className="flex flex-col gap-3">
           {certificates?.map((cert) => {
             const program = cert.programs as { title: string } | null
-            const LEVEL_NAMES = ['Foundation', 'Intermediate', 'Advanced', 'Professional', 'Expert']
-            const levelName = LEVEL_NAMES[(cert.certificate_level || 1) - 1]
             return (
               <div key={cert.id} className="flex items-center justify-between rounded-xl border border-border bg-card p-4">
                 <div className="flex items-center gap-3">
@@ -156,8 +116,7 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
                 </div>
                 <div className="flex items-center gap-3">
                   {cert.revoked && <Badge variant="destructive" className="text-xs">Revoked</Badge>}
-                  {cert.issued_at && <Badge className="text-xs bg-green-100 text-green-700">Level {cert.certificate_level || 1}: {levelName}</Badge>}
-                  <span className="text-xs text-muted-foreground">{cert.final_score || '—'}%</span>
+                  <span className="text-xs text-muted-foreground">{cert.final_score}%</span>
                 </div>
               </div>
             )

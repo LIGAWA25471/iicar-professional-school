@@ -106,28 +106,28 @@ export async function POST(request: Request) {
     )
   }
 
-  // If final exam passed: create certificate request (admin can then sign and issue)
+  // If final exam passed: create pending certificate request (requires admin approval)
   if (type === 'final_exam' && passed) {
     const certId = `IICAR-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 10).toUpperCase()}`
 
-    // Create certificate - set issued_at to null initially so admin knows it needs approval
-    // We'll use issued_at as the approval flag: if null, it's pending; if set, it's approved
+    // Create certificate with pending status - admin must approve before it's issued
     await adminDb.from('certificates').upsert({
       student_id: user.id,
       program_id: programId,
       cert_id: certId,
       final_score: score,
-      issued_at: null, // Null = pending approval
-      revoked: false,
+      approval_status: 'pending', // Certificate requires admin approval
+      issued_at: null, // Will be set when approved
     }, { onConflict: 'student_id,program_id' })
 
-    // Update enrollment to completed status
+    // Update enrollment to awaiting_certificate status
     await adminDb.from('enrollments')
       .update({ status: 'completed', completed_at: new Date().toISOString() })
       .eq('student_id', user.id)
       .eq('program_id', programId)
 
-    console.log('[v0] Certificate created for student:', user.id, 'program:', programId, 'score:', score)
+    // Note: Certificate email will be sent when admin approves the certificate
+    // No automatic certificate notification here
   }
 
   return NextResponse.json({ score, passed, pendingApproval: type === 'final_exam' && passed })
