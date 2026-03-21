@@ -19,7 +19,7 @@ export default async function AdminCertificatesPage() {
   // Note: These columns come from the original schema + the approval workflow migration
   const { data: certs, error: certsError } = await adminDb
     .from('certificates')
-    .select('id, cert_id, issued_at, final_score, revoked, student_id, program_id')
+    .select('id, cert_id, issued_at, final_score, revoked, student_id, program_id, certificate_level')
     .order('issued_at', { ascending: false })
 
   if (certsError) {
@@ -74,6 +74,7 @@ export default async function AdminCertificatesPage() {
               <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Certificate ID</th>
               <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Student</th>
               <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Program</th>
+              <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Level</th>
               <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Score</th>
               <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Status</th>
               <th className="px-5 py-3 text-right text-xs font-semibold text-muted-foreground uppercase">Actions</th>
@@ -83,11 +84,18 @@ export default async function AdminCertificatesPage() {
             {certificatesWithDetails.map((cert) => {
               const profile = cert.profiles as { full_name: string } | null
               const program = cert.programs as { title: string } | null
+              const LEVEL_NAMES = ['Foundation', 'Intermediate', 'Advanced', 'Professional', 'Expert']
+              const levelName = LEVEL_NAMES[(cert.certificate_level || 1) - 1]
               return (
                 <tr key={cert.id} className={`hover:bg-muted/30 transition-colors ${cert.revoked ? 'opacity-60' : ''}`}>
                   <td className="px-5 py-3 font-mono text-xs text-muted-foreground">{cert.cert_id}</td>
                   <td className="px-5 py-3 text-foreground">{profile?.full_name ?? '—'}</td>
                   <td className="px-5 py-3 text-foreground truncate max-w-[180px]">{program?.title}</td>
+                  <td className="px-5 py-3 text-foreground">
+                    <Badge variant="outline" className="text-xs">
+                      Level {cert.certificate_level || 1}: {levelName}
+                    </Badge>
+                  </td>
                   <td className="px-5 py-3 text-foreground">{cert.final_score ?? '—'}%</td>
                   <td className="px-5 py-3">
                     {cert.revoked ? (
@@ -126,7 +134,7 @@ export default async function AdminCertificatesPage() {
               )
             })}
             {(!certificatesWithDetails || certificatesWithDetails.length === 0) && (
-              <tr><td colSpan={6} className="px-5 py-10 text-center text-muted-foreground">No certificates yet</td></tr>
+              <tr><td colSpan={7} className="px-5 py-10 text-center text-muted-foreground">No certificates yet</td></tr>
             )}
           </tbody>
         </table>
