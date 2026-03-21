@@ -15,13 +15,14 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
 
   const adminDb = createAdminClient()
 
-  const { data: profile, error: profileError } = await adminDb
+  const { data: profileData, error: profileError } = await adminDb
     .from('profiles')
     .select('id, full_name, email, country, phone, created_at')
     .eq('id', studentId)
-    .single()
   
-  console.log('[v0] Fetching student:', { studentId, profileError: profileError?.message, profileFound: !!profile })
+  const profile = profileData && profileData.length > 0 ? profileData[0] : null
+  
+  console.log('[v0] Fetching student:', { studentId, error: profileError?.message, profileFound: !!profile, dataLength: profileData?.length })
   
   if (!profile) {
     console.error('[v0] Student not found:', studentId, profileError?.message)
@@ -33,9 +34,12 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
         </Button>
         <div className="rounded-xl border border-border bg-card p-6 text-center">
           <h2 className="text-lg font-semibold text-foreground mb-2">Student Not Found</h2>
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="text-sm text-muted-foreground mb-2">
             The student with ID <code className="bg-muted px-2 py-1 rounded text-xs">{studentId}</code> could not be found.
           </p>
+          {profileError && (
+            <p className="text-xs text-red-600 mb-4">Error: {profileError.message}</p>
+          )}
           <Button asChild>
             <Link href="/admin/students">Back to Students</Link>
           </Button>
