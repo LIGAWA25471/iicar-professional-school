@@ -1,7 +1,7 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Award, Download, Clock, CheckCircle, XCircle, Settings } from 'lucide-react'
+import { Award, Download, Clock, CheckCircle, XCircle, Settings, Plus } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import RevokeCertButton from '@/components/admin/revoke-cert-button'
@@ -67,11 +67,18 @@ export default async function AdminCertificatesPage() {
             {pendingCerts.length === 0 && issuedCerts.length === 0 && 'No certificates yet'}
           </p>
         </div>
-        <Button asChild variant="outline" size="sm">
-          <Link href="/admin/certificates/signatures">
-            <Settings className="h-4 w-4 mr-2" /> Manage Signatures
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link href="/admin/certificates/issue">
+              <Plus className="h-4 w-4 mr-2" /> Issue Certificate
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/admin/certificates/signatures">
+              <Settings className="h-4 w-4 mr-2" /> Manage Signatures
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Pending Certificates Alert */}

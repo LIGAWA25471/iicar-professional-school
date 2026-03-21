@@ -15,7 +15,7 @@ export async function GET(
     const adminDb = createAdminClient()
     const { data: cert, error } = await adminDb
       .from('certificates')
-      .select('cert_id, issued_at, final_score, student_id, program_id, revoked')
+      .select('cert_id, issued_at, final_score, student_id, program_id, revoked, certificate_level')
       .eq('cert_id', cert_id.toUpperCase())
       .single()
 
@@ -80,11 +80,32 @@ export async function GET(
     doc.setTextColor(100, 100, 100)
     doc.text('Institute of International Career Advancement and Recognition', pageWidth / 2, 57, { align: 'center' })
 
-    // Certificate title
+    // Certificate title with level badge
     doc.setFont('times', 'bold')
     doc.setFontSize(28)
     doc.setTextColor(184, 134, 11) // gold color
     doc.text('Certificate of Completion', pageWidth / 2, 72, { align: 'center' })
+
+    // Certificate level display
+    const levelNames = ['Foundation', 'Intermediate', 'Advanced', 'Professional', 'Expert']
+    const levelName = levelNames[(cert.certificate_level || 1) - 1]
+    const levelColors = {
+      1: { r: 100, g: 150, b: 200 }, // Blue
+      2: { r: 100, g: 200, b: 100 }, // Green
+      3: { r: 200, g: 150, b: 50 }, // Orange
+      4: { r: 200, g: 80, b: 80 }, // Red
+      5: { r: 184, g: 134, b: 11 }, // Gold
+    }
+    const levelColor = levelColors[cert.certificate_level as keyof typeof levelColors] || levelColors[1]
+
+    // Level badge box
+    doc.setFillColor(levelColor.r, levelColor.g, levelColor.b)
+    doc.rect(pageWidth / 2 - 25, 64, 50, 8, 'F')
+    
+    doc.setFont('times', 'bold')
+    doc.setFontSize(10)
+    doc.setTextColor(255, 255, 255)
+    doc.text(`Level ${cert.certificate_level}: ${levelName}`, pageWidth / 2, 68, { align: 'center' })
 
     // Decorative line
     doc.setDrawColor(184, 134, 11)
