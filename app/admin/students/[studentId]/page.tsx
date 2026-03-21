@@ -15,12 +15,34 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
 
   const adminDb = createAdminClient()
 
-  const { data: profile } = await adminDb
+  const { data: profile, error: profileError } = await adminDb
     .from('profiles')
     .select('id, full_name, email, country, phone, created_at')
     .eq('id', studentId)
     .single()
-  if (!profile) notFound()
+  
+  console.log('[v0] Fetching student:', { studentId, profileError: profileError?.message, profileFound: !!profile })
+  
+  if (!profile) {
+    console.error('[v0] Student not found:', studentId, profileError?.message)
+    // Return a custom error page with helpful information
+    return (
+      <div className="flex flex-col gap-8 max-w-3xl">
+        <Button asChild variant="ghost" size="sm" className="w-fit text-muted-foreground">
+          <Link href="/admin/students"><ChevronLeft className="h-4 w-4 mr-1" /> Students</Link>
+        </Button>
+        <div className="rounded-xl border border-border bg-card p-6 text-center">
+          <h2 className="text-lg font-semibold text-foreground mb-2">Student Not Found</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            The student with ID <code className="bg-muted px-2 py-1 rounded text-xs">{studentId}</code> could not be found.
+          </p>
+          <Button asChild>
+            <Link href="/admin/students">Back to Students</Link>
+          </Button>
+        </div>
+      </div>
+    )
+  }
 
   const { data: enrollments } = await adminDb
     .from('enrollments')
