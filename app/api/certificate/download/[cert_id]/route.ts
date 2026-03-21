@@ -30,8 +30,9 @@ export async function GET(
       return NextResponse.json({ error: 'Certificate not found' }, { status: 404 })
     }
 
-    // Only allow download of approved certificates
-    if (cert.approval_status !== 'approved') {
+    // Allow download of approved certificates or certificates that don't have approval_status (legacy)
+    // If approval_status exists and is 'pending' or 'rejected', block download
+    if (cert.approval_status === 'pending' || cert.approval_status === 'rejected') {
       return NextResponse.json({ error: 'Certificate not yet approved' }, { status: 403 })
     }
 
