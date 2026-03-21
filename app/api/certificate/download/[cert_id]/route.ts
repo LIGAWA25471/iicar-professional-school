@@ -11,48 +11,29 @@ export async function GET(
 
   try {
     const adminDb = createAdminClient()
-    const { data: cert, error } = await adminDb
+    const { data: certs, error } = await adminDb
       .from('certificates')
       .select(`
-        cert_id, issued_at, final_score, student_id, program_id, 
-        approval_status, approved_at,
+        cert_id, issued_at, final_score, student_id, program_id, certificate_level,
         profiles(full_name), 
-        programs(title),
-        primary_signature_id,
-        secondary_signature_id
+        programs(title)
       `)
       .eq('cert_id', cert_id.toUpperCase())
-      .single()
 
-    if (error || !cert) {
+    if (error) {
+      console.error('[v0] Certificate query error:', error)
       return NextResponse.json({ error: 'Certificate not found' }, { status: 404 })
     }
 
-    // Only allow download of approved certificates
-    if (cert.approval_status !== 'approved') {
-      return NextResponse.json({ error: 'Certificate not yet approved' }, { status: 403 })
+    if (!certs || certs.length === 0) {
+      return NextResponse.json({ error: 'Certificate not found' }, { status: 404 })
     }
 
-    // Fetch signatures if present
-    let primarySignature = null
-    let secondarySignature = null
+    const cert = certs[0]
 
-    if (cert.primary_signature_id) {
-      const { data: sig } = await adminDb
-        .from('admin_signatures')
-        .select('signature_name, signature_title, signature_data')
-        .eq('id', cert.primary_signature_id)
-        .single()
-      primarySignature = sig
-    }
-
-    if (cert.secondary_signature_id) {
-      const { data: sig } = await adminDb
-        .from('admin_signatures')
-        .select('signature_name, signature_title, signature_data')
-        .eq('id', cert.secondary_signature_id)
-        .single()
-      secondarySignature = sig
+    // Only allow download of issued certificates
+    if (!cert.issued_at) {
+      return NextResponse.json({ error: 'Certificate not yet issued' }, { status: 403 })
     }
 
     // Generate PDF using jsPDF
@@ -166,79 +147,29 @@ export async function GET(
     const sigY = 162
     const sigLineY = sigY - 2
 
-    // Primary signature (left side)
-    if (primarySignature) {
-      // Add signature image
-      try {
-        doc.addImage(primarySignature.signature_data, 'PNG', 35, sigY - 18, 40, 15)
-      } catch (sigErr) {
-        console.error('[v0] Error adding primary signature:', sigErr)
-      }
-      
-      // Signature line
-      doc.setDrawColor(100, 100, 100)
-      doc.setLineWidth(0.3)
-      doc.line(30, sigLineY, 80, sigLineY)
-      
-      // Name and title
-      doc.setFont('times', 'bold')
-      doc.setFontSize(10)
-      doc.setTextColor(15, 23, 42)
-      doc.text(primarySignature.signature_name, 55, sigY + 5, { align: 'center' })
-      
-      doc.setFont('times', 'normal')
-      doc.setFontSize(8)
-      doc.setTextColor(100, 100, 100)
-      doc.text(primarySignature.signature_title, 55, sigY + 10, { align: 'center' })
-    } else {
-      // Default primary signature placeholder
-      doc.setDrawColor(100, 100, 100)
-      doc.setLineWidth(0.3)
-      doc.line(30, sigLineY, 80, sigLineY)
-      
-      doc.setFont('times', 'normal')
-      doc.setFontSize(9)
-      doc.setTextColor(100, 100, 100)
-      doc.text('Authorized Signature', 55, sigY + 5, { align: 'center' })
-    }
+    // Primary signature (left side) - Default placeholder
+    doc.setDrawColor(100, 100, 100)
+    doc.setLineWidth(0.3)
+    doc.line(30, sigLineY, 80, sigLineY)
+    
+    doc.setFont('times', 'normal')
+    doc.setFontSize(9)
+    doc.setTextColor(100, 100, 100)
+    doc.text('Authorized Signature', 55, sigY + 5, { align: 'center' })
 
-    // Secondary signature (right side)
-    if (secondarySignature) {
-      // Add signature image
-      try {
-        doc.addImage(secondarySignature.signature_data, 'PNG', pageWidth - 75, sigY - 18, 40, 15)
-      } catch (sigErr) {
-        console.error('[v0] Error adding secondary signature:', sigErr)
-      }
-      
-      // Signature line
-      doc.line(pageWidth - 80, sigLineY, pageWidth - 30, sigLineY)
-      
-      // Name and title
-      doc.setFont('times', 'bold')
-      doc.setFontSize(10)
-      doc.setTextColor(15, 23, 42)
-      doc.text(secondarySignature.signature_name, pageWidth - 55, sigY + 5, { align: 'center' })
-      
-      doc.setFont('times', 'normal')
-      doc.setFontSize(8)
-      doc.setTextColor(100, 100, 100)
-      doc.text(secondarySignature.signature_title, pageWidth - 55, sigY + 10, { align: 'center' })
-    } else {
-      // Default secondary signature (Principal)
-      doc.setDrawColor(100, 100, 100)
-      doc.line(pageWidth - 80, sigLineY, pageWidth - 30, sigLineY)
-      
-      doc.setFont('times', 'bold')
-      doc.setFontSize(10)
-      doc.setTextColor(15, 23, 42)
-      doc.text('Malinar Hellen', pageWidth - 55, sigY + 5, { align: 'center' })
-      
-      doc.setFont('times', 'normal')
-      doc.setFontSize(8)
-      doc.setTextColor(100, 100, 100)
-      doc.text('Principal, IICAR', pageWidth - 55, sigY + 10, { align: 'center' })
-    }
+    // Secondary signature (right side) - Default principal
+    doc.setDrawColor(100, 100, 100)
+    doc.line(pageWidth - 80, sigLineY, pageWidth - 30, sigLineY)
+    
+    doc.setFont('times', 'bold')
+    doc.setFontSize(10)
+    doc.setTextColor(15, 23, 42)
+    doc.text('Malinar Hellen', pageWidth - 55, sigY + 5, { align: 'center' })
+    
+    doc.setFont('times', 'normal')
+    doc.setFontSize(8)
+    doc.setTextColor(100, 100, 100)
+    doc.text('Principal, IICAR', pageWidth - 55, sigY + 10, { align: 'center' })
 
     // Add decorative text at bottom instead of partner logos
     doc.setFont('times', 'italic')
@@ -247,14 +178,19 @@ export async function GET(
     doc.text('COL Standard Aligned | GAOTE Certified | IICAR Standard Approved', pageWidth / 2, pageHeight - 12, { align: 'center' })
 
     // Generate PDF buffer
-    const pdfBuffer = Buffer.from(doc.output('arraybuffer'))
+    const pdfBytes = doc.output('arraybuffer')
+    const pdfBuffer = Buffer.from(pdfBytes)
 
-    // Return as downloadable file
+    // Return as downloadable PDF file with proper headers
     return new NextResponse(pdfBuffer, {
+      status: 200,
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${cert.cert_id}_certificate.pdf"`,
-        'Cache-Control': 'no-cache',
+        'Content-Length': pdfBuffer.length.toString(),
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
       },
     })
   } catch (err) {
