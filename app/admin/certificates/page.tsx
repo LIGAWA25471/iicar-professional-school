@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import RevokeCertButton from '@/components/admin/revoke-cert-button'
 import { CertificateApprovalActions } from '@/components/admin/certificate-approval-actions'
+import ManualCertificateForm from '@/components/admin/manual-certificate-form'
 
 export default async function AdminCertificatesPage() {
   const supabase = await createClient()
@@ -55,11 +56,14 @@ export default async function AdminCertificatesPage() {
             {certificatesWithDetails.length} certificate(s) on file
           </p>
         </div>
-        <Button asChild variant="outline" size="sm">
-          <Link href="/admin/certificates/signatures">
-            <Settings className="h-4 w-4 mr-2" /> Manage Signatures
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <ManualCertificateForm />
+          <Button asChild variant="outline" size="sm">
+            <Link href="/admin/certificates/signatures">
+              <Settings className="h-4 w-4 mr-2" /> Manage Signatures
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* All Certificates Table */}

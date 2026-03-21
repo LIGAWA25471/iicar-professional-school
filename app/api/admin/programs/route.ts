@@ -2,6 +2,28 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
+export async function GET() {
+  try {
+    const adminDb = createAdminClient()
+
+    const { data: programs, error } = await adminDb
+      .from('programs')
+      .select('id, title')
+      .eq('is_published', true)
+      .order('title', { ascending: true })
+
+    if (error) {
+      console.error('[v0] Programs fetch error:', error)
+      return NextResponse.json([], { status: 500 })
+    }
+
+    return NextResponse.json(programs || [])
+  } catch (err) {
+    console.error('[v0] Get programs error:', err)
+    return NextResponse.json([], { status: 500 })
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const supabase = await createClient()
