@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Users, ChevronRight } from 'lucide-react'
+import IssueCertificateModal from '@/components/admin/issue-certificate-modal'
 
 export default async function AdminStudentsPage({
   searchParams,
@@ -20,7 +21,7 @@ export default async function AdminStudentsPage({
 
   let query = adminDb
     .from('profiles')
-    .select('id, full_name, country, phone, created_at, is_admin')
+    .select('id, full_name, email, country, phone, created_at, is_admin')
     .eq('is_admin', false)
     .order('created_at', { ascending: false })
 
@@ -50,7 +51,7 @@ export default async function AdminStudentsPage({
               <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Name</th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Country</th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Joined</th>
-              <th className="px-6 py-3 text-right text-xs font-semibold text-muted-foreground uppercase">Details</th>
+              <th className="px-6 py-3 text-right text-xs font-semibold text-muted-foreground uppercase">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -61,7 +62,12 @@ export default async function AdminStudentsPage({
                 </td>
                 <td className="px-6 py-4 text-muted-foreground">{s.country ?? '—'}</td>
                 <td className="px-6 py-4 text-muted-foreground">{new Date(s.created_at).toLocaleDateString()}</td>
-                <td className="px-6 py-4 text-right">
+                <td className="px-6 py-4 text-right flex items-center justify-end gap-2">
+                  <IssueCertificateModal
+                    studentId={s.id}
+                    studentName={s.full_name ?? 'Student'}
+                    studentEmail={s.email}
+                  />
                   <Button asChild variant="ghost" size="sm" className="text-xs">
                     <Link href={`/admin/students/${s.id}`}><ChevronRight className="h-4 w-4" /></Link>
                   </Button>
