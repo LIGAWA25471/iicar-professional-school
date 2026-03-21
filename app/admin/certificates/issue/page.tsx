@@ -14,11 +14,11 @@ export default async function AdminIssueCertificatePage() {
   const adminDb = createAdminClient()
   const { data: profile } = await adminDb
     .from('profiles')
-    .select('role')
+    .select('is_admin')
     .eq('id', user.id)
     .single()
 
-  if (profile?.role !== 'admin') {
+  if (!profile || profile.is_admin !== true) {
     redirect('/dashboard')
   }
 
