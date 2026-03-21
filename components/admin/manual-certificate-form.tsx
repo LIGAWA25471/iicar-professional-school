@@ -34,6 +34,7 @@ export default function ManualCertificateForm({ onSuccess }: ManualCertificateFo
   const [programs, setPrograms] = useState<any[]>([])
   const [selectedProgram, setSelectedProgram] = useState<string>('')
   const [score, setScore] = useState('')
+  const [certificateLevel, setCertificateLevel] = useState(1)
   const [loadingPrograms, setLoadingPrograms] = useState(false)
   
   const [issuingCert, setIssuingCert] = useState(false)
@@ -102,7 +103,7 @@ export default function ManualCertificateForm({ onSuccess }: ManualCertificateFo
           studentId: selectedStudent.id,
           programId: selectedProgram,
           finalScore: scoreNum,
-          certificateLevel: 1,
+          certificateLevel: certificateLevel,
         }),
       })
 
@@ -156,6 +157,7 @@ export default function ManualCertificateForm({ onSuccess }: ManualCertificateFo
       setSelectedStudent(null)
       setSelectedProgram('')
       setScore('')
+      setCertificateLevel(1)
       setError(null)
       setSuccess(false)
     }
@@ -296,6 +298,22 @@ export default function ManualCertificateForm({ onSuccess }: ManualCertificateFo
                   />
                 </div>
 
+                <div>
+                  <Label htmlFor="level" className="text-sm">Certificate Level</Label>
+                  <select
+                    id="level"
+                    value={certificateLevel}
+                    onChange={(e) => setCertificateLevel(parseInt(e.target.value))}
+                    className="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-background text-sm"
+                  >
+                    <option value={1}>Level 1: Foundation</option>
+                    <option value={2}>Level 2: Intermediate</option>
+                    <option value={3}>Level 3: Advanced</option>
+                    <option value={4}>Level 4: Professional</option>
+                    <option value={5}>Level 5: Expert</option>
+                  </select>
+                </div>
+
                 {error && (
                   <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
@@ -342,6 +360,10 @@ export default function ManualCertificateForm({ onSuccess }: ManualCertificateFo
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Score:</span>
                   <span className="font-medium">{score}%</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Level:</span>
+                  <span className="font-medium">Level {certificateLevel}: {['Foundation', 'Intermediate', 'Advanced', 'Professional', 'Expert'][certificateLevel - 1]}</span>
                 </div>
               </div>
 

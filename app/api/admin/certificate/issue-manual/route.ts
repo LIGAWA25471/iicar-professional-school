@@ -25,24 +25,26 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { studentId, programId, certificateLevel } = body
+    const { studentId, programId, finalScore, certificateLevel } = body
 
-    if (!studentId || !programId || !certificateLevel) {
+    if (!studentId || !programId || finalScore === undefined || !certificateLevel) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
     // Generate certificate ID
     const certId = `IICAR-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 10).toUpperCase()}`
 
-    // Create certificate
+    // Create certificate with all fields
     const { data: cert, error: certError } = await adminDb
       .from('certificates')
       .insert({
         student_id: studentId,
         program_id: programId,
         cert_id: certId,
-        final_score: null,
+        final_score: parseInt(finalScore),
+        certificate_level: certificateLevel,
         issued_at: new Date().toISOString(),
+        revoked: false,
       })
       .select()
       .single()
