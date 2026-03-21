@@ -50,6 +50,7 @@ export async function GET(request: Request) {
 
     if (search) {
       // Search students by name or email
+      console.log('[v0] Searching for:', search)
       const { data: profiles, error: profilesError } = await adminDb
         .from('profiles')
         .select('id, full_name, email')
@@ -57,65 +58,130 @@ export async function GET(request: Request) {
         .limit(10)
 
       if (profilesError) {
+        console.error('[v0] Profile search error:', profilesError)
         throw new Error(profilesError.message)
       }
+
+      console.log('[v0] Found profiles:', profiles?.length)
 
       // For each student, get their enrollments
       const profilesWithEnrollments = await Promise.all(
         (profiles || []).map(async (profile) => {
-          const { data: enrollments } = await adminDb
-            .from('enrollments')
-            .select('id, program_id, status, programs(title)')
-            .eq('student_id', profile.id)
+          try {
+            const { data: enrollments, error: enrollError } = await adminDb
+              .from('enrollments')
+              .select('id, status, program_id, programs(title)')
+              .eq('student_id', profile.id)
 
-          return {
-            ...profile,
-            enrollments: enrollments || [],
+            if (enrollError) {
+              console.error('[v0] Enrollment fetch error for', profile.id, ':', enrollError)
+              return {
+                ...profile,
+                enrollments: [],
+              }
+            }
+
+            // Get certificate info for each enrollment
+            const enrollmentsWithCerts = await Promise.all(
+              (enrollments || []).map(async (enrollment: any) => {
+                const { data: cert } = await adminDb
+                  .from('certificates')
+                  .select('id, cert_id, certificate_level, issued_at')
+                  .eq('student_id', profile.id)
+                  .eq('program_id', enrollment.program_id)
+                  .single()
+
+                return {
+                  ...enrollment,
+                  existingCertificate: cert,
+                }
+              })
+            )
+
+            return {
+              ...profile,
+              enrollments: enrollmentsWithCerts || [],
+            }
+          } catch (err) {
+            console.error('[v0] Error processing profile:', err)
+            return {
+              ...profile,
+              enrollments: [],
+            }
           }
         })
       )
 
+      console.log('[v0] Returning profiles with enrollments:', profilesWithEnrollments.length)
       return NextResponse.json(profilesWithEnrollments)
     }
 
-    // Get all completed/active enrollments with student details
+    // Get all active/completed enrollments with student details
+    console.log('[v0] Fetching all active/completed enrollments')
     const { data: enrollments, error: enrollmentsError } = await adminDb
       .from('enrollments')
-      .select(`
-        id,
-        status,
-        created_at,
-        student_id,
-        program_id,
-        profiles(full_name, email),
-        programs(title)
-      `)
+      .select('id, status, student_id, program_id, created_at')
       .in('status', ['active', 'completed'])
-      .limit(50)
       .order('created_at', { ascending: false })
+      .limit(100)
 
     if (enrollmentsError) {
+      console.error('[v0] Enrollments fetch error:', enrollmentsError)
       throw new Error(enrollmentsError.message)
     }
 
-    // Get certificate info for each enrollment
-    const enrollmentsWithCerts = await Promise.all(
-      (enrollments || []).map(async (enrollment: any) => {
-        const { data: cert } = await adminDb
-          .from('certificates')
-          .select('id, cert_id, certificate_level, issued_at')
-          .eq('student_id', enrollment.student_id)
-          .eq('program_id', enrollment.program_id)
+    console.log('[v0] Found enrollments:', enrollments?.length)
+
+    // Group enrollments by student and fetch profile + program info
+    const studentMap = new Map()
+    
+    for (const enrollment of enrollments || []) {
+      if (!studentMap.has(enrollment.student_id)) {
+        // Fetch student profile
+        const { data: profile, error: profileError } = await adminDb
+          .from('profiles')
+          .select('id, full_name, email')
+          .eq('id', enrollment.student_id)
           .single()
 
-        return {
-          ...enrollment,
-          existingCertificate: cert,
+        if (!profileError && profile) {
+          studentMap.set(enrollment.student_id, {
+            ...profile,
+            enrollments: [],
+          })
         }
-      })
-    )
+      }
 
-    return NextResponse.json(enrollmentsWithCerts)
+      // Fetch program info
+      const { data: program } = await adminDb
+        .from('programs')
+        .select('id, title')
+        .eq('id', enrollment.program_id)
+        .single()
+
+      // Fetch certificate info
+      const { data: cert } = await adminDb
+        .from('certificates')
+        .select('id, cert_id, certificate_level, issued_at')
+        .eq('student_id', enrollment.student_id)
+        .eq('program_id', enrollment.program_id)
+        .single()
+
+      const student = studentMap.get(enrollment.student_id)
+      if (student) {
+        student.enrollments.push({
+          id: enrollment.id,
+          status: enrollment.status,
+          program_id: enrollment.program_id,
+          programs: program,
+          existingCertificate: cert,
+        })
+      }
+    }
+
+    const result = Array.from(studentMap.values())
+    console.log('[v0] Returning students:', result.length)
+    return NextResponse.json(result)
   } catch (error) {
     console.error('[v0] Error fetching enrollments:', error)
     return NextResponse.json(

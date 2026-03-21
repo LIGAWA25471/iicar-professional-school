@@ -43,18 +43,26 @@ export function IssueCertificateForm() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
+  // SWR fetcher that parses JSON
+  const fetcher = async (url: string) => {
+    const res = await fetch(url)
+    if (!res.ok) {
+      console.error('[v0] Fetch error:', res.status, res.statusText)
+      throw new Error(`Failed to fetch: ${res.status}`)
+    }
+    return res.json()
+  }
+
   // Search students
-  const { data: searchResults, isLoading: isSearching } = useSWR(
+  const { data: searchResults, isLoading: isSearching, error: searchError } = useSWR(
     searchQuery ? `/api/admin/enrollments/search?search=${encodeURIComponent(searchQuery)}` : null,
-    fetch
+    fetcher
   )
 
-  // Get specific enrollment details
-  const { data: enrollmentDetails } = useSWR(
-    selectedStudentId && selectedProgramId
-      ? `/api/admin/enrollments/search?studentId=${selectedStudentId}&programId=${selectedProgramId}`
-      : null,
-    fetch
+  // Get all enrollments on initial load
+  const { data: allEnrollments, isLoading: isLoadingAll } = useSWR(
+    '/api/admin/enrollments/search',
+    fetcher
   )
 
   const handleIssue = useCallback(async () => {
@@ -96,13 +104,19 @@ export function IssueCertificateForm() {
     }
   }, [selectedStudentId, selectedProgramId, selectedLevel])
 
-  const selectedStudent = searchResults?.find((s: any) => s.id === selectedStudentId)
+  const selectedStudent = (searchResults || allEnrollments)?.find?.((s: any) => s.id === selectedStudentId)
+  
+  // Use search results if available, otherwise use all enrollments
+  const displayedData = searchQuery ? searchResults : allEnrollments
+  const isLoading = searchQuery ? isSearching : isLoadingAll
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold mb-4">Search & Issue Certificate</h2>
-        <p className="text-sm text-muted-foreground">Search for a student to manually issue a certificate</p>
+        <h2 className="text-lg font-semibold mb-2">Search & Issue Certificate</h2>
+        <p className="text-sm text-muted-foreground">
+          All active and completed enrollments are displayed below. Search to filter by student name or email, or select directly from the list.
+        </p>
       </div>
 
       {/* Success Alert */}
@@ -139,15 +153,15 @@ export function IssueCertificateForm() {
             />
           </div>
 
-          {isSearching && (
+          {isLoading && (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           )}
 
-          {searchQuery && !isSearching && searchResults && searchResults.length > 0 && (
-            <div className="space-y-2 max-h-64 overflow-y-auto border border-border rounded-lg p-2">
-              {searchResults.map((student: any) => (
+          {!isLoading && displayedData && displayedData.length > 0 && (
+            <div className="space-y-2 max-h-96 overflow-y-auto border border-border rounded-lg p-2">
+              {displayedData.map((student: any) => (
                 <div key={student.id} className="space-y-2">
                   <button
                     onClick={() => setSelectedStudentId(student.id)}
@@ -173,10 +187,23 @@ export function IssueCertificateForm() {
                               : 'hover:bg-muted'
                           }`}
                         >
-                          <p className="font-medium">{enrollment.programs.title}</p>
-                          <Badge variant="outline" className="mt-1 text-xs">
-                            {enrollment.status}
-                          </Badge>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium">{enrollment.programs?.title || 'Unknown Program'}</p>
+                              <Badge variant="outline" className="mt-1 text-xs">
+                                {enrollment.status === 'completed' ? (
+                                  <><CheckCircle className="h-3 w-3 mr-1" /> Completed</>
+                                ) : (
+                                  <><Clock className="h-3 w-3 mr-1" /> {enrollment.status}</>
+                                )}
+                              </Badge>
+                            </div>
+                            {enrollment.existingCertificate && (
+                              <Badge className="ml-2 bg-green-100 text-green-700">
+                                Cert L{enrollment.existingCertificate.certificate_level}
+                              </Badge>
+                            )}
+                          </div>
                         </button>
                       ))}
                     </div>
@@ -186,8 +213,17 @@ export function IssueCertificateForm() {
             </div>
           )}
 
-          {searchQuery && !isSearching && searchResults && searchResults.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-4">No students found</p>
+          {!isLoading && displayedData && displayedData.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              {searchQuery ? 'No students found' : 'No active or completed enrollments available'}
+            </p>
+          )}
+
+          {searchError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>Error loading students: {searchError.message}</AlertDescription>
+            </Alert>
           )}
 
           {selectedStudent && selectedProgramId && (
