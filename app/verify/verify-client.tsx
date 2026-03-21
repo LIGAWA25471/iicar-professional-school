@@ -14,8 +14,9 @@ interface CertResult {
   issued_at: string
   final_score: number
   revoked: boolean
+  certificate_level?: number
   profiles: { full_name: string; country: string }
-  programs: { title: string; level: string }
+  programs: { title: string }
 }
 
 export default function VerifyClient() {
@@ -116,16 +117,22 @@ export default function VerifyClient() {
                   </div>
                 </div>
 
-                <div>
-                  <p className="text-xs font-medium text-gray-500 uppercase mb-1">Program</p>
-                  <p className="text-sm font-medium text-gray-900">{result.programs?.title || 'N/A'}</p>
-                  <p className="text-xs text-gray-600">{result.programs?.level || ''}</p>
-                </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500 uppercase mb-1">Program</p>
+                <p className="text-sm font-medium text-gray-900">{result.programs?.title || 'N/A'}</p>
+              </div>
 
-                <div>
-                  <p className="text-xs font-medium text-gray-500 uppercase mb-1">Final Score</p>
-                  <p className="text-2xl font-bold text-green-600">{result.final_score}%</p>
-                </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500 uppercase mb-1">Certificate Level</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {result.certificate_level ? `Level ${result.certificate_level}: ${['Foundation', 'Intermediate', 'Advanced', 'Professional', 'Expert'][result.certificate_level - 1]}` : 'N/A'}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-xs font-medium text-gray-500 uppercase mb-1">Final Score</p>
+                <p className="text-2xl font-bold text-green-600">{result.final_score}%</p>
+              </div>
 
                 {result.revoked && (
                   <div className="bg-red-50 border border-red-200 rounded p-3 mt-4">
