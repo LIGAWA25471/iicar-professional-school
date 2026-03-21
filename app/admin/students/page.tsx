@@ -21,7 +21,7 @@ export default async function AdminStudentsPage({
 
   let query = adminDb
     .from('profiles')
-    .select('id, full_name, email, country, phone, created_at, is_admin')
+    .select('id, full_name, country, phone, created_at, is_admin')
     .eq('is_admin', false)
     .order('created_at', { ascending: false })
 
@@ -66,7 +66,7 @@ export default async function AdminStudentsPage({
                   <IssueCertificateModal
                     studentId={s.id}
                     studentName={s.full_name ?? 'Student'}
-                    studentEmail={s.email}
+                    studentEmail={s.id}
                   />
                   <Button asChild variant="ghost" size="sm" className="text-xs">
                     <Link href={`/admin/students/${s.id}`}><ChevronRight className="h-4 w-4" /></Link>
