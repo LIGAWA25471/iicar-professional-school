@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ChevronLeft, Award } from 'lucide-react'
 import AdminManualEnrollModal from '@/components/admin/manual-enroll-modal'
+import IssueCertFromEnrollment from '@/components/admin/issue-cert-from-enrollment'
 
 export default async function AdminStudentDetailPage({ params }: { params: Promise<{ studentId: string }> }) {
   const { studentId } = await params
@@ -16,7 +17,7 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
 
   const { data: profile } = await adminDb
     .from('profiles')
-    .select('id, full_name, country, phone, created_at')
+    .select('id, full_name, email, country, phone, created_at')
     .eq('id', studentId)
     .single()
   if (!profile) notFound()
@@ -70,6 +71,7 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
                 <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Program</th>
                 <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Status</th>
                 <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Enrolled</th>
+                <th className="px-5 py-3 text-right text-xs font-semibold text-muted-foreground uppercase">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -89,11 +91,21 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
                     <td className="px-5 py-3 text-muted-foreground">
                       {e.enrolled_at ? new Date(e.enrolled_at).toLocaleDateString() : '—'}
                     </td>
+                    <td className="px-5 py-3 text-right">
+                      <IssueCertFromEnrollment
+                        studentId={studentId}
+                        studentName={profile.full_name ?? 'Student'}
+                        studentEmail={profile.email ?? ''}
+                        enrollmentId={e.id}
+                        programId={e.program_id}
+                        enrollmentStatus={e.status}
+                      />
+                    </td>
                   </tr>
                 )
               })}
               {(!enrollments || enrollments.length === 0) && (
-                <tr><td colSpan={3} className="px-5 py-6 text-center text-muted-foreground text-sm">No enrollments yet</td></tr>
+                <tr><td colSpan={4} className="px-5 py-6 text-center text-muted-foreground text-sm">No enrollments yet</td></tr>
               )}
             </tbody>
           </table>

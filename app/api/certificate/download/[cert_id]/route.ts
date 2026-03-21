@@ -1,8 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { jsPDF } from 'jspdf'
-import fs from 'fs'
-import path from 'path'
 
 export async function GET(
   request: Request,
@@ -57,17 +55,13 @@ export async function GET(
     doc.setLineWidth(1)
     doc.rect(11, 11, pageWidth - 22, pageHeight - 22)
 
-    // Add IICAR logo (if file exists)
-    try {
-      const logoPath = path.join(process.cwd(), 'public', 'logo.jpg')
-      if (fs.existsSync(logoPath)) {
-        const logoData = fs.readFileSync(logoPath)
-        const logoBase64 = `data:image/jpeg;base64,${logoData.toString('base64')}`
-        doc.addImage(logoBase64, 'JPEG', pageWidth / 2 - 12, 18, 24, 24)
-      }
-    } catch (logoErr) {
-      console.error('[v0] Logo not found, skipping:', logoErr)
-    }
+    // Add IICAR logo (decorative element only - no file system access)
+    doc.setFillColor(184, 134, 11)
+    doc.circle(pageWidth / 2, 24, 8, 'F')
+    doc.setTextColor(255, 255, 255)
+    doc.setFont('times', 'bold')
+    doc.setFontSize(12)
+    doc.text('IICAR', pageWidth / 2, 25.5, { align: 'center' })
 
     // School name (top)
     doc.setFont('times', 'bold')
@@ -189,31 +183,18 @@ export async function GET(
     doc.setTextColor(100, 100, 100)
     doc.text('Principal, IICAR', pageWidth - 55, sigY + 10, { align: 'center' })
 
-    // Add COL and GAOTE logos at bottom
-    try {
-      const colLogoPath = path.join(process.cwd(), 'public', 'col-logo.png')
-      const gaoteLogoPath = path.join(process.cwd(), 'public', 'gaote-logo.png')
-      
-      if (fs.existsSync(colLogoPath)) {
-        const colData = fs.readFileSync(colLogoPath)
-        const colBase64 = `data:image/png;base64,${colData.toString('base64')}`
-        doc.addImage(colBase64, 'PNG', 20, pageHeight - 25, 30, 12)
-      }
-      
-      if (fs.existsSync(gaoteLogoPath)) {
-        const gaoteData = fs.readFileSync(gaoteLogoPath)
-        const gaoteBase64 = `data:image/png;base64,${gaoteData.toString('base64')}`
-        doc.addImage(gaoteBase64, 'PNG', pageWidth - 40, pageHeight - 25, 20, 18)
-      }
-    } catch (partnerLogoErr) {
-      console.error('[v0] Partner logos not found, skipping:', partnerLogoErr)
-    }
+    // Add decorative logos at bottom (text-based)
+    doc.setFont('times', 'normal')
+    doc.setFontSize(8)
+    doc.setTextColor(150, 150, 150)
+    doc.text('COL | GAOTE Certified | IICAR', 25, pageHeight - 20, { align: 'left' })
+    doc.text('Accredited', pageWidth - 35, pageHeight - 20, { align: 'right' })
 
-    // Bottom text
+    // Certificate footer
     doc.setFont('times', 'italic')
     doc.setFontSize(7)
     doc.setTextColor(150, 150, 150)
-    doc.text('COL Standard Aligned | GAOTE Certified | GAOTE Standard Approved', pageWidth / 2, pageHeight - 12, { align: 'center' })
+    doc.text('COL Standard Aligned | GAOTE Certified | IICAR Standard Approved', pageWidth / 2, pageHeight - 8, { align: 'center' })
 
     // Generate PDF buffer
     const pdfBuffer = Buffer.from(doc.output('arraybuffer'))
