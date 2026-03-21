@@ -110,6 +110,15 @@ export function IssueCertificateForm() {
   const displayedData = searchQuery ? searchResults : allEnrollments
   const isLoading = searchQuery ? isSearching : isLoadingAll
 
+  console.log('[v0] Form state:', {
+    searchQuery,
+    displayedData: displayedData?.length,
+    isLoading,
+    allEnrollments: allEnrollments?.length,
+    searchResults: searchResults?.length,
+    selectedStudentId,
+  })
+
   return (
     <div className="space-y-6">
       <div>
@@ -156,10 +165,11 @@ export function IssueCertificateForm() {
           {isLoading && (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-sm text-muted-foreground">Loading enrollments...</span>
             </div>
           )}
 
-          {!isLoading && displayedData && displayedData.length > 0 && (
+          {!isLoading && displayedData && Array.isArray(displayedData) && displayedData.length > 0 && (
             <div className="space-y-2 max-h-96 overflow-y-auto border border-border rounded-lg p-2">
               {displayedData.map((student: any) => (
                 <div key={student.id} className="space-y-2">
@@ -213,10 +223,11 @@ export function IssueCertificateForm() {
             </div>
           )}
 
-          {!isLoading && displayedData && displayedData.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              {searchQuery ? 'No students found' : 'No active or completed enrollments available'}
-            </p>
+          {!isLoading && (!displayedData || (Array.isArray(displayedData) && displayedData.length === 0)) && (
+            <div className="text-center py-6 text-sm text-muted-foreground border border-dashed border-border rounded-lg">
+              <Clock className="h-6 w-6 mx-auto mb-2 opacity-50" />
+              {searchQuery ? 'No students found matching your search' : 'No active or completed enrollments available'}
+            </div>
           )}
 
           {searchError && (
