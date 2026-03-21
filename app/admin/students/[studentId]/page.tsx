@@ -24,13 +24,13 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
 
   const { data: enrollments } = await adminDb
     .from('enrollments')
-    .select('id, status, enrolled_at, completed_at, programs(title)')
+    .select('id, status, enrolled_at, completed_at, program_id, programs(title)')
     .eq('student_id', studentId)
     .order('enrolled_at', { ascending: false })
 
   const { data: certificates } = await adminDb
     .from('certificates')
-    .select('id, cert_id, issued_at, final_score, revoked, programs(title)')
+    .select('id, cert_id, issued_at, final_score, revoked, certificate_level, program_id, programs(title)')
     .eq('student_id', studentId)
     .order('issued_at', { ascending: false })
 
@@ -117,6 +117,8 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
         <div className="flex flex-col gap-3">
           {certificates?.map((cert) => {
             const program = cert.programs as { title: string } | null
+            const LEVEL_NAMES = ['Foundation', 'Intermediate', 'Advanced', 'Professional', 'Expert']
+            const levelName = LEVEL_NAMES[(cert.certificate_level || 1) - 1]
             return (
               <div key={cert.id} className="flex items-center justify-between rounded-xl border border-border bg-card p-4">
                 <div className="flex items-center gap-3">
@@ -128,7 +130,8 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
                 </div>
                 <div className="flex items-center gap-3">
                   {cert.revoked && <Badge variant="destructive" className="text-xs">Revoked</Badge>}
-                  <span className="text-xs text-muted-foreground">{cert.final_score}%</span>
+                  {cert.issued_at && <Badge className="text-xs bg-green-100 text-green-700">Level {cert.certificate_level || 1}: {levelName}</Badge>}
+                  <span className="text-xs text-muted-foreground">{cert.final_score || '—'}%</span>
                 </div>
               </div>
             )
