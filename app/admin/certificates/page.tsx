@@ -14,16 +14,19 @@ export default async function AdminCertificatesPage() {
 
   const adminDb = createAdminClient()
 
-  // Get pending certificates first, then approved ones
-  // Note: These columns come from the original schema + the approval workflow migration
+  // Query only columns that exist in the original schema
+  // pending = issued_at is NULL
+  // approved = issued_at is NOT NULL
   const { data: certs, error: certsError } = await adminDb
     .from('certificates')
-    .select('id, cert_id, issued_at, final_score, revoked, student_id, program_id, approval_status, created_at')
-    .order('created_at', { ascending: false })
+    .select('id, cert_id, issued_at, final_score, revoked, student_id, program_id')
+    .order('issued_at', { ascending: true }) // Pending (NULL) first, then issued in order
 
   if (certsError) {
     console.error('[v0] Certificate fetch error:', certsError)
   }
+
+  console.log('[v0] Fetched certificates:', certs?.length || 0)
 
   // Fetch related data separately to avoid foreign key issues
   const certificatesWithDetails = await Promise.all(
@@ -41,8 +44,10 @@ export default async function AdminCertificatesPage() {
   )
 
   // Separate pending from issued certificates
-  const pendingCerts = certificatesWithDetails.filter(c => !c.issued_at || c.approval_status === 'pending')
-  const issuedCerts = certificatesWithDetails.filter(c => c.issued_at && c.approval_status !== 'pending')
+  // Pending: issued_at is null
+  // Issued: issued_at is not null
+  const pendingCerts = certificatesWithDetails.filter(c => c.issued_at === null)
+  const issuedCerts = certificatesWithDetails.filter(c => c.issued_at !== null)
 
   // Get available signatures
   const { data: signatures } = await adminDb
@@ -141,9 +146,9 @@ export default async function AdminCertificatesPage() {
                         <Badge variant="destructive" className="text-xs">
                           <XCircle className="h-3 w-3 mr-1" /> Revoked
                         </Badge>
-                      ) : !cert.issued_at || cert.approval_status === 'pending' ? (
+                      ) : cert.issued_at === null ? (
                         <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700 border-amber-200">
-                          <Clock className="h-3 w-3 mr-1" /> Pending
+                          <Clock className="h-3 w-3 mr-1" /> Pending Review
                         </Badge>
                       ) : (
                         <Badge variant="default" className="text-xs bg-green-100 text-green-700 border-green-200">
@@ -165,9 +170,9 @@ export default async function AdminCertificatesPage() {
                           <RevokeCertButton certId={cert.id} />
                         </>
                       )}
-                      {(!cert.issued_at || cert.approval_status === 'pending') && (
+                      {cert.issued_at === null && (
                         <Button asChild size="sm" className="text-xs bg-amber-600 hover:bg-amber-700">
-                          <Link href={`/admin/certificates/${cert.id}/approve`}>Review</Link>
+                          <Link href={`/admin/certificates/${cert.id}/approve`}>Review & Sign</Link>
                         </Button>
                       )}
                     </td>

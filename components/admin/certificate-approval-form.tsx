@@ -14,11 +14,9 @@ interface Certificate {
   final_score: number
   student_id: string
   program_id: string
-  approval_status: string
-  created_at: string
   issued_at: string | null
-  profiles: { id: string; full_name: string; email: string; phone: string; country: string } | null
-  programs: { id: string; title: string; description: string } | null
+  profiles: { id: string; full_name: string; email: string; phone?: string; country?: string } | null
+  programs: { id: string; title: string; description?: string } | null
 }
 
 interface Signature {

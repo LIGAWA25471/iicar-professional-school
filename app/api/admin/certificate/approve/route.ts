@@ -39,31 +39,34 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Certificate ID required' }, { status: 400 })
   }
 
-  // Get the certificate
+  // Get the certificate - only query columns that exist
   const { data: cert, error: certError } = await adminDb
     .from('certificates')
-    .select('id, cert_id, student_id, program_id, approval_status, profiles(full_name, id), programs(title)')
+    .select('id, cert_id, student_id, program_id, issued_at')
     .eq('id', certificateId)
     .single()
 
   if (certError || !cert) {
+    console.error('[v0] Certificate fetch error:', certError)
     return NextResponse.json({ error: 'Certificate not found' }, { status: 404 })
   }
 
-  if (cert.approval_status === 'approved') {
-    return NextResponse.json({ error: 'Certificate already approved' }, { status: 400 })
+  // Check if already issued
+  if (cert.issued_at !== null) {
+    return NextResponse.json({ error: 'Certificate already issued' }, { status: 400 })
   }
 
-  // Update certificate to approved status
+  // Get student and program details separately
+  const [{ data: studentProfile }, { data: program }] = await Promise.all([
+    adminDb.from('profiles').select('full_name, email').eq('id', cert.student_id).single(),
+    adminDb.from('programs').select('title').eq('id', cert.program_id).single(),
+  ])
+
+  // Update certificate to issued status
   const { error: updateError } = await adminDb
     .from('certificates')
     .update({
-      approval_status: 'approved',
-      approved_at: new Date().toISOString(),
-      approved_by: user.id,
       issued_at: new Date().toISOString(),
-      primary_signature_id: primarySignatureId || null,
-      secondary_signature_id: secondarySignatureId || null,
     })
     .eq('id', certificateId)
 
@@ -72,22 +75,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to approve certificate' }, { status: 500 })
   }
 
-  // Get student email for notification
-  const { data: studentAuth } = await adminDb.auth.admin.getUserById(cert.student_id)
-  
-  if (studentAuth?.user?.email) {
-    const profile = cert.profiles as { full_name: string } | null
-    const program = cert.programs as { title: string } | null
-    
+  console.log('[v0] Certificate approved:', cert.cert_id)
+
+  // Send notification to student
+  if (studentProfile?.email) {
     const certificatePdfUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://iicar.org'}/api/certificate/download/${cert.cert_id}`
-    
     await sendCertificateNotification(
-      studentAuth.user.email,
-      profile?.full_name || 'Student',
+      studentProfile.email,
+      studentProfile.full_name || 'Student',
       program?.title || 'Program',
       certificatePdfUrl
     )
   }
 
-  return NextResponse.json({ success: true, message: 'Certificate approved successfully' })
+  return NextResponse.json({ success: true, cert_id: cert.cert_id })
 }

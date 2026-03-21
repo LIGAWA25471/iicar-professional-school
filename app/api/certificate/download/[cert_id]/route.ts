@@ -15,14 +15,7 @@ export async function GET(
     const adminDb = createAdminClient()
     const { data: cert, error } = await adminDb
       .from('certificates')
-      .select(`
-        cert_id, issued_at, final_score, student_id, program_id, 
-        approval_status, approved_at,
-        profiles(full_name), 
-        programs(title),
-        primary_signature_id,
-        secondary_signature_id
-      `)
+      .select('cert_id, issued_at, final_score, student_id, program_id, revoked')
       .eq('cert_id', cert_id.toUpperCase())
       .single()
 
@@ -30,33 +23,16 @@ export async function GET(
       return NextResponse.json({ error: 'Certificate not found' }, { status: 404 })
     }
 
-    // Allow download of approved certificates or certificates that don't have approval_status (legacy)
-    // If approval_status exists and is 'pending' or 'rejected', block download
-    if (cert.approval_status === 'pending' || cert.approval_status === 'rejected') {
-      return NextResponse.json({ error: 'Certificate not yet approved' }, { status: 403 })
+    // Only allow download of issued certificates (issued_at is not null)
+    if (cert.issued_at === null) {
+      return NextResponse.json({ error: 'Certificate not yet issued' }, { status: 403 })
     }
 
-    // Fetch signatures if present
-    let primarySignature = null
-    let secondarySignature = null
-
-    if (cert.primary_signature_id) {
-      const { data: sig } = await adminDb
-        .from('admin_signatures')
-        .select('signature_name, signature_title, signature_data')
-        .eq('id', cert.primary_signature_id)
-        .single()
-      primarySignature = sig
-    }
-
-    if (cert.secondary_signature_id) {
-      const { data: sig } = await adminDb
-        .from('admin_signatures')
-        .select('signature_name, signature_title, signature_data')
-        .eq('id', cert.secondary_signature_id)
-        .single()
-      secondarySignature = sig
-    }
+    // Fetch student and program details
+    const [{ data: studentData }, { data: programData }] = await Promise.all([
+      adminDb.from('profiles').select('full_name').eq('id', cert.student_id).single(),
+      adminDb.from('programs').select('title').eq('id', cert.program_id).single(),
+    ])
 
     // Generate PDF using jsPDF
     const doc = new jsPDF({
@@ -125,9 +101,7 @@ export async function GET(
     doc.setFont('times', 'bold')
     doc.setFontSize(20)
     doc.setTextColor(15, 23, 42)
-    const studentName = cert.profiles && typeof cert.profiles === 'object' && 'full_name' in cert.profiles 
-      ? cert.profiles.full_name 
-      : 'Unknown Student'
+    const studentName = studentData?.full_name || 'Valued Graduate'
     doc.text(studentName, pageWidth / 2, 102, { align: 'center' })
 
     // Body text continued
@@ -140,9 +114,7 @@ export async function GET(
     doc.setFont('times', 'bold')
     doc.setFontSize(14)
     doc.setTextColor(15, 23, 42)
-    const programTitle = cert.programs && typeof cert.programs === 'object' && 'title' in cert.programs
-      ? cert.programs.title
-      : 'Professional Development'
+    const programTitle = programData?.title || 'Professional Development'
     doc.text(programTitle, pageWidth / 2, 125, { align: 'center' })
 
     // Score and date
@@ -173,79 +145,28 @@ export async function GET(
     const sigY = 162
     const sigLineY = sigY - 2
 
-    // Primary signature (left side)
-    if (primarySignature) {
-      // Add signature image
-      try {
-        doc.addImage(primarySignature.signature_data, 'PNG', 35, sigY - 18, 40, 15)
-      } catch (sigErr) {
-        console.error('[v0] Error adding primary signature:', sigErr)
-      }
-      
-      // Signature line
-      doc.setDrawColor(100, 100, 100)
-      doc.setLineWidth(0.3)
-      doc.line(30, sigLineY, 80, sigLineY)
-      
-      // Name and title
-      doc.setFont('times', 'bold')
-      doc.setFontSize(10)
-      doc.setTextColor(15, 23, 42)
-      doc.text(primarySignature.signature_name, 55, sigY + 5, { align: 'center' })
-      
-      doc.setFont('times', 'normal')
-      doc.setFontSize(8)
-      doc.setTextColor(100, 100, 100)
-      doc.text(primarySignature.signature_title, 55, sigY + 10, { align: 'center' })
-    } else {
-      // Default primary signature placeholder
-      doc.setDrawColor(100, 100, 100)
-      doc.setLineWidth(0.3)
-      doc.line(30, sigLineY, 80, sigLineY)
-      
-      doc.setFont('times', 'normal')
-      doc.setFontSize(9)
-      doc.setTextColor(100, 100, 100)
-      doc.text('Authorized Signature', 55, sigY + 5, { align: 'center' })
-    }
+    // Primary signature (left side) - Default authorized signature
+    doc.setDrawColor(100, 100, 100)
+    doc.setLineWidth(0.3)
+    doc.line(30, sigLineY, 80, sigLineY)
+    
+    doc.setFont('times', 'normal')
+    doc.setFontSize(9)
+    doc.setTextColor(100, 100, 100)
+    doc.text('Authorized Signature', 55, sigY + 5, { align: 'center' })
 
-    // Secondary signature (right side)
-    if (secondarySignature) {
-      // Add signature image
-      try {
-        doc.addImage(secondarySignature.signature_data, 'PNG', pageWidth - 75, sigY - 18, 40, 15)
-      } catch (sigErr) {
-        console.error('[v0] Error adding secondary signature:', sigErr)
-      }
-      
-      // Signature line
-      doc.line(pageWidth - 80, sigLineY, pageWidth - 30, sigLineY)
-      
-      // Name and title
-      doc.setFont('times', 'bold')
-      doc.setFontSize(10)
-      doc.setTextColor(15, 23, 42)
-      doc.text(secondarySignature.signature_name, pageWidth - 55, sigY + 5, { align: 'center' })
-      
-      doc.setFont('times', 'normal')
-      doc.setFontSize(8)
-      doc.setTextColor(100, 100, 100)
-      doc.text(secondarySignature.signature_title, pageWidth - 55, sigY + 10, { align: 'center' })
-    } else {
-      // Default secondary signature (Principal)
-      doc.setDrawColor(100, 100, 100)
-      doc.line(pageWidth - 80, sigLineY, pageWidth - 30, sigLineY)
-      
-      doc.setFont('times', 'bold')
-      doc.setFontSize(10)
-      doc.setTextColor(15, 23, 42)
-      doc.text('Malinar Hellen', pageWidth - 55, sigY + 5, { align: 'center' })
-      
-      doc.setFont('times', 'normal')
-      doc.setFontSize(8)
-      doc.setTextColor(100, 100, 100)
-      doc.text('Principal, IICAR', pageWidth - 55, sigY + 10, { align: 'center' })
-    }
+    // Secondary signature (right side) - Principal
+    doc.line(pageWidth - 80, sigLineY, pageWidth - 30, sigLineY)
+    
+    doc.setFont('times', 'bold')
+    doc.setFontSize(10)
+    doc.setTextColor(15, 23, 42)
+    doc.text('Malinar Hellen', pageWidth - 55, sigY + 5, { align: 'center' })
+    
+    doc.setFont('times', 'normal')
+    doc.setFontSize(8)
+    doc.setTextColor(100, 100, 100)
+    doc.text('Principal, IICAR', pageWidth - 55, sigY + 10, { align: 'center' })
 
     // Add COL and GAOTE logos at bottom
     try {
