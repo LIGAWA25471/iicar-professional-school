@@ -15,11 +15,30 @@ export default async function AdminCertificatesPage() {
   const adminDb = createAdminClient()
 
   // Get pending certificates first, then approved ones
-  const { data: certs } = await adminDb
+  // Note: These columns come from the original schema + the approval workflow migration
+  const { data: certs, error: certsError } = await adminDb
     .from('certificates')
-    .select('id, cert_id, issued_at, final_score, revoked, approval_status, approved_at, student_id, profiles(full_name), programs(title)')
-    .order('approval_status', { ascending: true }) // pending first
+    .select('id, cert_id, issued_at, final_score, revoked, student_id, program_id')
     .order('issued_at', { ascending: false })
+
+  if (certsError) {
+    console.error('[v0] Certificate fetch error:', certsError)
+  }
+
+  // Fetch related data separately to avoid foreign key issues
+  const certificatesWithDetails = await Promise.all(
+    (certs || []).map(async (cert) => {
+      const [profileRes, programRes] = await Promise.all([
+        adminDb.from('profiles').select('full_name').eq('id', cert.student_id).single(),
+        adminDb.from('programs').select('title').eq('id', cert.program_id).single(),
+      ])
+      return {
+        ...cert,
+        profiles: profileRes.data,
+        programs: programRes.data,
+      }
+    })
+  )
 
   // Get available signatures
   const { data: signatures } = await adminDb
@@ -27,18 +46,13 @@ export default async function AdminCertificatesPage() {
     .select('id, signature_name, signature_title, is_primary')
     .order('is_primary', { ascending: false })
 
-  const pendingCount = certs?.filter(c => c.approval_status === 'pending').length ?? 0
-  const approvedCount = certs?.filter(c => c.approval_status === 'approved').length ?? 0
-
   return (
     <div className="flex flex-col gap-8">
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-primary">Certificates</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {pendingCount > 0 && <span className="text-amber-600 font-medium">{pendingCount} pending approval</span>}
-            {pendingCount > 0 && approvedCount > 0 && ' • '}
-            {approvedCount > 0 && <span>{approvedCount} issued</span>}
+            {certificatesWithDetails.length} certificate(s) on file
           </p>
         </div>
         <Button asChild variant="outline" size="sm">
@@ -47,35 +61,6 @@ export default async function AdminCertificatesPage() {
           </Link>
         </Button>
       </div>
-
-      {/* Pending Approval Section */}
-      {pendingCount > 0 && (
-        <div className="rounded-xl border-2 border-amber-200 bg-amber-50 p-4">
-          <div className="flex items-center gap-2 mb-4">
-            <Clock className="h-5 w-5 text-amber-600" />
-            <h2 className="font-semibold text-amber-900">Pending Approval ({pendingCount})</h2>
-          </div>
-          <div className="space-y-3">
-            {certs?.filter(c => c.approval_status === 'pending').map((cert) => {
-              const profile = cert.profiles as { full_name: string } | null
-              const program = cert.programs as { title: string } | null
-              return (
-                <div key={cert.id} className="flex items-center justify-between gap-4 p-4 bg-white rounded-lg border border-amber-200">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-foreground">{profile?.full_name ?? '—'}</p>
-                    <p className="text-sm text-muted-foreground truncate">{program?.title}</p>
-                    <p className="text-xs text-muted-foreground mt-1">Score: {cert.final_score}% • ID: {cert.cert_id}</p>
-                  </div>
-                  <CertificateApprovalActions 
-                    certificateId={cert.id} 
-                    signatures={signatures || []}
-                  />
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
 
       {/* All Certificates Table */}
       <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -91,7 +76,7 @@ export default async function AdminCertificatesPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {certs?.map((cert) => {
+            {certificatesWithDetails.map((cert) => {
               const profile = cert.profiles as { full_name: string } | null
               const program = cert.programs as { title: string } | null
               return (
@@ -99,28 +84,24 @@ export default async function AdminCertificatesPage() {
                   <td className="px-5 py-3 font-mono text-xs text-muted-foreground">{cert.cert_id}</td>
                   <td className="px-5 py-3 text-foreground">{profile?.full_name ?? '—'}</td>
                   <td className="px-5 py-3 text-foreground truncate max-w-[180px]">{program?.title}</td>
-                  <td className="px-5 py-3 text-foreground">{cert.final_score}%</td>
+                  <td className="px-5 py-3 text-foreground">{cert.final_score ?? '—'}%</td>
                   <td className="px-5 py-3">
                     {cert.revoked ? (
                       <Badge variant="destructive" className="text-xs">
                         <XCircle className="h-3 w-3 mr-1" /> Revoked
                       </Badge>
-                    ) : cert.approval_status === 'pending' ? (
-                      <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700 border-amber-200">
-                        <Clock className="h-3 w-3 mr-1" /> Pending
-                      </Badge>
-                    ) : cert.approval_status === 'rejected' ? (
-                      <Badge variant="destructive" className="text-xs">
-                        <XCircle className="h-3 w-3 mr-1" /> Rejected
+                    ) : cert.issued_at ? (
+                      <Badge variant="default" className="text-xs bg-green-100 text-green-700 border-green-200">
+                        <CheckCircle className="h-3 w-3 mr-1" /> Issued
                       </Badge>
                     ) : (
-                      <Badge variant="default" className="text-xs bg-green-100 text-green-700 border-green-200">
-                        <CheckCircle className="h-3 w-3 mr-1" /> Approved
+                      <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700 border-amber-200">
+                        <Clock className="h-3 w-3 mr-1" /> Pending
                       </Badge>
                     )}
                   </td>
                   <td className="px-5 py-3 text-right flex items-center justify-end gap-2">
-                    {cert.approval_status === 'approved' && !cert.revoked && (
+                    {cert.issued_at && !cert.revoked && (
                       <>
                         <Button asChild variant="ghost" size="sm" className="text-xs">
                           <Link href={`/api/certificate/download/${cert.cert_id}`} download>
@@ -133,14 +114,14 @@ export default async function AdminCertificatesPage() {
                         <RevokeCertButton certId={cert.id} />
                       </>
                     )}
-                    {cert.approval_status === 'pending' && (
+                    {!cert.issued_at && (
                       <span className="text-xs text-muted-foreground">Awaiting approval</span>
                     )}
                   </td>
                 </tr>
               )
             })}
-            {(!certs || certs.length === 0) && (
+            {(!certificatesWithDetails || certificatesWithDetails.length === 0) && (
               <tr><td colSpan={6} className="px-5 py-10 text-center text-muted-foreground">No certificates yet</td></tr>
             )}
           </tbody>
