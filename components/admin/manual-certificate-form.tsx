@@ -145,6 +145,10 @@ export default function ManualCertificateForm({ onSuccess }: ManualCertificateFo
 
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen)
+    if (newOpen && searchResults.length === 0) {
+      // Load all students when dialog opens
+      loadAllStudents()
+    }
     if (!newOpen) {
       setStep('search')
       setSearchQuery('')
@@ -156,6 +160,21 @@ export default function ManualCertificateForm({ onSuccess }: ManualCertificateFo
       setSuccess(false)
     }
   }
+
+  const loadAllStudents = useCallback(async () => {
+    setSearching(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/admin/search-students')
+      if (!res.ok) throw new Error('Failed to load students')
+      const data = await res.json()
+      setSearchResults(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load students')
+    } finally {
+      setSearching(false)
+    }
+  }, [])
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -180,16 +199,17 @@ export default function ManualCertificateForm({ onSuccess }: ManualCertificateFo
             <>
               <form onSubmit={handleSearch} className="space-y-3">
                 <div>
-                  <Label htmlFor="search" className="text-sm">Student Name or ID</Label>
+                  <Label htmlFor="search" className="text-sm">Search Student (Optional)</Label>
+                  <p className="text-xs text-muted-foreground mb-2">Leave empty to see all students</p>
                   <div className="flex gap-2 mt-1">
                     <Input
                       id="search"
-                      placeholder="Search..."
+                      placeholder="Search by name or ID..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       disabled={searching}
                     />
-                    <Button type="submit" size="sm" disabled={searching}>
+                    <Button type="submit" size="sm" disabled={searching || !searchQuery.trim()}>
                       {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                     </Button>
                   </div>
@@ -203,22 +223,34 @@ export default function ManualCertificateForm({ onSuccess }: ManualCertificateFo
                 </Alert>
               )}
 
-              {searchResults.length > 0 && (
-                <div className="space-y-2 max-h-64 overflow-y-auto border border-border rounded-lg p-2">
-                  {searchResults.map((student) => (
-                    <button
-                      key={student.id}
-                      onClick={() => handleSelectStudent(student)}
-                      className="w-full text-left p-2 rounded border border-border hover:bg-muted transition-colors text-sm"
-                    >
-                      <p className="font-medium">{student.full_name}</p>
-                      <p className="text-xs text-muted-foreground">{student.country || 'N/A'}</p>
-                    </button>
-                  ))}
+              {searching && (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground mr-2" />
+                  <span className="text-sm text-muted-foreground">Loading students...</span>
                 </div>
               )}
 
-              {searchResults.length === 0 && searchQuery && !searching && (
+              {searchResults.length > 0 && !searching && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground px-1">
+                    {searchResults.length} student(s) available
+                  </p>
+                  <div className="max-h-64 overflow-y-auto border border-border rounded-lg p-2 space-y-1">
+                    {searchResults.map((student) => (
+                      <button
+                        key={student.id}
+                        onClick={() => handleSelectStudent(student)}
+                        className="w-full text-left p-2 rounded border border-border hover:bg-muted transition-colors text-sm"
+                      >
+                        <p className="font-medium">{student.full_name}</p>
+                        <p className="text-xs text-muted-foreground">{student.country || 'N/A'} • ID: {student.id.substring(0, 8)}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {searchResults.length === 0 && !searching && (
                 <p className="text-sm text-muted-foreground text-center py-4">No students found</p>
               )}
             </>
