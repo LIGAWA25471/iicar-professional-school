@@ -47,16 +47,26 @@ export function IssueCertificateForm() {
   const fetcher = async (url: string) => {
     const res = await fetch(url)
     if (!res.ok) {
-      console.error('[v0] Fetch error:', res.status, res.statusText)
+      console.error('[v0] Fetch error:', res.status, res.statusText, await res.text())
       throw new Error(`Failed to fetch: ${res.status}`)
     }
-    return res.json()
+    const data = await res.json()
+    console.log('[v0] Fetcher got data:', data)
+    return data
   }
 
   // Search students
   const { data: searchResults, isLoading: isSearching, error: searchError } = useSWR(
     searchQuery ? `/api/admin/enrollments/search?search=${encodeURIComponent(searchQuery)}` : null,
-    fetcher
+    fetcher,
+    { revalidateOnFocus: false }
+  )
+
+  // Get all enrollments on initial load
+  const { data: allEnrollments, isLoading: isLoadingAll, error: allError } = useSWR(
+    '/api/admin/enrollments/search',
+    fetcher,
+    { revalidateOnFocus: false }
   )
 
   // Get all enrollments on initial load
@@ -117,6 +127,7 @@ export function IssueCertificateForm() {
     allEnrollments: allEnrollments?.length,
     searchResults: searchResults?.length,
     selectedStudentId,
+    allError,
   })
 
   return (
@@ -197,9 +208,9 @@ export function IssueCertificateForm() {
                               : 'hover:bg-muted'
                           }`}
                         >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium">{enrollment.programs?.title || 'Unknown Program'}</p>
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-xs truncate">Program ID: {enrollment.program_id}</p>
                               <Badge variant="outline" className="mt-1 text-xs">
                                 {enrollment.status === 'completed' ? (
                                   <><CheckCircle className="h-3 w-3 mr-1" /> Completed</>
@@ -208,11 +219,6 @@ export function IssueCertificateForm() {
                                 )}
                               </Badge>
                             </div>
-                            {enrollment.existingCertificate && (
-                              <Badge className="ml-2 bg-green-100 text-green-700">
-                                Cert L{enrollment.existingCertificate.certificate_level}
-                              </Badge>
-                            )}
                           </div>
                         </button>
                       ))}
@@ -242,7 +248,7 @@ export function IssueCertificateForm() {
               <p className="text-sm font-medium text-green-900">Selected:</p>
               <p className="text-sm text-green-800">{selectedStudent.full_name}</p>
               <p className="text-xs text-green-700 mt-1">
-                {selectedStudent.enrollments.find((e: any) => e.program_id === selectedProgramId)?.programs.title}
+                Program ID: {selectedProgramId}
               </p>
             </div>
           )}
@@ -278,15 +284,6 @@ export function IssueCertificateForm() {
               )
             })}
           </div>
-
-          {enrollmentDetails?.existingCertificate && (
-            <Alert className="mt-4 border-amber-200 bg-amber-50">
-              <AlertCircle className="h-4 w-4 text-amber-600" />
-              <AlertDescription className="text-amber-800">
-                This student already has a certificate for this program (Level {enrollmentDetails.existingCertificate.certificate_level}) issued on {new Date(enrollmentDetails.existingCertificate.issued_at).toLocaleDateString()}. Issuing a new certificate will update the existing one.
-              </AlertDescription>
-            </Alert>
-          )}
         </Card>
       )}
 
@@ -308,10 +305,8 @@ export function IssueCertificateForm() {
               <span className="font-medium">{selectedStudent?.email}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Program:</span>
-              <span className="font-medium">
-                {selectedStudent?.enrollments.find((e: any) => e.program_id === selectedProgramId)?.programs.title}
-              </span>
+              <span className="text-muted-foreground">Program ID:</span>
+              <span className="font-medium">{selectedProgramId}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Certificate Level:</span>
