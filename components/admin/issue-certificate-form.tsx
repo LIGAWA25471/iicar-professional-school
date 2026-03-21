@@ -69,12 +69,6 @@ export function IssueCertificateForm() {
     { revalidateOnFocus: false }
   )
 
-  // Get all enrollments on initial load
-  const { data: allEnrollments, isLoading: isLoadingAll } = useSWR(
-    '/api/admin/enrollments/search',
-    fetcher
-  )
-
   const handleIssue = useCallback(async () => {
     if (!selectedStudentId || !selectedProgramId) {
       setErrorMessage('Please select a student and program')
