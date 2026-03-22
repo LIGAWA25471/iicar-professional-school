@@ -11,30 +11,60 @@ export async function GET(
 
   try {
     const adminDb = createAdminClient()
+    
+    console.log('[v0] Downloading certificate:', { cert_id: cert_id.toUpperCase() })
+    
+    // Query certificates table without joins (this works reliably)
     const { data: certs, error } = await adminDb
       .from('certificates')
-      .select(`
-        cert_id, issued_at, final_score, student_id, program_id, certificate_level,
-        profiles(full_name), 
-        programs(title)
-      `)
+      .select('*')
       .eq('cert_id', cert_id.toUpperCase())
 
     if (error) {
       console.error('[v0] Certificate query error:', error)
-      return NextResponse.json({ error: 'Certificate not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Certificate not found', details: error.message }, { status: 404 })
     }
 
     if (!certs || certs.length === 0) {
+      console.error('[v0] Certificate not found:', cert_id.toUpperCase())
       return NextResponse.json({ error: 'Certificate not found' }, { status: 404 })
     }
 
     const cert = certs[0]
+    console.log('[v0] Certificate found:', { cert_id: cert.cert_id, issued_at: cert.issued_at })
 
     // Only allow download of issued certificates
     if (!cert.issued_at) {
       return NextResponse.json({ error: 'Certificate not yet issued' }, { status: 403 })
     }
+
+    // Fetch profile data separately
+    let profile = null
+    if (cert.student_id) {
+      const { data: profiles } = await adminDb
+        .from('profiles')
+        .select('full_name')
+        .eq('id', cert.student_id)
+      
+      profile = profiles && profiles.length > 0 ? profiles[0] : null
+    }
+
+    // Fetch program data separately
+    let program = null
+    if (cert.program_id) {
+      const { data: programs } = await adminDb
+        .from('programs')
+        .select('title')
+        .eq('id', cert.program_id)
+      
+      program = programs && programs.length > 0 ? programs[0] : null
+    }
+
+    console.log('[v0] Certificate data prepared:', { 
+      cert_id: cert.cert_id, 
+      student: profile?.full_name, 
+      program: program?.title 
+    })
 
     // Generate beautiful professional PDF using jsPDF
     const doc = new jsPDF({
@@ -118,9 +148,7 @@ export async function GET(
     doc.setFont('times', 'bold')
     doc.setFontSize(24)
     doc.setTextColor(15, 23, 42) // Navy
-    const studentName = cert.profiles && typeof cert.profiles === 'object' && 'full_name' in cert.profiles 
-      ? cert.profiles.full_name 
-      : 'Valued Student'
+    const studentName = profile?.full_name || 'Valued Student'
     const splitName = doc.splitTextToSize(studentName, pageWidth - 40)
     doc.text(splitName, pageWidth / 2, 95, { align: 'center' })
 
@@ -134,9 +162,7 @@ export async function GET(
     doc.setFont('times', 'bold')
     doc.setFontSize(14)
     doc.setTextColor(184, 134, 11) // Gold
-    const programTitle = cert.programs && typeof cert.programs === 'object' && 'title' in cert.programs
-      ? cert.programs.title
-      : 'Professional Development Program'
+    const programTitle = program?.title || 'Professional Development Program'
     const splitProgram = doc.splitTextToSize(programTitle, pageWidth - 50)
     doc.text(splitProgram, pageWidth / 2, 120, { align: 'center' })
 
