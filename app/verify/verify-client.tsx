@@ -15,8 +15,8 @@ interface CertResult {
   final_score: number
   revoked: boolean
   certificate_level?: number
-  profiles: { full_name: string; country: string }
-  programs: { title: string }
+  profiles: { full_name: string; country: string } | null
+  programs: { title: string } | null
 }
 
 export default function VerifyClient() {

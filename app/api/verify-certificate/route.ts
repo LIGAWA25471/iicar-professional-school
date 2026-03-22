@@ -13,17 +13,16 @@ export async function GET(request: NextRequest) {
 
     const adminDb = createAdminClient()
     
-    // Try with exact match first
-    const { data: certificates, error, status } = await adminDb
+    // Query certificates table first without relations
+    const { data: certificates, error } = await adminDb
       .from('certificates')
-      .select('cert_id, issued_at, final_score, revoked, certificate_level, student_id, program_id, profiles(full_name, country), programs(title)')
+      .select('*')
       .ilike('cert_id', trimmedCertId)
 
-    console.log('[v0] Query result:', { 
-      status, 
+    console.log('[v0] Certificate query result:', { 
       error: error?.message, 
       found: certificates?.length,
-      certificates: certificates?.map((c: any) => c.cert_id)
+      certificates: certificates?.map((c: any) => ({ id: c.id, cert_id: c.cert_id, student_id: c.student_id, program_id: c.program_id }))
     })
 
     if (error) {
@@ -36,23 +35,45 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Certificate not found', searched: trimmedCertId }, { status: 404 })
     }
 
-    const data = certificates[0]
+    const cert = certificates[0]
 
-    if (!data.issued_at) {
+    if (!cert.issued_at) {
       console.log('[v0] Certificate not yet issued:', trimmedCertId)
       return NextResponse.json({ error: 'Certificate not yet issued' }, { status: 403 })
     }
 
-    console.log('[v0] Certificate verified successfully:', trimmedCertId)
+    // Fetch profile data separately
+    let profile = null
+    if (cert.student_id) {
+      const { data: profiles } = await adminDb
+        .from('profiles')
+        .select('full_name, country')
+        .eq('id', cert.student_id)
+      
+      profile = profiles && profiles.length > 0 ? profiles[0] : null
+    }
+
+    // Fetch program data separately
+    let program = null
+    if (cert.program_id) {
+      const { data: programs } = await adminDb
+        .from('programs')
+        .select('title')
+        .eq('id', cert.program_id)
+      
+      program = programs && programs.length > 0 ? programs[0] : null
+    }
+
+    console.log('[v0] Certificate verified successfully:', trimmedCertId, { student: profile?.full_name, program: program?.title })
 
     return NextResponse.json({
-      cert_id: data.cert_id,
-      issued_at: data.issued_at,
-      final_score: data.final_score,
-      revoked: data.revoked,
-      certificate_level: data.certificate_level,
-      profiles: data.profiles,
-      programs: data.programs,
+      cert_id: cert.cert_id,
+      issued_at: cert.issued_at,
+      final_score: cert.final_score,
+      revoked: cert.revoked,
+      certificate_level: cert.certificate_level,
+      profiles: profile,
+      programs: program,
     })
   } catch (err) {
     console.error('[v0] Verify certificate error:', err)
