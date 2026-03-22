@@ -34,41 +34,25 @@ export default async function AdminCertificatesPage() {
     )
   }
 
-  // Fetch related data separately with better error handling
-  const certificatesWithDetails = []
-  
-  for (const cert of certs || []) {
-    try {
-      const { data: profiles } = await adminDb
-        .from('profiles')
-        .select('full_name')
-        .eq('id', cert.student_id)
-      
-      const { data: programs } = await adminDb
-        .from('programs')
-        .select('title')
-        .eq('id', cert.program_id)
-      
-      certificatesWithDetails.push({
-        ...cert,
-        profiles: profiles && profiles.length > 0 ? profiles[0] : null,
-        programs: programs && programs.length > 0 ? programs[0] : null,
-      })
-    } catch (err) {
-      console.error('[v0] Error fetching certificate details for', cert.id, ':', err)
-      certificatesWithDetails.push({
-        ...cert,
-        profiles: null,
-        programs: null,
-      })
-    }
-  }
+  // Fetch related data efficiently - get all profiles and programs once
+  const { data: allProfiles } = await adminDb
+    .from('profiles')
+    .select('id, full_name')
 
-  // Get available signatures
-  const { data: signatures } = await adminDb
-    .from('admin_signatures')
-    .select('id, signature_name, signature_title, is_primary')
-    .order('is_primary', { ascending: false })
+  const { data: allPrograms } = await adminDb
+    .from('programs')
+    .select('id, title')
+
+  // Create lookup maps for O(1) access
+  const profilesMap = new Map(allProfiles?.map(p => [p.id, p]) || [])
+  const programsMap = new Map(allPrograms?.map(p => [p.id, p]) || [])
+
+  // Map certificates with their related data
+  const certificatesWithDetails = (certs || []).map(cert => ({
+    ...cert,
+    profiles: profilesMap.get(cert.student_id) || null,
+    programs: programsMap.get(cert.program_id) || null,
+  }))
 
   return (
     <div className="flex flex-col gap-8">
