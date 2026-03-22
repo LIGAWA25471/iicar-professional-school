@@ -1,10 +1,11 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Award, ExternalLink, Download, Clock, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Award, ExternalLink, Download, Printer, Clock, CheckCircle2, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import CertificateCard from '@/components/dashboard/certificate-card'
 
 interface Certificate {
   id: string
@@ -88,44 +89,7 @@ export default async function CertificatesPage() {
           </h2>
           <div className="grid gap-6 md:grid-cols-2">
             {approvedCerts.map((cert) => (
-              <div key={cert.id}
-                className={`flex flex-col gap-4 rounded-xl border p-6 ${cert.revoked ? 'border-destructive/30 bg-destructive/5 opacity-60' : 'border-green-200 bg-green-50'}`}>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-600">
-                    <CheckCircle2 className="h-6 w-6 text-white" />
-                  </div>
-                  {cert.revoked ? (
-                    <Badge className="bg-destructive/20 text-destructive">Revoked</Badge>
-                  ) : (
-                    <Badge className="bg-green-600 text-white">
-                      <CheckCircle2 className="h-3 w-3 mr-1" />
-                      Approved
-                    </Badge>
-                  )}
-                </div>
-                <div>
-                  <h3 className="font-semibold text-foreground">{cert.programs?.title}</h3>
-                  <p className="mt-1 text-xs font-mono text-muted-foreground">{cert.cert_id}</p>
-                </div>
-                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground border-t border-border pt-3">
-                  <span>Issued: {new Date(cert.issued_at!).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
-                  {cert.final_score && <span>Final Score: <strong className="text-foreground">{cert.final_score}%</strong></span>}
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button asChild variant="outline" size="sm" className="text-xs flex-1 bg-green-600 text-white border-green-600 hover:bg-green-700">
-                    <Link href={`/api/certificate/download/${cert.cert_id}`} download>
-                      <Download className="mr-1.5 h-3 w-3" /> Download PDF
-                    </Link>
-                  </Button>
-                  {!cert.revoked && (
-                    <Button asChild variant="outline" size="sm" className="text-xs flex-1">
-                      <Link href={`/verify?id=${cert.cert_id}`} target="_blank">
-                        Verify <ExternalLink className="ml-1.5 h-3 w-3" />
-                      </Link>
-                    </Button>
-                  )}
-                </div>
-              </div>
+              <CertificateCard key={cert.id} cert={cert} />
             ))}
           </div>
         </div>

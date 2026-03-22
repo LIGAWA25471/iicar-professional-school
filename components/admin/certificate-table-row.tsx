@@ -1,6 +1,6 @@
 'use client'
 
-import { Download, CheckCircle, XCircle } from 'lucide-react'
+import { Download, Printer, CheckCircle, XCircle } from 'lucide-react'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -21,6 +21,15 @@ export default function CertificateTableRow({ cert, profile, program }: Certific
     const link = document.createElement('a')
     link.href = `/api/certificate/download/${cert.cert_id}`
     link.download = `${cert.cert_id}_certificate.pdf`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  const handlePrint = () => {
+    const link = document.createElement('a')
+    link.href = `/api/certificate/download/${cert.cert_id}`
+    link.target = '_blank'
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -51,8 +60,11 @@ export default function CertificateTableRow({ cert, profile, program }: Certific
       <td className="px-5 py-3 text-right flex items-center justify-end gap-2">
         {cert.issued_at && !cert.revoked && (
           <>
-            <Button variant="ghost" size="sm" className="text-xs" onClick={handleDownload}>
+            <Button variant="ghost" size="sm" className="text-xs" onClick={handleDownload} title="Download PDF">
               <Download className="h-3 w-3" />
+            </Button>
+            <Button variant="ghost" size="sm" className="text-xs" onClick={handlePrint} title="Print Certificate">
+              <Printer className="h-3 w-3" />
             </Button>
             <Button asChild variant="ghost" size="sm" className="text-xs">
               <Link href={`/verify?id=${cert.cert_id}`} target="_blank">Verify</Link>
