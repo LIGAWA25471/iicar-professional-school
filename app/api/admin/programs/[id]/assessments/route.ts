@@ -22,6 +22,30 @@ export async function POST(
 
   console.log('[v0] Saving assessment:', { moduleId, programId, type, questionCount: questions.length })
 
+  // Validate moduleId for module_quiz
+  if (type === 'module_quiz') {
+    if (!moduleId) {
+      return NextResponse.json({ 
+        error: 'Module ID is required for module assessments. Please save your modules first before publishing assessments.' 
+      }, { status: 400 })
+    }
+    
+    // Verify module exists in database
+    const { data: module, error: moduleError } = await adminDb
+      .from('modules')
+      .select('id')
+      .eq('id', moduleId)
+      .eq('program_id', programId)
+      .single()
+    
+    if (moduleError || !module) {
+      console.error('[v0] Module not found:', { moduleId, programId, moduleError })
+      return NextResponse.json({ 
+        error: 'Module not found. Please ensure modules are saved before publishing assessments.' 
+      }, { status: 400 })
+    }
+  }
+
   // Delete existing questions for this module/program+type so we don't duplicate
   if (type === 'module_quiz' && moduleId) {
     await adminDb.from('questions').delete()
@@ -56,7 +80,15 @@ export async function POST(
 
   const { error, data } = await adminDb.from('questions').insert(rows)
   if (error) {
-    console.error('[v0] Insert error:', error)
+    console.error('[v0] Insert error:', { error: error.message, code: error.code, details: error.details })
+    
+    // Provide helpful error message based on error type
+    if (error.message?.includes('foreign key constraint')) {
+      return NextResponse.json({ 
+        error: 'Failed to save assessment: Please ensure all modules are saved first before publishing assessments.' 
+      }, { status: 400 })
+    }
+    
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
