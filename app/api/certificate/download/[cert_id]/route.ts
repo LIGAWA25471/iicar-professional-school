@@ -36,7 +36,7 @@ export async function GET(
       return NextResponse.json({ error: 'Certificate not yet issued' }, { status: 403 })
     }
 
-    // Generate PDF using jsPDF
+    // Generate beautiful professional PDF using jsPDF
     const doc = new jsPDF({
       orientation: 'landscape',
       unit: 'mm',
@@ -46,80 +46,101 @@ export async function GET(
     const pageWidth = doc.internal.pageSize.getWidth()
     const pageHeight = doc.internal.pageSize.getHeight()
 
-    // Background color (light gold)
-    doc.setFillColor(255, 251, 235)
-    doc.rect(0, 0, pageWidth, pageHeight, 'F')
+    // Premium background gradient effect with decorative shapes
+    // Top accent bar (navy blue)
+    doc.setFillColor(15, 23, 42) // Navy blue
+    doc.rect(0, 0, pageWidth, 12, 'F')
 
-    // Outer border (dark goldenrod)
-    doc.setDrawColor(184, 134, 11)
-    doc.setLineWidth(3)
-    doc.rect(8, 8, pageWidth - 16, pageHeight - 16)
+    // Background color (cream white)
+    doc.setFillColor(255, 255, 255)
+    doc.rect(0, 12, pageWidth, pageHeight - 12, 'F')
 
-    // Inner border
-    doc.setLineWidth(1)
-    doc.rect(11, 11, pageWidth - 22, pageHeight - 22)
+    // Elegant left border accent (gold)
+    doc.setFillColor(184, 134, 11) // Gold
+    doc.rect(0, 12, 3, pageHeight - 12, 'F')
 
-    // Add IICAR logo as simple text badge
-    doc.setFillColor(184, 134, 11)
-    doc.circle(pageWidth / 2, 24, 8, 'F')
-    doc.setTextColor(255, 255, 255)
-    doc.setFont('times', 'bold')
-    doc.setFontSize(10)
-    doc.text('IICAR', pageWidth / 2, 25.5, { align: 'center' })
+    // Premium border frame
+    doc.setDrawColor(184, 134, 11) // Gold
+    doc.setLineWidth(2)
+    doc.rect(10, 20, pageWidth - 20, pageHeight - 40)
 
-    // School name (top)
-    doc.setFont('times', 'bold')
-    doc.setFontSize(24)
-    doc.setTextColor(15, 23, 42) // primary color
-    doc.text('IICAR GLOBAL COLLEGE', pageWidth / 2, 50, { align: 'center' })
-
-    doc.setFont('times', 'normal')
-    doc.setFontSize(10)
-    doc.setTextColor(100, 100, 100)
-    doc.text('Institute of International Career Advancement and Recognition', pageWidth / 2, 57, { align: 'center' })
-
-    // Certificate title
-    doc.setFont('times', 'bold')
-    doc.setFontSize(28)
-    doc.setTextColor(184, 134, 11) // gold color
-    doc.text('Certificate of Completion', pageWidth / 2, 72, { align: 'center' })
-
-    // Decorative line
+    // Decorative corner elements - top left
     doc.setDrawColor(184, 134, 11)
     doc.setLineWidth(0.5)
-    doc.line(60, 78, pageWidth - 60, 78)
+    doc.line(10, 20, 25, 20)
+    doc.line(10, 20, 10, 32)
+
+    // Decorative corner elements - bottom right
+    doc.line(pageWidth - 10, pageHeight - 20, pageWidth - 25, pageHeight - 20)
+    doc.line(pageWidth - 10, pageHeight - 20, pageWidth - 10, pageHeight - 32)
+
+    // IICAR Institution Header
+    doc.setFont('times', 'bold')
+    doc.setFontSize(28)
+    doc.setTextColor(15, 23, 42) // Navy
+    doc.text('IICAR GLOBAL COLLEGE', pageWidth / 2, 38, { align: 'center' })
+
+    // Subtitle
+    doc.setFont('times', 'italic')
+    doc.setFontSize(9)
+    doc.setTextColor(100, 100, 100)
+    doc.text('Institute of International Career Advancement and Recognition', pageWidth / 2, 44, { align: 'center' })
+
+    // Decorative line under header
+    doc.setDrawColor(184, 134, 11)
+    doc.setLineWidth(1.5)
+    doc.line(45, 47, pageWidth - 45, 47)
+
+    // Main certificate title with premium styling
+    doc.setFont('times', 'bold')
+    doc.setFontSize(32)
+    doc.setTextColor(184, 134, 11) // Gold
+    doc.text('Certificate of Achievement', pageWidth / 2, 62, { align: 'center' })
+
+    // Secondary line
+    doc.setFont('times', 'italic')
+    doc.setFontSize(11)
+    doc.setTextColor(100, 100, 100)
+    doc.text('Professional Certification', pageWidth / 2, 68, { align: 'center' })
+
+    // Decorative divider
+    doc.setDrawColor(184, 134, 11)
+    doc.setLineWidth(0.5)
+    doc.line(60, 71, pageWidth - 60, 71)
 
     // Certificate body text
     doc.setFont('times', 'normal')
     doc.setFontSize(11)
     doc.setTextColor(60, 60, 60)
-    doc.text('This is to certify that', pageWidth / 2, 90, { align: 'center' })
+    doc.text('This prestigious certificate is awarded to', pageWidth / 2, 83, { align: 'center' })
 
-    // Student name
+    // Student name - prominent display
     doc.setFont('times', 'bold')
-    doc.setFontSize(20)
-    doc.setTextColor(15, 23, 42)
+    doc.setFontSize(24)
+    doc.setTextColor(15, 23, 42) // Navy
     const studentName = cert.profiles && typeof cert.profiles === 'object' && 'full_name' in cert.profiles 
       ? cert.profiles.full_name 
-      : 'Unknown Student'
-    doc.text(studentName, pageWidth / 2, 102, { align: 'center' })
+      : 'Valued Student'
+    const splitName = doc.splitTextToSize(studentName, pageWidth - 40)
+    doc.text(splitName, pageWidth / 2, 95, { align: 'center' })
 
-    // Body text continued
+    // Certificate text continued
     doc.setFont('times', 'normal')
     doc.setFontSize(11)
     doc.setTextColor(60, 60, 60)
-    doc.text('has successfully completed the professional certification program in', pageWidth / 2, 114, { align: 'center' })
+    doc.text('for successfully completing the professional certification in', pageWidth / 2, 110, { align: 'center' })
 
-    // Program title
+    // Program title - highlighted
     doc.setFont('times', 'bold')
     doc.setFontSize(14)
-    doc.setTextColor(15, 23, 42)
+    doc.setTextColor(184, 134, 11) // Gold
     const programTitle = cert.programs && typeof cert.programs === 'object' && 'title' in cert.programs
       ? cert.programs.title
-      : 'Professional Development'
-    doc.text(programTitle, pageWidth / 2, 125, { align: 'center' })
+      : 'Professional Development Program'
+    const splitProgram = doc.splitTextToSize(programTitle, pageWidth - 50)
+    doc.text(splitProgram, pageWidth / 2, 120, { align: 'center' })
 
-    // Score and date
+    // Achievement level and performance metrics
     doc.setFont('times', 'normal')
     doc.setFontSize(10)
     doc.setTextColor(100, 100, 100)
@@ -130,52 +151,106 @@ export async function GET(
       year: 'numeric',
     }) : new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
 
+    const LEVEL_NAMES = ['Foundation', 'Intermediate', 'Advanced', 'Professional', 'Expert']
+    const levelName = LEVEL_NAMES[(cert.certificate_level || 1) - 1]
+
+    // Create metrics section
+    let metricsY = 132
+    
+    // Score box (if available)
     if (cert.final_score) {
-      doc.text(`Final Score: ${cert.final_score}%  |  Issued: ${issueDate}`, pageWidth / 2, 137, { align: 'center' })
-    } else {
-      doc.text(`Issued: ${issueDate}`, pageWidth / 2, 137, { align: 'center' })
+      doc.setDrawColor(184, 134, 11)
+      doc.setLineWidth(0.5)
+      doc.rect(30, metricsY - 2, 35, 8)
+      
+      doc.setFont('times', 'bold')
+      doc.setFontSize(9)
+      doc.setTextColor(184, 134, 11)
+      doc.text(`Final Score: ${cert.final_score}%`, 32, metricsY + 3, { align: 'left' })
+      metricsY += 12
     }
 
-    // Certificate ID
-    doc.setFont('courier', 'normal')
+    // Certificate level box
+    doc.setDrawColor(15, 23, 42)
+    doc.setLineWidth(0.5)
+    doc.rect(30, metricsY - 2, 35, 8)
+    
+    doc.setFont('times', 'bold')
     doc.setFontSize(9)
-    doc.setTextColor(120, 120, 120)
-    doc.text(`Certificate ID: ${cert.cert_id}`, pageWidth / 2, 145, { align: 'center' })
-    doc.text('Verify at: https://iicar.org/verify', pageWidth / 2, 150, { align: 'center' })
+    doc.setTextColor(15, 23, 42)
+    doc.text(`Level ${cert.certificate_level || 1}: ${levelName}`, 32, metricsY + 3, { align: 'left' })
 
-    // Signature section
-    const sigY = 162
-    const sigLineY = sigY - 2
-
-    // Primary signature (left side) - Default placeholder
-    doc.setDrawColor(100, 100, 100)
-    doc.setLineWidth(0.3)
-    doc.line(30, sigLineY, 80, sigLineY)
+    // Issue date box
+    doc.setDrawColor(184, 134, 11)
+    doc.setLineWidth(0.5)
+    doc.rect(pageWidth - 65, metricsY - 2, 35, 8)
     
     doc.setFont('times', 'normal')
     doc.setFontSize(9)
     doc.setTextColor(100, 100, 100)
-    doc.text('Authorized Signature', 55, sigY + 5, { align: 'center' })
+    doc.text(`Issued: ${issueDate}`, pageWidth - 63, metricsY + 3, { align: 'left' })
 
-    // Secondary signature (right side) - Default principal
-    doc.setDrawColor(100, 100, 100)
-    doc.line(pageWidth - 80, sigLineY, pageWidth - 30, sigLineY)
+    // Certificate ID and verification
+    doc.setFont('courier', 'normal')
+    doc.setFontSize(8)
+    doc.setTextColor(120, 120, 120)
+    doc.text(`Certificate ID: ${cert.cert_id}`, pageWidth / 2, pageHeight - 28, { align: 'center' })
+    
+    doc.setFont('times', 'normal')
+    doc.setFontSize(8)
+    doc.setTextColor(120, 120, 120)
+    doc.text('Verify Certificate: https://iicar.org/verify', pageWidth / 2, pageHeight - 24, { align: 'center' })
+
+    // Signature section with premium styling
+    const sigY = pageHeight - 38
+    const sigLineY = sigY - 5
+
+    // Left signature block - Authorized Signatory
+    doc.setLineWidth(0.4)
+    doc.setDrawColor(15, 23, 42)
+    doc.line(20, sigLineY, 60, sigLineY)
     
     doc.setFont('times', 'bold')
-    doc.setFontSize(10)
+    doc.setFontSize(9)
     doc.setTextColor(15, 23, 42)
-    doc.text('Malinar Hellen', pageWidth - 55, sigY + 5, { align: 'center' })
+    doc.text('_________________________', 40, sigY - 2, { align: 'center' })
+    
+    doc.setFont('times', 'bold')
+    doc.setFontSize(9)
+    doc.setTextColor(15, 23, 42)
+    doc.text('Authorized Signatory', 40, sigY + 4, { align: 'center' })
     
     doc.setFont('times', 'normal')
     doc.setFontSize(8)
     doc.setTextColor(100, 100, 100)
-    doc.text('Principal, IICAR', pageWidth - 55, sigY + 10, { align: 'center' })
+    doc.text('Director, Programs', 40, sigY + 8, { align: 'center' })
 
-    // Add decorative text at bottom instead of partner logos
+    // Right signature block - Principal
+    doc.setLineWidth(0.4)
+    doc.setDrawColor(15, 23, 42)
+    doc.line(pageWidth - 60, sigLineY, pageWidth - 20, sigLineY)
+    
+    doc.setFont('times', 'bold')
+    doc.setFontSize(9)
+    doc.setTextColor(15, 23, 42)
+    doc.text('_________________________', pageWidth - 40, sigY - 2, { align: 'center' })
+    
+    doc.setFont('times', 'bold')
+    doc.setFontSize(10)
+    doc.setTextColor(15, 23, 42)
+    doc.text('Malinar Hellen', pageWidth - 40, sigY + 4, { align: 'center' })
+    
+    doc.setFont('times', 'normal')
+    doc.setFontSize(8)
+    doc.setTextColor(100, 100, 100)
+    doc.text('Principal, IICAR', pageWidth - 40, sigY + 8, { align: 'center' })
+
+    // Footer certification statement
     doc.setFont('times', 'italic')
     doc.setFontSize(7)
     doc.setTextColor(150, 150, 150)
-    doc.text('COL Standard Aligned | GAOTE Certified | IICAR Standard Approved', pageWidth / 2, pageHeight - 12, { align: 'center' })
+    doc.text('This certificate recognizes demonstrated excellence and proficiency in professional development.', 
+      pageWidth / 2, pageHeight - 2, { align: 'center' })
 
     // Generate PDF buffer
     const pdfBytes = doc.output('arraybuffer')
