@@ -34,6 +34,8 @@ export async function POST(request: NextRequest) {
     // Generate certificate ID
     const certId = `IICAR-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 10).toUpperCase()}`
 
+    console.log('[v0] Creating certificate:', { certId, studentId, programId, finalScore, certificateLevel })
+
     // Create certificate with all fields
     const { data: cert, error: certError } = await adminDb
       .from('certificates')
@@ -47,30 +49,39 @@ export async function POST(request: NextRequest) {
         revoked: false,
       })
       .select()
-      .single()
 
     if (certError) {
       console.error('[v0] Certificate creation error:', certError)
-      return NextResponse.json({ error: 'Failed to create certificate' }, { status: 500 })
+      return NextResponse.json({ error: `Failed to create certificate: ${certError.message}` }, { status: 500 })
     }
 
-    // Get student email
-    const { data: student } = await adminDb
+    if (!cert || cert.length === 0) {
+      console.error('[v0] Certificate not returned from insert')
+      return NextResponse.json({ error: 'Certificate created but could not retrieve it' }, { status: 500 })
+    }
+
+    console.log('[v0] Certificate created successfully:', certId)
+
+    // Get student name
+    const { data: students } = await adminDb
       .from('profiles')
       .select('email, full_name')
       .eq('id', studentId)
-      .single()
+
+    const student = students && students.length > 0 ? students[0] : null
 
     // Get program title
-    const { data: program } = await adminDb
+    const { data: programs } = await adminDb
       .from('programs')
       .select('title')
       .eq('id', programId)
-      .single()
+
+    const program = programs && programs.length > 0 ? programs[0] : null
 
     // Send email notification (optional - you can implement later)
     if (student?.email) {
       try {
+        console.log('[v0] Sending email notification to:', student.email)
         await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/email/certificate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -88,13 +99,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    console.log('[v0] Certificate issuance complete:', { certId, student: student?.full_name })
+
     return NextResponse.json({
       success: true,
       certId: certId,
       message: 'Certificate issued successfully',
     })
   } catch (err) {
-    console.error('[v0] Error:', err)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('[v0] Certificate issuance error:', err)
+    const errorMessage = err instanceof Error ? err.message : 'Internal server error'
+    return NextResponse.json({ error: `Certificate issuance failed: ${errorMessage}` }, { status: 500 })
   }
 }

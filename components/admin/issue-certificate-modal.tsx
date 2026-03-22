@@ -33,6 +33,7 @@ export default function IssueCertificateModal({
   const [issuingCert, setIssuingCert] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [successCertId, setSuccessCertId] = useState<string | null>(null)
 
   const LEVEL_NAMES = ['Foundation', 'Intermediate', 'Advanced', 'Professional', 'Expert']
   const LEVEL_DESCRIPTIONS = [
@@ -49,6 +50,7 @@ export default function IssueCertificateModal({
       setLoading(true)
       setError(null)
       setSuccess(false)
+      setSuccessCertId(null)
       setSelectedLevel(1)
       setFinalScore('75')
       setSelectedEnrollment(null)
@@ -90,15 +92,28 @@ export default function IssueCertificateModal({
         }),
       })
 
+      const data = await res.json()
+
       if (!res.ok) {
-        const errorData = await res.json()
-        throw new Error(errorData.error || 'Failed to issue certificate')
+        throw new Error(data.error || 'Failed to issue certificate')
       }
 
+      setSuccessCertId(data.certId)
       setSuccess(true)
+      
+      // Auto-download PDF after 1 second
+      setTimeout(() => {
+        const link = document.createElement('a')
+        link.href = `/api/certificate/download/${data.certId}`
+        link.download = `${data.certId}_certificate.pdf`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      }, 1000)
+
       setTimeout(() => {
         setOpen(false)
-      }, 2000)
+      }, 2500)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to issue certificate')
     } finally {
