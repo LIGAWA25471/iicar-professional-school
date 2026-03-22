@@ -29,6 +29,7 @@ export default function IssueCertificateModal({
   const [enrollments, setEnrollments] = useState<any[]>([])
   const [selectedEnrollment, setSelectedEnrollment] = useState<string | null>(null)
   const [selectedLevel, setSelectedLevel] = useState(1)
+  const [finalScore, setFinalScore] = useState<string>('75')
   const [issuingCert, setIssuingCert] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -49,6 +50,7 @@ export default function IssueCertificateModal({
       setError(null)
       setSuccess(false)
       setSelectedLevel(1)
+      setFinalScore('75')
       setSelectedEnrollment(null)
       
       try {
@@ -65,7 +67,13 @@ export default function IssueCertificateModal({
   }, [studentId])
 
   const handleIssueCertificate = useCallback(async () => {
-    if (!selectedEnrollment) return
+    if (!selectedEnrollment || !finalScore) return
+
+    const score = parseInt(finalScore)
+    if (isNaN(score) || score < 0 || score > 100) {
+      setError('Score must be a number between 0 and 100')
+      return
+    }
 
     setIssuingCert(true)
     setError(null)
@@ -77,6 +85,7 @@ export default function IssueCertificateModal({
         body: JSON.stringify({
           studentId,
           programId: selectedEnrollment,
+          finalScore: score,
           certificateLevel: selectedLevel,
         }),
       })
@@ -95,7 +104,7 @@ export default function IssueCertificateModal({
     } finally {
       setIssuingCert(false)
     }
-  }, [selectedEnrollment, selectedLevel, studentId])
+  }, [selectedEnrollment, selectedLevel, studentId, finalScore])
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -159,27 +168,43 @@ export default function IssueCertificateModal({
             </div>
 
             {selectedEnrollment && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Certificate Level</label>
-                <div className="grid grid-cols-5 gap-2">
-                  {LEVEL_NAMES.map((name, idx) => (
-                    <button
-                      key={idx + 1}
-                      onClick={() => setSelectedLevel(idx + 1)}
-                      className={`p-2 rounded text-center transition-colors ${
-                        selectedLevel === idx + 1
-                          ? 'bg-primary text-primary-foreground'
-                          : 'border border-border hover:border-primary'
-                      }`}
-                      title={LEVEL_DESCRIPTIONS[idx]}
-                    >
-                      <p className="text-xs font-bold">L{idx + 1}</p>
-                    </button>
-                  ))}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Final Score (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={finalScore}
+                    onChange={(e) => setFinalScore(e.target.value)}
+                    placeholder="75"
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm"
+                  />
+                  <p className="text-xs text-muted-foreground">Enter a score between 0 and 100</p>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {LEVEL_NAMES[selectedLevel - 1]}: {LEVEL_DESCRIPTIONS[selectedLevel - 1]}
-                </p>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Certificate Level</label>
+                  <div className="grid grid-cols-5 gap-2">
+                    {LEVEL_NAMES.map((name, idx) => (
+                      <button
+                        key={idx + 1}
+                        onClick={() => setSelectedLevel(idx + 1)}
+                        className={`p-2 rounded text-center transition-colors ${
+                          selectedLevel === idx + 1
+                            ? 'bg-primary text-primary-foreground'
+                            : 'border border-border hover:border-primary'
+                        }`}
+                        title={LEVEL_DESCRIPTIONS[idx]}
+                      >
+                        <p className="text-xs font-bold">L{idx + 1}</p>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {LEVEL_NAMES[selectedLevel - 1]}: {LEVEL_DESCRIPTIONS[selectedLevel - 1]}
+                  </p>
+                </div>
               </div>
             )}
 
