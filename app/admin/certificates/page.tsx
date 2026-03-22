@@ -23,31 +23,46 @@ export default async function AdminCertificatesPage() {
 
   if (certsError) {
     console.error('[v0] Certificate fetch error:', certsError)
+    return (
+      <div className="flex flex-col gap-4">
+        <h1 className="text-2xl font-bold text-primary">Certificates</h1>
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800">
+          <p className="font-semibold">Error loading certificates</p>
+          <p className="text-sm mt-1">{certsError.message}</p>
+        </div>
+      </div>
+    )
   }
 
-  // Fetch related data separately to avoid foreign key issues
-  const certificatesWithDetails = await Promise.all(
-    (certs || []).map(async (cert) => {
-      try {
-        const [profileRes, programRes] = await Promise.all([
-          adminDb.from('profiles').select('full_name').eq('id', cert.student_id),
-          adminDb.from('programs').select('title').eq('id', cert.program_id),
-        ])
-        return {
-          ...cert,
-          profiles: profileRes.data && profileRes.data.length > 0 ? profileRes.data[0] : null,
-          programs: programRes.data && programRes.data.length > 0 ? programRes.data[0] : null,
-        }
-      } catch (err) {
-        console.error('[v0] Error fetching certificate details:', err)
-        return {
-          ...cert,
-          profiles: null,
-          programs: null,
-        }
-      }
-    })
-  )
+  // Fetch related data separately with better error handling
+  const certificatesWithDetails = []
+  
+  for (const cert of certs || []) {
+    try {
+      const { data: profiles } = await adminDb
+        .from('profiles')
+        .select('full_name')
+        .eq('id', cert.student_id)
+      
+      const { data: programs } = await adminDb
+        .from('programs')
+        .select('title')
+        .eq('id', cert.program_id)
+      
+      certificatesWithDetails.push({
+        ...cert,
+        profiles: profiles && profiles.length > 0 ? profiles[0] : null,
+        programs: programs && programs.length > 0 ? programs[0] : null,
+      })
+    } catch (err) {
+      console.error('[v0] Error fetching certificate details for', cert.id, ':', err)
+      certificatesWithDetails.push({
+        ...cert,
+        profiles: null,
+        programs: null,
+      })
+    }
+  }
 
   // Get available signatures
   const { data: signatures } = await adminDb
