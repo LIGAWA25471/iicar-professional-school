@@ -230,28 +230,6 @@ export default function ProgramModulesManager({
       setSavingQuizFor(null)
     }
   }
-    setSavingQuizFor(idx)
-    setError('')
-    setSuccess('')
-    try {
-      console.log('[v0] Saving quiz for module:', mod.id, 'questions:', mod.quiz.length)
-      const res = await fetch(`/api/admin/programs/${programId}/assessments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ moduleId: mod.id, questions: mod.quiz, type: 'module_quiz' }),
-      })
-      console.log('[v0] Response status:', res.status)
-      const data = await res.json()
-      console.log('[v0] Response data:', data)
-      if (!res.ok) throw new Error(data.error ?? 'Failed to save assessment')
-      setModules(prev => prev.map((m, i) => i === idx ? { ...m, quizSaved: true } : m))
-      setSuccess(`Assessment published — ${data.saved} questions are now available to enrolled students.`)
-    } catch (e) {
-      console.error('[v0] Save quiz error:', e)
-      setError(e instanceof Error ? e.message : 'Failed to save assessment')
-    } finally {
-      setSavingQuizFor(null)
-    }
   }
 
   async function generateExam() {
