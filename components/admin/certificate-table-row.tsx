@@ -1,6 +1,7 @@
 'use client'
 
-import { Download, Printer, CheckCircle, XCircle } from 'lucide-react'
+import { useState } from 'react'
+import { Download, Printer, Share2, CheckCircle, XCircle } from 'lucide-react'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -16,6 +17,7 @@ const LEVEL_NAMES = ['Foundation', 'Intermediate', 'Advanced', 'Professional', '
 
 export default function CertificateTableRow({ cert, profile, program }: CertificateTableRowProps) {
   const levelName = LEVEL_NAMES[(cert.certificate_level || 1) - 1]
+  const [copied, setCopied] = useState(false)
 
   const handleDownload = () => {
     const link = document.createElement('a')
@@ -33,6 +35,13 @@ export default function CertificateTableRow({ cert, profile, program }: Certific
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+  }
+
+  const handleShare = () => {
+    const shareUrl = `${typeof window !== 'undefined' ? window.location.origin : 'https://iicar.org'}/verify?id=${cert.cert_id}`
+    navigator.clipboard.writeText(shareUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   return (
@@ -65,6 +74,9 @@ export default function CertificateTableRow({ cert, profile, program }: Certific
             </Button>
             <Button variant="ghost" size="sm" className="text-xs" onClick={handlePrint} title="Print Certificate">
               <Printer className="h-3 w-3" />
+            </Button>
+            <Button variant="ghost" size="sm" className="text-xs" onClick={handleShare} title={copied ? "Copied!" : "Share Certificate"}>
+              <Share2 className="h-3 w-3" />
             </Button>
             <Button asChild variant="ghost" size="sm" className="text-xs">
               <Link href={`/verify?id=${cert.cert_id}`} target="_blank">Verify</Link>

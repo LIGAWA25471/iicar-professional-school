@@ -1,7 +1,8 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
-import { Download, Printer, ExternalLink, CheckCircle2 } from 'lucide-react'
+import { Download, Printer, Share2, ExternalLink, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 
@@ -19,6 +20,8 @@ interface CertificateCardProps {
 }
 
 export default function CertificateCard({ cert }: CertificateCardProps) {
+  const [copied, setCopied] = useState(false)
+
   const handlePrint = () => {
     const link = document.createElement('a')
     link.href = `/api/certificate/download/${cert.cert_id}`
@@ -35,6 +38,13 @@ export default function CertificateCard({ cert }: CertificateCardProps) {
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+  }
+
+  const handleShare = () => {
+    const shareUrl = `${typeof window !== 'undefined' ? window.location.origin : 'https://iicar.org'}/verify?id=${cert.cert_id}`
+    navigator.clipboard.writeText(shareUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   return (
@@ -66,6 +76,9 @@ export default function CertificateCard({ cert }: CertificateCardProps) {
         </Button>
         <Button variant="outline" size="sm" className="text-xs flex-1 bg-blue-600 text-white border-blue-600 hover:bg-blue-700" onClick={handlePrint}>
           <Printer className="mr-1.5 h-3 w-3" /> Print
+        </Button>
+        <Button variant="outline" size="sm" className="text-xs flex-1" onClick={handleShare} title={copied ? "Copied!" : "Share Certificate"}>
+          <Share2 className="mr-1.5 h-3 w-3" /> {copied ? "Copied!" : "Share"}
         </Button>
         {!cert.revoked && (
           <Button asChild variant="outline" size="sm" className="text-xs flex-1">
