@@ -28,14 +28,23 @@ export default async function AdminCertificatesPage() {
   // Fetch related data separately to avoid foreign key issues
   const certificatesWithDetails = await Promise.all(
     (certs || []).map(async (cert) => {
-      const [profileRes, programRes] = await Promise.all([
-        adminDb.from('profiles').select('full_name').eq('id', cert.student_id).single(),
-        adminDb.from('programs').select('title').eq('id', cert.program_id).single(),
-      ])
-      return {
-        ...cert,
-        profiles: profileRes.data,
-        programs: programRes.data,
+      try {
+        const [profileRes, programRes] = await Promise.all([
+          adminDb.from('profiles').select('full_name').eq('id', cert.student_id),
+          adminDb.from('programs').select('title').eq('id', cert.program_id),
+        ])
+        return {
+          ...cert,
+          profiles: profileRes.data && profileRes.data.length > 0 ? profileRes.data[0] : null,
+          programs: programRes.data && programRes.data.length > 0 ? programRes.data[0] : null,
+        }
+      } catch (err) {
+        console.error('[v0] Error fetching certificate details:', err)
+        return {
+          ...cert,
+          profiles: null,
+          programs: null,
+        }
       }
     })
   )
