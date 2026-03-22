@@ -724,7 +724,6 @@ export default function ProgramModulesManager({
           </div>
         </div>
       )}
-      </div>
     </section>
   )
 }
