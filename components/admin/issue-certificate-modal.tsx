@@ -27,7 +27,7 @@ export default function IssueCertificateModal({
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [enrollments, setEnrollments] = useState<any[]>([])
-  const [selectedEnrollment, setSelectedEnrollment] = useState<string | null>(null)
+  const [selectedEnrollment, setSelectedEnrollment] = useState<any>(null)
   const [selectedLevel, setSelectedLevel] = useState(1)
   const [finalScore, setFinalScore] = useState<string>('75')
   const [issuingCert, setIssuingCert] = useState(false)
@@ -86,7 +86,7 @@ export default function IssueCertificateModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           studentId,
-          programId: selectedEnrollment,
+          programId: selectedEnrollment.program_id,
           finalScore: score,
           certificateLevel: selectedLevel,
         }),
@@ -163,9 +163,9 @@ export default function IssueCertificateModal({
                   {enrollments.map((enrollment) => (
                     <button
                       key={enrollment.id}
-                      onClick={() => setSelectedEnrollment(enrollment.id)}
+                      onClick={() => setSelectedEnrollment(enrollment)}
                       className={`w-full text-left p-3 rounded-lg border-2 transition-colors ${
-                        selectedEnrollment === enrollment.id
+                        selectedEnrollment?.id === enrollment.id
                           ? 'border-primary bg-primary/10'
                           : 'border-border hover:border-primary/50'
                       }`}
