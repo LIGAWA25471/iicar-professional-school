@@ -690,6 +690,7 @@ export default function ProgramModulesManager({
           ))}
         </div>
       )}
+    </div>
 
       {!generating && modules.length === 0 && (
         <div className="flex flex-col items-center gap-3 py-14 border-2 border-dashed border-border rounded-xl">
