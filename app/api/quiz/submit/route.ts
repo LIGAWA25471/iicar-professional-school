@@ -106,41 +106,29 @@ export async function POST(request: Request) {
     )
   }
 
-  // If final exam passed: issue certificate + complete enrollment via admin client
+  // If final exam passed: create pending certificate request (requires admin approval)
   if (type === 'final_exam' && passed) {
     const certId = `IICAR-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 10).toUpperCase()}`
 
+    // Create certificate with pending status - admin must approve before it's issued
     await adminDb.from('certificates').upsert({
       student_id: user.id,
       program_id: programId,
       cert_id: certId,
       final_score: score,
-      issued_at: new Date().toISOString(),
+      approval_status: 'pending', // Certificate requires admin approval
+      issued_at: null, // Will be set when approved
     }, { onConflict: 'student_id,program_id' })
 
+    // Update enrollment to awaiting_certificate status
     await adminDb.from('enrollments')
       .update({ status: 'completed', completed_at: new Date().toISOString() })
       .eq('student_id', user.id)
       .eq('program_id', programId)
 
-    // Send certificate email
-    if (studentProfile) {
-      const programTitle = (await adminDb
-        .from('programs')
-        .select('title')
-        .eq('id', programId)
-        .single()).data?.title || 'Program'
-      
-      const certificatePdfUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://iicar.org'}/api/certificate/download/${certId}`
-      
-      await sendCertificateNotification(
-        studentProfile.email || user.email || '',
-        studentProfile.full_name || 'Student',
-        programTitle,
-        certificatePdfUrl
-      )
-    }
+    // Note: Certificate email will be sent when admin approves the certificate
+    // No automatic certificate notification here
   }
 
-  return NextResponse.json({ score, passed })
+  return NextResponse.json({ score, passed, pendingApproval: type === 'final_exam' && passed })
 }
