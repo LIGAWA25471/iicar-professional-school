@@ -11,7 +11,8 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Award, Loader2 } from 'lucide-react'
+import { Award, Loader2, Globe } from 'lucide-react'
+import { CertificateLanguage } from '@/lib/certificate-translations'
 
 interface IssueCertificateModalProps {
   studentId: string
@@ -30,6 +31,7 @@ export default function IssueCertificateModal({
   const [selectedEnrollment, setSelectedEnrollment] = useState<any>(null)
   const [selectedLevel, setSelectedLevel] = useState(1)
   const [finalScore, setFinalScore] = useState<string>('75')
+  const [selectedLanguage, setSelectedLanguage] = useState<CertificateLanguage>('en')
   const [issuingCert, setIssuingCert] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -89,6 +91,7 @@ export default function IssueCertificateModal({
           programId: selectedEnrollment.program_id,
           finalScore: score,
           certificateLevel: selectedLevel,
+          language: selectedLanguage,
         }),
       })
 
@@ -104,8 +107,8 @@ export default function IssueCertificateModal({
       // Auto-download PDF after 1 second
       setTimeout(() => {
         const link = document.createElement('a')
-        link.href = `/api/certificate/download/${data.certId}`
-        link.download = `${data.certId}_certificate.pdf`
+        link.href = `/api/certificate/download/${data.certId}?lang=${selectedLanguage}`
+        link.download = `${data.certId}_certificate_${selectedLanguage}.pdf`
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
@@ -119,7 +122,7 @@ export default function IssueCertificateModal({
     } finally {
       setIssuingCert(false)
     }
-  }, [selectedEnrollment, selectedLevel, studentId, finalScore])
+  }, [selectedEnrollment, selectedLevel, studentId, finalScore, selectedLanguage])
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -184,6 +187,27 @@ export default function IssueCertificateModal({
 
             {selectedEnrollment && (
               <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    <Globe className="h-4 w-4" /> Certificate Language
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(['en', 'fr', 'pt'] as const).map((lang) => (
+                      <button
+                        key={lang}
+                        onClick={() => setSelectedLanguage(lang)}
+                        className={`p-2 rounded text-center transition-colors text-sm font-medium ${
+                          selectedLanguage === lang
+                            ? 'bg-primary text-primary-foreground'
+                            : 'border border-border hover:border-primary'
+                        }`}
+                      >
+                        {lang === 'en' ? 'English' : lang === 'fr' ? 'Français' : 'Português'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Final Score (%)</label>
                   <input
