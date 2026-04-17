@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Download, Printer, Share2, ExternalLink, CheckCircle2 } from 'lucide-react'
+import { Download, Printer, Share2, ExternalLink, CheckCircle2, Globe } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { CertificateLanguage } from '@/lib/certificate-translations'
 
 interface Certificate {
   id: string
@@ -19,25 +20,35 @@ interface CertificateCardProps {
   cert: Certificate
 }
 
+const LANGUAGES: { code: CertificateLanguage; label: string }[] = [
+  { code: 'en', label: 'English' },
+  { code: 'fr', label: 'Français' },
+  { code: 'pt', label: 'Português' },
+]
+
 export default function CertificateCard({ cert }: CertificateCardProps) {
   const [copied, setCopied] = useState(false)
+  const [showDownloadMenu, setShowDownloadMenu] = useState(false)
+  const [showPrintMenu, setShowPrintMenu] = useState(false)
 
-  const handlePrint = () => {
+  const handlePrint = (lang: CertificateLanguage = 'en') => {
     const link = document.createElement('a')
-    link.href = `/api/certificate/download/${cert.cert_id}`
+    link.href = `/api/certificate/download/${cert.cert_id}?lang=${lang}`
     link.target = '_blank'
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+    setShowPrintMenu(false)
   }
 
-  const handleDownload = () => {
+  const handleDownload = (lang: CertificateLanguage = 'en') => {
     const link = document.createElement('a')
-    link.href = `/api/certificate/download/${cert.cert_id}`
-    link.download = `${cert.cert_id}_certificate.pdf`
+    link.href = `/api/certificate/download/${cert.cert_id}?lang=${lang}`
+    link.download = `${cert.cert_id}_certificate_${lang}.pdf`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+    setShowDownloadMenu(false)
   }
 
   const handleShare = () => {
@@ -71,12 +82,40 @@ export default function CertificateCard({ cert }: CertificateCardProps) {
         {cert.final_score && <span>Final Score: <strong className="text-foreground">{cert.final_score}%</strong></span>}
       </div>
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" size="sm" className="text-xs flex-1 bg-green-600 text-white border-green-600 hover:bg-green-700" onClick={handleDownload}>
-          <Download className="mr-1.5 h-3 w-3" /> Download
-        </Button>
-        <Button variant="outline" size="sm" className="text-xs flex-1 bg-blue-600 text-white border-blue-600 hover:bg-blue-700" onClick={handlePrint}>
-          <Printer className="mr-1.5 h-3 w-3" /> Print
-        </Button>
+        <div className="relative flex-1 group">
+          <Button variant="outline" size="sm" className="text-xs w-full bg-green-600 text-white border-green-600 hover:bg-green-700">
+            <Download className="mr-1.5 h-3 w-3" /> Download
+          </Button>
+          <div className="absolute left-0 top-full mt-1 w-full hidden group-hover:flex flex-col bg-background border border-border rounded shadow-md z-10">
+            {LANGUAGES.map((lang) => (
+              <button
+                key={lang.code}
+                onClick={() => handleDownload(lang.code)}
+                className="px-3 py-2 text-xs hover:bg-green-50 text-left whitespace-nowrap font-medium"
+              >
+                {lang.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="relative flex-1 group">
+          <Button variant="outline" size="sm" className="text-xs w-full bg-blue-600 text-white border-blue-600 hover:bg-blue-700">
+            <Printer className="mr-1.5 h-3 w-3" /> Print
+          </Button>
+          <div className="absolute left-0 top-full mt-1 w-full hidden group-hover:flex flex-col bg-background border border-border rounded shadow-md z-10">
+            {LANGUAGES.map((lang) => (
+              <button
+                key={lang.code}
+                onClick={() => handlePrint(lang.code)}
+                className="px-3 py-2 text-xs hover:bg-blue-50 text-left whitespace-nowrap font-medium"
+              >
+                {lang.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <Button variant="outline" size="sm" className="text-xs flex-1" onClick={handleShare} title={copied ? "Copied!" : "Share Certificate"}>
           <Share2 className="mr-1.5 h-3 w-3" /> {copied ? "Copied!" : "Share"}
         </Button>
