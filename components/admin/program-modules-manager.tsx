@@ -230,7 +230,6 @@ export default function ProgramModulesManager({
       setSavingQuizFor(null)
     }
   }
-  }
 
   async function generateExam() {
     setGeneratingExam(true)
