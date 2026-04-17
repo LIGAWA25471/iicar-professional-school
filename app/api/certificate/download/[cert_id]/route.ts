@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { jsPDF } from 'jspdf'
+import { certificateTranslations, levelNames, type CertificateLanguage } from '@/lib/certificate-translations'
 
 export async function GET(
   request: Request,
@@ -8,6 +9,12 @@ export async function GET(
 ) {
   const { cert_id } = await params
   if (!cert_id) return NextResponse.json({ error: 'No certificate ID provided' }, { status: 400 })
+
+  // Get language from query params, default to English
+  const url = new URL(request.url)
+  const lang = (url.searchParams.get('lang') || 'en') as CertificateLanguage
+  const translations = certificateTranslations[lang] || certificateTranslations.en
+  const langLevelNames = levelNames[lang] || levelNames.en
 
   try {
     const adminDb = createAdminClient()
@@ -125,13 +132,13 @@ export async function GET(
     doc.setFont('times', 'bold')
     doc.setFontSize(32)
     doc.setTextColor(184, 134, 11) // Gold
-    doc.text('Certificate of Achievement', pageWidth / 2, 62, { align: 'center' })
+    doc.text(translations.certificateTitle, pageWidth / 2, 62, { align: 'center' })
 
     // Secondary line
     doc.setFont('times', 'italic')
     doc.setFontSize(11)
     doc.setTextColor(100, 100, 100)
-    doc.text('Professional Certification', pageWidth / 2, 68, { align: 'center' })
+    doc.text(translations.certificateSubtitle, pageWidth / 2, 68, { align: 'center' })
 
     // Decorative divider
     doc.setDrawColor(184, 134, 11)
@@ -142,7 +149,7 @@ export async function GET(
     doc.setFont('times', 'normal')
     doc.setFontSize(11)
     doc.setTextColor(60, 60, 60)
-    doc.text('This prestigious certificate is awarded to', pageWidth / 2, 83, { align: 'center' })
+    doc.text(translations.awardedTo, pageWidth / 2, 83, { align: 'center' })
 
     // Student name - prominent display
     doc.setFont('times', 'bold')
@@ -156,7 +163,7 @@ export async function GET(
     doc.setFont('times', 'normal')
     doc.setFontSize(11)
     doc.setTextColor(60, 60, 60)
-    doc.text('for successfully completing the professional certification in', pageWidth / 2, 110, { align: 'center' })
+    doc.text(translations.forSuccessfullyCompleting, pageWidth / 2, 110, { align: 'center' })
 
     // Program title - highlighted
     doc.setFont('times', 'bold')
@@ -171,14 +178,21 @@ export async function GET(
     doc.setFontSize(10)
     doc.setTextColor(100, 100, 100)
 
-    const issueDate = cert.issued_at ? new Date(cert.issued_at).toLocaleDateString('en-GB', {
+    // Determine locale for date formatting
+    const localeMap: Record<CertificateLanguage, string> = {
+      en: 'en-GB',
+      fr: 'fr-FR',
+      pt: 'pt-BR',
+    }
+    const dateLocale = localeMap[lang] || 'en-GB'
+
+    const issueDate = cert.issued_at ? new Date(cert.issued_at).toLocaleDateString(dateLocale, {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
-    }) : new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+    }) : new Date().toLocaleDateString(dateLocale, { day: 'numeric', month: 'long', year: 'numeric' })
 
-    const LEVEL_NAMES = ['Foundation', 'Intermediate', 'Advanced', 'Professional', 'Expert']
-    const levelName = LEVEL_NAMES[(cert.certificate_level || 1) - 1]
+    const levelName = langLevelNames[(cert.certificate_level || 1) - 1]
 
     // Create metrics section
     let metricsY = 132
@@ -192,7 +206,8 @@ export async function GET(
       doc.setFont('times', 'bold')
       doc.setFontSize(9)
       doc.setTextColor(184, 134, 11)
-      doc.text(`Final Score: ${cert.final_score}%`, 32, metricsY + 3, { align: 'left' })
+      const scoreLabel = lang === 'fr' ? 'Note Finale' : lang === 'pt' ? 'Pontuação Final' : 'Final Score'
+      doc.text(`${scoreLabel}: ${cert.final_score}%`, 32, metricsY + 3, { align: 'left' })
       metricsY += 12
     }
 
@@ -204,7 +219,7 @@ export async function GET(
     doc.setFont('times', 'bold')
     doc.setFontSize(9)
     doc.setTextColor(15, 23, 42)
-    doc.text(`Level ${cert.certificate_level || 1}: ${levelName}`, 32, metricsY + 3, { align: 'left' })
+    doc.text(`${translations.levelLabel} ${cert.certificate_level || 1}: ${levelName}`, 32, metricsY + 3, { align: 'left' })
 
     // Issue date box
     doc.setDrawColor(184, 134, 11)
@@ -214,7 +229,7 @@ export async function GET(
     doc.setFont('times', 'normal')
     doc.setFontSize(9)
     doc.setTextColor(100, 100, 100)
-    doc.text(`Issued: ${issueDate}`, pageWidth - 63, metricsY + 3, { align: 'left' })
+    doc.text(`${translations.issuedLabel}: ${issueDate}`, pageWidth - 63, metricsY + 3, { align: 'left' })
 
     // Certificate ID and verification
     doc.setFont('courier', 'normal')
@@ -244,12 +259,12 @@ export async function GET(
     doc.setFont('times', 'bold')
     doc.setFontSize(9)
     doc.setTextColor(15, 23, 42)
-    doc.text('Authorized Signatory', 40, sigY + 4, { align: 'center' })
+    doc.text(translations.authorizedSignatory, 40, sigY + 4, { align: 'center' })
     
     doc.setFont('times', 'normal')
     doc.setFontSize(8)
     doc.setTextColor(100, 100, 100)
-    doc.text('Director, Programs', 40, sigY + 8, { align: 'center' })
+    doc.text(translations.directorPrograms, 40, sigY + 8, { align: 'center' })
 
     // Right signature block - Principal
     doc.setLineWidth(0.4)
@@ -269,13 +284,13 @@ export async function GET(
     doc.setFont('times', 'normal')
     doc.setFontSize(8)
     doc.setTextColor(100, 100, 100)
-    doc.text('Principal, IICAR', pageWidth - 40, sigY + 8, { align: 'center' })
+    doc.text(translations.principal, pageWidth - 40, sigY + 8, { align: 'center' })
 
     // Footer certification statement
     doc.setFont('times', 'italic')
     doc.setFontSize(7)
     doc.setTextColor(150, 150, 150)
-    doc.text('This certificate recognizes demonstrated excellence and proficiency in professional development.', 
+    doc.text(translations.recognitionStatement, 
       pageWidth / 2, pageHeight - 2, { align: 'center' })
 
     // Generate PDF buffer
