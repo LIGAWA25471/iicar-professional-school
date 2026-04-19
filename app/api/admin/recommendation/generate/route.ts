@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     // Fetch student profile
     const { data: student, error: studentError } = await adminDb
       .from('profiles')
-      .select('full_name, email')
+      .select('full_name')
       .eq('id', studentId)
       .single()
 
