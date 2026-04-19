@@ -11,7 +11,8 @@ interface RecommendationGeneratorProps {
   studentName: string
   enrollments: Array<{
     id: string
-    programs: { title: string; id: string } | null
+    program_id: string
+    programs: { id: string; title: string } | null
     status: string
   }>
 }
@@ -73,8 +74,9 @@ export default function RecommendationGenerator({
 
   const handleGenerateAll = async (type: 'recommendation' | 'endorsement') => {
     for (const enrollment of completedEnrollments) {
-      if (enrollment.programs) {
-        setLoading(`${enrollment.programs.id}-${type}`)
+      const programId = enrollment.programs?.id || enrollment.program_id
+      if (programId) {
+        setLoading(`${programId}-${type}`)
         
         try {
           const res = await fetch('/api/admin/recommendation/generate', {
@@ -82,7 +84,7 @@ export default function RecommendationGenerator({
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               studentId,
-              programId: enrollment.programs.id,
+              programId,
               type,
               language: selectedLang,
             }),
@@ -152,39 +154,42 @@ export default function RecommendationGenerator({
           <div className="space-y-2">
             <h4 className="text-sm font-medium">Individual Documents:</h4>
             <div className="max-h-60 overflow-y-auto space-y-2">
-              {completedEnrollments.map((enrollment) => (
-                <div key={enrollment.id} className="flex items-center justify-between gap-2 p-3 bg-muted/30 rounded">
-                  <span className="text-sm">{enrollment.programs?.title}</span>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-xs"
-                      disabled={loading === `${enrollment.programs?.id}-recommendation`}
-                      onClick={() => handleGenerateRecommendation(enrollment.programs?.id || '', 'recommendation')}
-                    >
-                      {loading === `${enrollment.programs?.id}-recommendation` ? (
-                        <><Loader2 className="h-3 w-3 mr-1 animate-spin" />Generating...</>
-                      ) : (
-                        <><Download className="h-3 w-3 mr-1" />Recommendation</>
-                      )}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-xs"
-                      disabled={loading === `${enrollment.programs?.id}-endorsement`}
-                      onClick={() => handleGenerateRecommendation(enrollment.programs?.id || '', 'endorsement')}
-                    >
-                      {loading === `${enrollment.programs?.id}-endorsement` ? (
-                        <><Loader2 className="h-3 w-3 mr-1 animate-spin" />Generating...</>
-                      ) : (
-                        <><Download className="h-3 w-3 mr-1" />Endorsement</>
-                      )}
-                    </Button>
+              {completedEnrollments.map((enrollment) => {
+                const programId = enrollment.programs?.id || enrollment.program_id
+                return (
+                  <div key={enrollment.id} className="flex items-center justify-between gap-2 p-3 bg-muted/30 rounded">
+                    <span className="text-sm">{enrollment.programs?.title}</span>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs"
+                        disabled={loading === `${programId}-recommendation`}
+                        onClick={() => handleGenerateRecommendation(programId, 'recommendation')}
+                      >
+                        {loading === `${programId}-recommendation` ? (
+                          <><Loader2 className="h-3 w-3 mr-1 animate-spin" />Generating...</>
+                        ) : (
+                          <><Download className="h-3 w-3 mr-1" />Recommendation</>
+                        )}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs"
+                        disabled={loading === `${programId}-endorsement`}
+                        onClick={() => handleGenerateRecommendation(programId, 'endorsement')}
+                      >
+                        {loading === `${programId}-endorsement` ? (
+                          <><Loader2 className="h-3 w-3 mr-1 animate-spin" />Generating...</>
+                        ) : (
+                          <><Download className="h-3 w-3 mr-1" />Endorsement</>
+                        )}
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
 

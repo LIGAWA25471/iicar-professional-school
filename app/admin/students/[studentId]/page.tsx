@@ -24,7 +24,7 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
 
   const { data: enrollments } = await adminDb
     .from('enrollments')
-    .select('id, status, enrolled_at, completed_at, programs(title)')
+    .select('id, status, enrolled_at, completed_at, program_id, programs(id, title)')
     .eq('student_id', studentId)
     .order('enrolled_at', { ascending: false })
 

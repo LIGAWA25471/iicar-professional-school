@@ -6,51 +6,60 @@ import { recommendationTranslations, type RecommendationLanguage, type Recommend
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { studentId, programId, type, language = 'en' } = body as {
-      studentId: string
-      programId: string
-      type: RecommendationType
-      language: RecommendationLanguage
-    }
+    console.log('[v0] Recommendation request body:', body)
+    
+    const { studentId, programId, type, language = 'en' } = body
 
     if (!studentId || !programId || !type) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+      console.error('[v0] Missing required fields:', { studentId, programId, type })
+      return NextResponse.json({ 
+        error: 'Missing required fields',
+        received: { studentId, programId, type, language }
+      }, { status: 400 })
+    }
+
+    if (!['recommendation', 'endorsement'].includes(type)) {
+      console.error('[v0] Invalid type:', type)
+      return NextResponse.json({ error: 'Invalid type - must be "recommendation" or "endorsement"' }, { status: 400 })
     }
 
     const adminDb = createAdminClient()
 
     // Fetch student profile
-    const { data: student } = await adminDb
+    const { data: student, error: studentError } = await adminDb
       .from('profiles')
       .select('full_name, email')
       .eq('id', studentId)
       .single()
 
-    if (!student) {
-      return NextResponse.json({ error: 'Student not found' }, { status: 404 })
+    if (studentError || !student) {
+      console.error('[v0] Student fetch error:', studentError)
+      return NextResponse.json({ error: 'Student not found', details: studentError?.message }, { status: 404 })
     }
 
     // Fetch program details
-    const { data: program } = await adminDb
+    const { data: program, error: programError } = await adminDb
       .from('programs')
       .select('title')
       .eq('id', programId)
       .single()
 
-    if (!program) {
-      return NextResponse.json({ error: 'Program not found' }, { status: 404 })
+    if (programError || !program) {
+      console.error('[v0] Program fetch error:', programError)
+      return NextResponse.json({ error: 'Program not found', details: programError?.message }, { status: 404 })
     }
 
     // Verify enrollment exists
-    const { data: enrollment } = await adminDb
+    const { data: enrollment, error: enrollmentError } = await adminDb
       .from('enrollments')
       .select('id, completed_at')
       .eq('student_id', studentId)
       .eq('program_id', programId)
       .single()
 
-    if (!enrollment) {
-      return NextResponse.json({ error: 'Student is not enrolled in this program' }, { status: 400 })
+    if (enrollmentError || !enrollment) {
+      console.error('[v0] Enrollment verification error:', enrollmentError)
+      return NextResponse.json({ error: 'Student is not enrolled in this program', details: enrollmentError?.message }, { status: 400 })
     }
 
     const translations = recommendationTranslations[language]
