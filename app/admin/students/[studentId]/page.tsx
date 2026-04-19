@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ChevronLeft, Award } from 'lucide-react'
 import AdminManualEnrollModal from '@/components/admin/manual-enroll-modal'
+import RecommendationGenerator from '@/components/admin/recommendation-generator'
 
 export default async function AdminStudentDetailPage({ params }: { params: Promise<{ studentId: string }> }) {
   const { studentId } = await params
@@ -23,7 +24,7 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
 
   const { data: enrollments } = await adminDb
     .from('enrollments')
-    .select('id, status, enrolled_at, completed_at, programs(title)')
+    .select('id, status, enrolled_at, completed_at, program_id, programs(id, title)')
     .eq('student_id', studentId)
     .order('enrolled_at', { ascending: false })
 
@@ -126,6 +127,12 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
           )}
         </div>
       </div>
+
+      <RecommendationGenerator
+        studentId={studentId}
+        studentName={profile.full_name ?? 'Student'}
+        enrollments={enrollments ?? []}
+      />
     </div>
   )
 }
