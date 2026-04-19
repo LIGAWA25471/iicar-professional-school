@@ -72,6 +72,43 @@ export default function RecommendationGenerator({
     }
   }
 
+  const handleGenerateCombined = async (type: 'recommendation' | 'endorsement') => {
+    setLoading(`combined-${type}`)
+    setError(null)
+
+    try {
+      const res = await fetch('/api/admin/recommendation/generate-all', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          studentId,
+          type,
+          language: selectedLang,
+        }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to generate combined document')
+      }
+
+      // Download combined PDF
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${studentName}_${type}_all_courses_${selectedLang}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to generate combined document')
+    } finally {
+      setLoading(null)
+    }
+  }
+
   const handleGenerateAll = async (type: 'recommendation' | 'endorsement') => {
     for (const enrollment of completedEnrollments) {
       const programId = enrollment.programs?.id || enrollment.program_id
@@ -95,7 +132,7 @@ export default function RecommendationGenerator({
             const url = window.URL.createObjectURL(blob)
             const a = document.createElement('a')
             a.href = url
-            a.download = `${studentName}_${enrollment.programs.title}_${type}_${selectedLang}.pdf`
+            a.download = `${studentName}_${enrollment.programs?.title}_${type}_${selectedLang}.pdf`
             document.body.appendChild(a)
             a.click()
             window.URL.revokeObjectURL(url)
@@ -193,31 +230,69 @@ export default function RecommendationGenerator({
             </div>
           </div>
 
-          <div className="border-t border-border pt-4 space-y-2">
-            <h4 className="text-sm font-medium">Generate All at Once:</h4>
-            <div className="flex gap-2">
-              <Button
-                className="flex-1"
-                disabled={loading !== null}
-                onClick={() => handleGenerateAll('recommendation')}
-              >
-                {loading?.includes('recommendation') ? (
-                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Generating...</>
-                ) : (
-                  <><Download className="h-4 w-4 mr-2" />Download All Recommendations</>
-                )}
-              </Button>
-              <Button
-                className="flex-1"
-                disabled={loading !== null}
-                onClick={() => handleGenerateAll('endorsement')}
-              >
-                {loading?.includes('endorsement') ? (
-                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Generating...</>
-                ) : (
-                  <><Download className="h-4 w-4 mr-2" />Download All Endorsements</>
-                )}
-              </Button>
+          <div className="border-t border-border pt-4 space-y-4">
+            <div>
+              <h4 className="text-sm font-medium mb-3">Combined Document (All Courses in One):</h4>
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-700"
+                  disabled={loading === 'combined-recommendation' || completedEnrollments.length === 0}
+                  onClick={() => handleGenerateCombined('recommendation')}
+                >
+                  {loading === 'combined-recommendation' ? (
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Generating...</>
+                  ) : (
+                    <><Download className="h-4 w-4 mr-2" />Combined Recommendation</>
+                  )}
+                </Button>
+                <Button
+                  className="flex-1 bg-amber-600 hover:bg-amber-700"
+                  disabled={loading === 'combined-endorsement' || completedEnrollments.length === 0}
+                  onClick={() => handleGenerateCombined('endorsement')}
+                >
+                  {loading === 'combined-endorsement' ? (
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Generating...</>
+                  ) : (
+                    <><Download className="h-4 w-4 mr-2" />Combined Endorsement</>
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Single document listing all {completedEnrollments.length} completed certification(s)
+              </p>
+            </div>
+
+            <div className="border-t border-border pt-4">
+              <h4 className="text-sm font-medium mb-3">Individual Documents (Separate File for Each Course):</h4>
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  className="flex-1"
+                  variant="outline"
+                  disabled={loading !== null && !loading?.includes('individual')}
+                  onClick={() => handleGenerateAll('recommendation')}
+                >
+                  {loading?.includes('recommendation') && !loading?.includes('combined') ? (
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Generating...</>
+                  ) : (
+                    <><Download className="h-4 w-4 mr-2" />All Recommendations Separately</>
+                  )}
+                </Button>
+                <Button
+                  className="flex-1"
+                  variant="outline"
+                  disabled={loading !== null && !loading?.includes('individual')}
+                  onClick={() => handleGenerateAll('endorsement')}
+                >
+                  {loading?.includes('endorsement') && !loading?.includes('combined') ? (
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Generating...</>
+                  ) : (
+                    <><Download className="h-4 w-4 mr-2" />All Endorsements Separately</>
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Separate document for each certification (sequential downloads)
+              </p>
             </div>
           </div>
         </div>

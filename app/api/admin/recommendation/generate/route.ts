@@ -123,16 +123,31 @@ export async function POST(request: Request) {
     doc.text(translations.sincerely, 20, yPosition)
     yPosition += 15
 
-    // Signature line
-    doc.setLineWidth(0.4)
-    doc.setDrawColor(15, 23, 42)
-    doc.line(20, yPosition, 70, yPosition)
-    yPosition += 8
+    // Add registrar signature image
+    try {
+      // Using a placeholder for signature - in production, fetch from URL or use base64
+      // For now, we'll draw a signature line with the text "Registrar"
+      doc.setLineWidth(0.5)
+      doc.setDrawColor(15, 23, 42)
+      doc.line(20, yPosition, 70, yPosition)
+      yPosition += 2
+
+      // Signature placeholder text
+      doc.setFont('times', 'italic')
+      doc.setFontSize(9)
+      doc.setTextColor(100, 100, 100)
+      doc.text('[Registrar Signature]', 20, yPosition)
+      yPosition += 10
+    } catch (e) {
+      // Fallback if signature image fails
+      yPosition += 10
+    }
 
     // Name and title
     doc.setFont('times', 'bold')
     doc.setFontSize(10)
-    doc.text(translations.directorPrograms, 20, yPosition)
+    doc.setTextColor(15, 23, 42)
+    doc.text(translations.registrar, 20, yPosition)
     yPosition += 5
 
     doc.setFont('times', 'normal')
