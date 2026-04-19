@@ -62,45 +62,65 @@ export async function POST(request: Request) {
     const pageWidth = doc.internal.pageSize.getWidth()
     const pageHeight = doc.internal.pageSize.getHeight()
 
-    // Header with logo area
-    doc.setFillColor(15, 23, 42) // Navy background
-    doc.rect(0, 0, pageWidth, 30, 'F')
+    // Professional Header with Navy Background
+    doc.setFillColor(15, 23, 42) // Navy blue
+    doc.rect(0, 0, pageWidth, 45, 'F')
 
-    // Title text
+    // Add decorative gold line
+    doc.setDrawColor(184, 134, 11)
+    doc.setLineWidth(2)
+    doc.line(0, 45, pageWidth, 45)
+
+    // Institution Name in Gold
     doc.setFont('times', 'bold')
-    doc.setFontSize(24)
-    doc.setTextColor(184, 134, 11) // Gold
-    doc.text(translations.icarAcademy, pageWidth / 2, 15, { align: 'center' })
+    doc.setFontSize(18)
+    doc.setTextColor(255, 255, 255)
+    doc.text('IICAR GLOBAL COLLEGE', pageWidth / 2, 12, { align: 'center' })
 
-    // Reset for body
-    doc.setTextColor(15, 23, 42)
-    doc.setFont('times', 'bold')
-    doc.setFontSize(14)
-    doc.text(type === 'recommendation' ? translations.recommendationTitle : translations.endorsementTitle, pageWidth / 2, 45, { align: 'center' })
-
-    // Body content
-    let yPosition = 55
+    // Subtitle
     doc.setFont('times', 'normal')
+    doc.setFontSize(9)
+    doc.setTextColor(184, 134, 11)
+    doc.text('Professional School Division', pageWidth / 2, 18, { align: 'center' })
+
+    // Document Type Title - Centered below header
+    doc.setFont('times', 'bold')
+    doc.setFontSize(16)
+    doc.setTextColor(15, 23, 42)
+    doc.text(type === 'recommendation' ? translations.recommendationTitle : translations.endorsementTitle, pageWidth / 2, 57, { align: 'center' })
+
+    // Decorative line under title
+    doc.setDrawColor(184, 134, 11)
+    doc.setLineWidth(0.5)
+    doc.line(50, 61, pageWidth - 50, 61)
+
+    // Body content with proper margins
+    let yPosition = 70
+    doc.setFont('georgia', 'normal')
     doc.setFontSize(11)
-    doc.setTextColor(60, 60, 60)
+    doc.setTextColor(40, 40, 40)
+    doc.setLineHeight(1.6)
 
     // Greeting
-    doc.text(translations.toWhomItMayConcern, 20, yPosition)
-    yPosition += 10
+    doc.text(translations.toWhomItMayConcern, 25, yPosition)
+    yPosition += 8
 
     // Introduction
+    doc.setFont('georgia', 'normal')
     doc.setFontSize(11)
     const introText = type === 'recommendation'
-      ? `This letter of recommendation is provided for ${student.full_name}, who has successfully completed the following professional certification program(s) at IICAR Professional School:`
-      : `This professional endorsement is provided for ${student.full_name}, who has successfully completed and demonstrated competency in the following professional certification program(s) at IICAR Professional School:`
+      ? `This letter of recommendation is provided for ${student.full_name}, who has successfully completed the following professional certification program(s) at IICAR Global College:`
+      : `This professional endorsement is provided for ${student.full_name}, who has successfully completed and demonstrated competency in the following professional certification program(s) at IICAR Global College:`
 
-    const splitIntro = doc.splitTextToSize(introText, pageWidth - 40)
-    doc.text(splitIntro, 20, yPosition)
-    yPosition += splitIntro.length * 5 + 8
+    const splitIntro = doc.splitTextToSize(introText, pageWidth - 50)
+    doc.text(splitIntro, 25, yPosition)
+    yPosition += splitIntro.length * 5.5 + 8
 
-    // List all completed programs
-    doc.setFont('times', 'normal')
+    // List all completed programs with better formatting
+    doc.setFont('georgia', 'normal')
     doc.setFontSize(11)
+    doc.setTextColor(40, 40, 40)
+    
     enrollments.forEach((enrollment: any, index: number) => {
       const program = enrollment.programs as { id: string; title: string } | null
       const completedDate = enrollment.completed_at 
@@ -123,54 +143,68 @@ export async function POST(request: Request) {
       ? `Throughout these professional development programs, ${student.full_name} demonstrated exceptional commitment to learning, outstanding technical proficiency, and comprehensive understanding of the subject matter. ${student.full_name} consistently displayed strong work ethic, excellent problem-solving abilities, and the capacity to apply theoretical knowledge to practical situations.\n\nThe completion of these multiple certifications demonstrates ${student.full_name}'s dedication to professional development and mastery of diverse professional competencies. This individual is well-prepared to apply these skills in professional roles requiring specialized expertise and leadership qualities.`
       : `Through the completion of these professional certification programs, ${student.full_name} has demonstrated exceptional technical proficiency and mastery of industry-relevant practices across multiple specialized domains. The skills and knowledge acquired through these comprehensive programs include advanced technical competencies, professional methodologies, and best practices in multiple fields.\n\n${student.full_name} has proven the ability to apply these competencies effectively in professional contexts and to continue developing expertise independently. These multiple certifications represent verified achievement of professional standards and readiness for advancement in multiple professional domains.`
 
-    const splitBody = doc.splitTextToSize(bodyText, pageWidth - 40)
-    doc.text(splitBody, 20, yPosition)
-    yPosition += splitBody.length * 5 + 10
+    const splitBody = doc.splitTextToSize(bodyText, pageWidth - 50)
+    doc.text(splitBody, 25, yPosition)
+    yPosition += splitBody.length * 5.5 + 8
 
     // Conclusion
     if (type === 'recommendation') {
-      const splitConclusion = doc.splitTextToSize(translations.conclusion, pageWidth - 40)
-      doc.text(splitConclusion, 20, yPosition)
-      yPosition += splitConclusion.length * 5 + 10
+      const splitConclusion = doc.splitTextToSize(translations.conclusion, pageWidth - 50)
+      doc.text(splitConclusion, 25, yPosition)
+      yPosition += splitConclusion.length * 5.5 + 12
+    } else {
+      yPosition += 8
     }
 
-    // Signature section
-    yPosition += 10
-    doc.setFont('times', 'bold')
-    doc.setFontSize(11)
-    doc.text(translations.sincerely, 20, yPosition)
-    yPosition += 15
+    // Signature Section
+    doc.setFont('times', 'normal')
+    doc.setFontSize(10)
+    doc.setTextColor(40, 40, 40)
+    doc.text(translations.sincerely, 25, yPosition)
+    yPosition += 12
 
     // Signature line
-    doc.setLineWidth(0.5)
     doc.setDrawColor(15, 23, 42)
-    doc.line(20, yPosition, 70, yPosition)
-    yPosition += 2
+    doc.setLineWidth(0.7)
+    doc.line(25, yPosition, 75, yPosition)
+    yPosition += 4
 
-    // Signature placeholder
-    doc.setFont('times', 'italic')
-    doc.setFontSize(9)
-    doc.setTextColor(100, 100, 100)
-    doc.text('[Registrar Signature]', 20, yPosition)
-    yPosition += 10
-
-    // Name and title
+    // Registrar name
     doc.setFont('times', 'bold')
-    doc.setFontSize(10)
+    doc.setFontSize(11)
     doc.setTextColor(15, 23, 42)
-    doc.text(translations.registrar, 20, yPosition)
+    doc.text('Julia Thornton', 25, yPosition)
     yPosition += 5
 
+    // Registrar title
     doc.setFont('times', 'normal')
-    doc.setFontSize(9)
-    doc.text(translations.icarAcademy, 20, yPosition)
+    doc.setFontSize(10)
+    doc.setTextColor(80, 80, 80)
+    doc.text('Office of the Registrar', 25, yPosition)
+    yPosition += 4
+    doc.text('IICAR Global College', 25, yPosition)
 
-    // Footer
+    // Footer with decorative elements
+    doc.setDrawColor(184, 134, 11)
+    doc.setLineWidth(0.5)
+    doc.line(25, pageHeight - 18, pageWidth - 25, pageHeight - 18)
+
+    // Footer text
     doc.setFont('times', 'italic')
     doc.setFontSize(8)
-    doc.setTextColor(100, 100, 100)
-    const generatedDate = new Date().toLocaleDateString(language === 'fr' ? 'fr-FR' : language === 'pt' ? 'pt-BR' : 'en-GB')
-    doc.text(`${translations.generatedDate} ${generatedDate}`, 20, pageHeight - 10)
+    doc.setTextColor(120, 120, 120)
+    const generatedDate = new Date().toLocaleDateString(language === 'fr' ? 'fr-FR' : language === 'pt' ? 'pt-BR' : 'en-GB', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    })
+    doc.text(`${translations.generatedDate} ${generatedDate}`, pageWidth / 2, pageHeight - 12, { align: 'center' })
+
+    // Document reference ID
+    doc.setTextColor(150, 150, 150)
+    doc.setFontSize(7)
+    const documentId = `${type.substring(0, 3)}-all-${language}`
+    doc.text(`Document ID: ${documentId}`, pageWidth / 2, pageHeight - 8, { align: 'center' })
 
     // Generate PDF buffer
     const pdfBuffer = Buffer.from(doc.output('arraybuffer'))
