@@ -1,4 +1,4 @@
-import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 export async function DELETE(
@@ -7,25 +7,33 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    console.log('[v0] DELETE /api/admin/signatures/{id} - ID:', id)
 
     const adminDb = createAdminClient()
 
     const { error } = await adminDb
-      .from('signatures')
+      .from('admin_signatures')
       .delete()
       .eq('id', id)
 
     if (error) {
-      throw error
+      console.error('[v0] Error deleting signature:', error)
+      return NextResponse.json({ 
+        success: false,
+        error: 'Failed to delete signature',
+        details: error.message
+      }, { status: 500 })
     }
 
+    console.log('[v0] Signature deleted:', id)
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('[v0] Error deleting signature:', err)
-    return NextResponse.json({ error: 'Failed to delete signature' }, { status: 500 })
+    console.error('[v0] Error in DELETE /api/admin/signatures/{id}:', err)
+    return NextResponse.json({ 
+      success: false,
+      error: 'Failed to delete signature',
+      message: err instanceof Error ? err.message : String(err)
+    }, { status: 500 })
   }
 }
 
@@ -35,39 +43,60 @@ export async function POST(
 ) {
   try {
     const { id } = await params
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    console.log('[v0] POST /api/admin/signatures/{id} - ID:', id)
 
     const adminDb = createAdminClient()
 
     // Get the action from the URL path
     const url = new URL(request.url)
-    const action = url.pathname.split('/').pop()
+    const pathParts = url.pathname.split('/')
+    const action = pathParts[pathParts.length - 1]
+
+    console.log('[v0] Action:', action)
 
     if (action === 'activate') {
-      // Set all signatures to inactive
-      await adminDb
-        .from('signatures')
-        .update({ is_active: false })
-        .eq('is_active', true)
+      // Deactivate all other signatures
+      const { error: deactivateError } = await adminDb
+        .from('admin_signatures')
+        .update({ is_primary: false })
+        .neq('id', id)
 
-      // Set this one as active
-      const { error } = await adminDb
-        .from('signatures')
-        .update({ is_active: true })
-        .eq('id', id)
-
-      if (error) {
-        throw error
+      if (deactivateError) {
+        console.warn('[v0] Warning deactivating other signatures:', deactivateError.message)
       }
 
-      return NextResponse.json({ success: true })
+      // Activate this signature
+      const { data: updatedSignature, error } = await adminDb
+        .from('admin_signatures')
+        .update({ is_primary: true })
+        .eq('id', id)
+        .select('id, signature_name, is_primary, created_at')
+        .single()
+
+      if (error) {
+        console.error('[v0] Error activating signature:', error)
+        return NextResponse.json({ 
+          success: false,
+          error: 'Failed to activate signature',
+          details: error.message
+        }, { status: 500 })
+      }
+
+      console.log('[v0] Signature activated:', id)
+      return NextResponse.json({ success: true, data: updatedSignature })
     }
 
-    return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
+    console.warn('[v0] Unknown action:', action)
+    return NextResponse.json({ 
+      success: false,
+      error: 'Invalid action'
+    }, { status: 400 })
   } catch (err) {
-    console.error('[v0] Error updating signature:', err)
-    return NextResponse.json({ error: 'Failed to update signature' }, { status: 500 })
+    console.error('[v0] Error in POST /api/admin/signatures/{id}:', err)
+    return NextResponse.json({ 
+      success: false,
+      error: 'Server error',
+      message: err instanceof Error ? err.message : String(err)
+    }, { status: 500 })
   }
 }
