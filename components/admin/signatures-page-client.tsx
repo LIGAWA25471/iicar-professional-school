@@ -115,17 +115,42 @@ export default function SignaturesPageClient({ initialSignatures }: { initialSig
   }
 
   const handleFileUpload = async (file: File) => {
+    if (!signatureName.trim()) {
+      alert('Please enter a signature name before uploading')
+      return
+    }
+
     const reader = new FileReader()
     reader.onload = async (e) => {
       const base64 = e.target?.result as string
       await saveSignature('upload', base64)
-      setSignatureName('')
     }
     reader.readAsDataURL(file)
   }
 
-  const saveSignature = async (type: 'upload' | 'drawn' | 'typed', data: string) => {
-    if (!signatureName.trim() && type !== 'typed') {
+  const saveUploadedSignature = async () => {
+    if (!fileInputRef.current?.files?.[0]) {
+      alert('Please select a file first')
+      return
+    }
+    if (!signatureName.trim()) {
+      alert('Please enter a signature name')
+      return
+    }
+
+    const file = fileInputRef.current.files[0]
+    const reader = new FileReader()
+    reader.onload = async (e) => {
+      const base64 = e.target?.result as string
+      await saveSignature('upload', base64, signatureName)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const saveSignature = async (type: 'upload' | 'drawn' | 'typed', data: string, customName?: string) => {
+    const name = customName || signatureName || typedName || `${type} Signature`
+    
+    if (!name.trim()) {
       alert('Please enter a name for this signature')
       return
     }
@@ -138,7 +163,7 @@ export default function SignaturesPageClient({ initialSignatures }: { initialSig
         body: JSON.stringify({
           signature_type: type,
           signature_data: data,
-          signature_name: signatureName || typedName || `${type} Signature`,
+          signature_name: name,
         }),
       })
 
@@ -148,8 +173,13 @@ export default function SignaturesPageClient({ initialSignatures }: { initialSig
         setSignatureName('')
         setTypedName('')
         clearCanvas()
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ''
+        }
+        alert('Signature saved successfully!')
       } else {
-        alert('Failed to save signature')
+        const errorData = await res.json()
+        alert(`Failed to save signature: ${errorData.error || 'Unknown error'}`)
       }
     } catch (err) {
       console.error('[v0] Error saving signature:', err)
@@ -240,7 +270,11 @@ export default function SignaturesPageClient({ initialSignatures }: { initialSig
                   type="file"
                   accept="image/*"
                   className="hidden"
-                  onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])}
+                  onChange={(e) => {
+                    if (e.target.files?.[0]) {
+                      // Just set the file, user will click save button
+                    }
+                  }}
                 />
                 <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                 <p className="text-sm font-medium">Click to upload or drag and drop</p>
@@ -255,6 +289,26 @@ export default function SignaturesPageClient({ initialSignatures }: { initialSig
                   Choose File
                 </Button>
               </div>
+              {fileInputRef.current?.files?.length ? (
+                <div className="text-sm text-muted-foreground">
+                  Selected: {fileInputRef.current.files[0]?.name}
+                </div>
+              ) : null}
+              <Button 
+                onClick={saveUploadedSignature} 
+                disabled={loading || !fileInputRef.current?.files?.length} 
+                className="w-full"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving...
+                  </>
+                ) : (
+                  <>
+                    <Check className="h-4 w-4 mr-2" /> Save Uploaded Signature
+                  </>
+                )}
+              </Button>
             </TabsContent>
 
             {/* Draw Tab */}
