@@ -174,7 +174,6 @@ export async function POST(request: Request) {
           doc.text(processedSignature.signature_data, 25, yPosition)
           yPosition += 8
         }
-        }
       } catch (err) {
         console.log('[v0] Error adding signature:', err)
         doc.setDrawColor(15, 23, 42)
