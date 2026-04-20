@@ -131,13 +131,14 @@ export async function POST(request: Request) {
       ? translations.recommendationBody(student.full_name, program.title)
       : translations.endorsementBody(student.full_name, program.title)
 
-    const splitBody = doc.splitTextToSize(bodyText, pageWidth - 50)
+    const maxWidth = pageWidth - 50 // 25mm left margin + 25mm right margin
+    const splitBody = doc.splitTextToSize(bodyText, maxWidth)
     doc.text(splitBody, 25, yPosition)
     yPosition += splitBody.length * 4 + 10
 
     // Conclusion paragraph
     if (type === 'recommendation') {
-      const splitConclusion = doc.splitTextToSize(translations.conclusion, pageWidth - 50)
+      const splitConclusion = doc.splitTextToSize(translations.conclusion, maxWidth)
       doc.text(splitConclusion, 25, yPosition)
       yPosition += splitConclusion.length * 4 + 15
     } else {

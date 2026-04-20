@@ -106,6 +106,7 @@ export async function POST(request: Request) {
 
     // Body content with proper margins
     let yPosition = 70
+    const maxWidth = pageWidth - 50 // 25mm left + 25mm right margins
     doc.setFont('georgia', 'normal')
     doc.setFontSize(11)
     doc.setTextColor(40, 40, 40)
@@ -121,7 +122,7 @@ export async function POST(request: Request) {
       ? translations.multipleRecommendationIntro(student.full_name)
       : translations.multipleEndorsementIntro(student.full_name)
 
-    const splitIntro = doc.splitTextToSize(introText, pageWidth - 50)
+    const splitIntro = doc.splitTextToSize(introText, maxWidth)
     doc.text(splitIntro, 25, yPosition)
     yPosition += splitIntro.length * 4 + 12
 
@@ -152,13 +153,13 @@ export async function POST(request: Request) {
       ? translations.multipleRecommendationBody(student.full_name)
       : translations.multipleEndorsementBody(student.full_name)
 
-    const splitBody = doc.splitTextToSize(bodyText, pageWidth - 50)
+    const splitBody = doc.splitTextToSize(bodyText, maxWidth)
     doc.text(splitBody, 25, yPosition)
     yPosition += splitBody.length * 4 + 15
 
     // Conclusion
     if (type === 'recommendation') {
-      const splitConclusion = doc.splitTextToSize(translations.conclusion, pageWidth - 50)
+      const splitConclusion = doc.splitTextToSize(translations.conclusion, maxWidth)
       doc.text(splitConclusion, 25, yPosition)
       yPosition += splitConclusion.length * 4 + 15
     } else {
