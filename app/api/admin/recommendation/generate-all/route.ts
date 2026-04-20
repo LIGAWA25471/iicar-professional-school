@@ -126,10 +126,12 @@ export async function POST(request: Request) {
     doc.text(splitIntro, 25, yPosition)
     yPosition += splitIntro.length * 4 + 12
 
-    // List all completed programs with better formatting
+    // List all completed programs with text wrapping and page break handling
     doc.setFont('georgia', 'normal')
-    doc.setFontSize(11)
+    doc.setFontSize(10)
     doc.setTextColor(40, 40, 40)
+    
+    const pageBreakThreshold = pageHeight - 40 // Leave room for signature section
     
     enrollments.forEach((enrollment: any, index: number) => {
       const program = enrollment.programs as { id: string; title: string } | null
@@ -141,9 +143,18 @@ export async function POST(request: Request) {
           })
         : 'N/A'
       
+      // Wrap long program titles and dates
       const bulletText = `${index + 1}. ${program?.title || 'Program'} (Completed: ${completedDate})`
-      doc.text(bulletText, 30, yPosition)
-      yPosition += 7
+      const wrappedBullet = doc.splitTextToSize(bulletText, maxWidth - 10)
+      
+      // Check if we need a page break
+      if (yPosition + wrappedBullet.length * 4 > pageBreakThreshold) {
+        doc.addPage()
+        yPosition = 30
+      }
+      
+      doc.text(wrappedBullet, 30, yPosition)
+      yPosition += wrappedBullet.length * 4 + 2
     })
 
     yPosition += 8
@@ -154,19 +165,38 @@ export async function POST(request: Request) {
       : translations.multipleEndorsementBody(student.full_name)
 
     const splitBody = doc.splitTextToSize(bodyText, maxWidth)
+    
+    // Check if body text needs a new page
+    if (yPosition + splitBody.length * 4 + 15 > pageBreakThreshold) {
+      doc.addPage()
+      yPosition = 30
+    }
+    
     doc.text(splitBody, 25, yPosition)
     yPosition += splitBody.length * 4 + 15
 
     // Conclusion
     if (type === 'recommendation') {
       const splitConclusion = doc.splitTextToSize(translations.conclusion, maxWidth)
+      
+      // Check if conclusion needs a new page
+      if (yPosition + splitConclusion.length * 4 + 15 > pageBreakThreshold) {
+        doc.addPage()
+        yPosition = 30
+      }
+      
       doc.text(splitConclusion, 25, yPosition)
       yPosition += splitConclusion.length * 4 + 15
     } else {
       yPosition += 10
     }
 
-    // Signature Section
+    // Signature Section - ensure it stays on the same page
+    if (yPosition + 40 > pageBreakThreshold) {
+      doc.addPage()
+      yPosition = 30
+    }
+    
     doc.setFont('times', 'normal')
     doc.setFontSize(10)
     doc.setTextColor(40, 40, 40)
