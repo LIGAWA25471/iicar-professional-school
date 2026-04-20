@@ -62,29 +62,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Student is not enrolled in this program', details: enrollmentError?.message }, { status: 400 })
     }
 
-    // Fetch active signature for the document
+    // Fetch active (primary) signature for the document
     const { data: activeSignature } = await adminDb
-      .from('signatures')
-      .select('signature_type, signature_data, signature_name')
-      .eq('is_active', true)
+      .from('admin_signatures')
+      .select('signature_data, signature_name')
+      .eq('is_primary', true)
       .single()
 
-    // Convert blob URLs to base64 if needed
+    // Process signature data (no blob URL conversion needed since data is stored directly)
     let processedSignature = activeSignature
-    if (activeSignature?.signature_type === 'upload' && activeSignature.signature_data?.startsWith('http')) {
-      try {
-        const response = await fetch(activeSignature.signature_data)
-        const buffer = await response.arrayBuffer()
-        const base64 = Buffer.from(buffer).toString('base64')
-        processedSignature = {
-          ...activeSignature,
-          signature_data: `data:image/png;base64,${base64}`
-        }
-      } catch (err) {
-        console.error('[v0] Error converting blob URL to base64:', err)
-        // Fall back to original signature_data
-      }
-    }
 
     const translations = recommendationTranslations[language]
 
@@ -168,14 +154,7 @@ export async function POST(request: Request) {
     // Add signature (if available)
     if (processedSignature) {
       try {
-        if (processedSignature.signature_type === 'typed') {
-          // Display typed signature
-          doc.setFont('times', 'italic')
-          doc.setFontSize(14)
-          doc.setTextColor(15, 23, 42)
-          doc.text(processedSignature.signature_data, 25, yPosition)
-          yPosition += 8
-        } else if (processedSignature.signature_type === 'drawn' || processedSignature.signature_type === 'upload') {
+        if (processedSignature.signature_data?.startsWith('data:image')) {
           // Display image signature (base64 PNG)
           try {
             doc.addImage(processedSignature.signature_data, 'PNG', 25, yPosition - 2, 50, 10)
@@ -187,6 +166,14 @@ export async function POST(request: Request) {
             doc.line(25, yPosition, 75, yPosition)
             yPosition += 4
           }
+        } else {
+          // Display typed signature
+          doc.setFont('georgia', 'bold')
+          doc.setFontSize(14)
+          doc.setTextColor(15, 23, 42)
+          doc.text(processedSignature.signature_data, 25, yPosition)
+          yPosition += 8
+        }
         }
       } catch (err) {
         console.log('[v0] Error adding signature:', err)

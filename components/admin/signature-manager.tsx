@@ -25,6 +25,14 @@ export default function SignatureManager() {
   const [typedName, setTypedName] = useState('')
   const [signatureName, setSignatureName] = useState('')
 
+  // Fetch signatures when dialog opens
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen)
+    if (newOpen) {
+      fetchSignatures()
+    }
+  }
+
   // Fetch signatures on mount
   const fetchSignatures = async () => {
     try {
@@ -107,13 +115,20 @@ export default function SignatureManager() {
         }),
       })
 
+      const newSignature = await res.json()
+      console.log('[v0] Save response:', newSignature)
+
       if (res.ok) {
-        const newSignature = await res.json()
         setSignatures([newSignature, ...signatures])
         setOpen(false)
+        alert('Signature saved successfully!')
+      } else {
+        console.error('[v0] Save error:', newSignature)
+        alert(`Failed to save signature: ${newSignature.error || 'Unknown error'}`)
       }
     } catch (err) {
       console.error('[v0] Error saving signature:', err)
+      alert(err instanceof Error ? err.message : 'Error saving signature')
     } finally {
       setLoading(false)
     }
@@ -153,7 +168,7 @@ export default function SignatureManager() {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="outline" onClick={fetchSignatures}>
           <PenTool className="h-4 w-4 mr-2" />

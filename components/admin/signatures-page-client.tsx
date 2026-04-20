@@ -10,10 +10,8 @@ import { PenTool, Upload, Type, Trash2, Check, Loader2 } from 'lucide-react'
 
 interface Signature {
   id: string
-  signature_type: 'upload' | 'drawn' | 'typed'
-  signature_data: string
   signature_name: string
-  is_active: boolean
+  is_primary: boolean
   created_at: string
 }
 
@@ -250,7 +248,7 @@ export default function SignaturesPageClient({ initialSignatures }: { initialSig
         setSignatures(
           signatures.map((s) => ({
             ...s,
-            is_active: s.id === id,
+            is_primary: s.id === id,
           }))
         )
       } else {
@@ -262,7 +260,7 @@ export default function SignaturesPageClient({ initialSignatures }: { initialSig
     }
   }
 
-  const activeSignature = signatures.find((s) => s.is_active)
+  const activeSignature = signatures.find((s) => s.is_primary)
 
   return (
     <div className="space-y-8">
@@ -504,16 +502,15 @@ export default function SignaturesPageClient({ initialSignatures }: { initialSig
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <p className="font-medium">{sig.signature_name}</p>
-                        {sig.is_active && <Badge className="bg-green-600">Active</Badge>}
+                        {sig.is_primary && <Badge className="bg-green-600">Active</Badge>}
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {sig.signature_type === 'typed' ? 'Typed' : sig.signature_type === 'drawn' ? 'Hand-drawn' : 'Uploaded'}
-                        {' '} • {new Date(sig.created_at).toLocaleDateString()}
+                        {new Date(sig.created_at).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {!sig.is_active && (
+                    {!sig.is_primary && (
                       <Button
                         size="sm"
                         variant="outline"
