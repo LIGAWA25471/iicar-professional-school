@@ -118,8 +118,8 @@ export async function POST(request: Request) {
     doc.setFont('georgia', 'normal')
     doc.setFontSize(11)
     const introText = type === 'recommendation'
-      ? `This letter of recommendation is provided for ${student.full_name}, who has successfully completed the following professional certification program(s) at IICAR Global College:`
-      : `This professional endorsement is provided for ${student.full_name}, who has successfully completed and demonstrated competency in the following professional certification program(s) at IICAR Global College:`
+      ? translations.multipleRecommendationIntro(student.full_name)
+      : translations.multipleEndorsementIntro(student.full_name)
 
     const splitIntro = doc.splitTextToSize(introText, pageWidth - 50)
     doc.text(splitIntro, 25, yPosition)
@@ -149,8 +149,8 @@ export async function POST(request: Request) {
 
     // Main body text
     const bodyText = type === 'recommendation'
-      ? `Throughout these professional development programs, ${student.full_name} demonstrated exceptional commitment to learning, outstanding technical proficiency, and comprehensive understanding of the subject matter. ${student.full_name} consistently displayed strong work ethic, excellent problem-solving abilities, and the capacity to apply theoretical knowledge to practical situations.\n\nThe completion of these multiple certifications demonstrates ${student.full_name}'s dedication to professional development and mastery of diverse professional competencies. This individual is well-prepared to apply these skills in professional roles requiring specialized expertise and leadership qualities.`
-      : `Through the completion of these professional certification programs, ${student.full_name} has demonstrated exceptional technical proficiency and mastery of industry-relevant practices across multiple specialized domains. The skills and knowledge acquired through these comprehensive programs include advanced technical competencies, professional methodologies, and best practices in multiple fields.\n\n${student.full_name} has proven the ability to apply these competencies effectively in professional contexts and to continue developing expertise independently. These multiple certifications represent verified achievement of professional standards and readiness for advancement in multiple professional domains.`
+      ? translations.multipleRecommendationBody(student.full_name)
+      : translations.multipleEndorsementBody(student.full_name)
 
     const splitBody = doc.splitTextToSize(bodyText, pageWidth - 50)
     doc.text(splitBody, 25, yPosition)
