@@ -50,6 +50,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No completed certifications found for this student' }, { status: 400 })
     }
 
+    // Fetch active signature for the document
+    const { data: activeSignature } = await adminDb
+      .from('signatures')
+      .select('signature_type, signature_data, signature_name')
+      .eq('is_active', true)
+      .single()
+
     const translations = recommendationTranslations[language]
 
     // Generate combined PDF
@@ -162,11 +169,43 @@ export async function POST(request: Request) {
     doc.text(translations.sincerely, 25, yPosition)
     yPosition += 12
 
-    // Signature line
-    doc.setDrawColor(15, 23, 42)
-    doc.setLineWidth(0.7)
-    doc.line(25, yPosition, 75, yPosition)
-    yPosition += 4
+    // Add signature (if available)
+    if (activeSignature) {
+      try {
+        if (activeSignature.signature_type === 'typed') {
+          // Display typed signature
+          doc.setFont('times', 'italic')
+          doc.setFontSize(14)
+          doc.setTextColor(15, 23, 42)
+          doc.text(activeSignature.signature_data, 25, yPosition)
+          yPosition += 8
+        } else if (activeSignature.signature_type === 'drawn' || activeSignature.signature_type === 'upload') {
+          // Display image signature
+          try {
+            doc.addImage(activeSignature.signature_data, 'PNG', 25, yPosition - 2, 50, 10)
+            yPosition += 10
+          } catch (imgErr) {
+            console.log('[v0] Could not add image signature, using line')
+            doc.setDrawColor(15, 23, 42)
+            doc.setLineWidth(0.7)
+            doc.line(25, yPosition, 75, yPosition)
+            yPosition += 4
+          }
+        }
+      } catch (err) {
+        console.log('[v0] Error adding signature:', err)
+        doc.setDrawColor(15, 23, 42)
+        doc.setLineWidth(0.7)
+        doc.line(25, yPosition, 75, yPosition)
+        yPosition += 4
+      }
+    } else {
+      // Default signature line if no signature on file
+      doc.setDrawColor(15, 23, 42)
+      doc.setLineWidth(0.7)
+      doc.line(25, yPosition, 75, yPosition)
+      yPosition += 4
+    }
 
     // Registrar name
     doc.setFont('times', 'bold')

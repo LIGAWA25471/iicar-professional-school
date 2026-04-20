@@ -1,8 +1,8 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Users, BookOpen, Award, TrendingUp, ChevronRight } from 'lucide-react'
-import SignatureManager from '@/components/admin/signature-manager'
+import { Users, BookOpen, Award, TrendingUp, ChevronRight, PenTool } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 export default async function AdminPage() {
   const supabase = await createClient()
@@ -52,7 +52,11 @@ export default async function AdminPage() {
           <h1 className="text-2xl font-bold text-primary">Admin Overview</h1>
           <p className="mt-1 text-sm text-muted-foreground">Platform snapshot and recent activity</p>
         </div>
-        <SignatureManager />
+        <Button asChild>
+          <Link href="/admin/signatures" className="flex items-center gap-2">
+            <PenTool className="h-4 w-4" /> Manage Signatures
+          </Link>
+        </Button>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
