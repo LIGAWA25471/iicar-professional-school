@@ -111,7 +111,6 @@ export async function POST(request: Request) {
     doc.setFont('georgia', 'normal')
     doc.setFontSize(11)
     doc.setTextColor(40, 40, 40)
-    doc.setLineHeight(1.6)
 
     // Greeting
     doc.text(translations.toWhomItMayConcern, 25, yPosition)
