@@ -24,6 +24,7 @@ export default function SignaturesPageClient({ initialSignatures }: { initialSig
   const [signatureName, setSignatureName] = useState('')
   const [typedName, setTypedName] = useState('')
   const [isDrawing, setIsDrawing] = useState(false)
+  const [uploadPreview, setUploadPreview] = useState<string | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -196,6 +197,7 @@ export default function SignaturesPageClient({ initialSignatures }: { initialSig
         setSignatures([newSignature, ...signatures])
         setSignatureName('')
         setTypedName('')
+        setUploadPreview(null)
         clearCanvas()
         if (fileInputRef.current) {
           fileInputRef.current.value = ''
@@ -297,7 +299,13 @@ export default function SignaturesPageClient({ initialSignatures }: { initialSig
                   accept="image/*"
                   className="hidden"
                   onChange={(e) => {
-                    // File is now selected, UI will show the filename below
+                    if (e.target.files?.[0]) {
+                      const reader = new FileReader()
+                      reader.onload = (event) => {
+                        setUploadPreview(event.target?.result as string)
+                      }
+                      reader.readAsDataURL(e.target.files[0])
+                    }
                   }}
                 />
                 <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
@@ -314,8 +322,20 @@ export default function SignaturesPageClient({ initialSignatures }: { initialSig
                 </Button>
               </div>
               {fileInputRef.current?.files && fileInputRef.current.files.length > 0 && (
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
-                  ✓ Selected: <strong>{fileInputRef.current.files[0].name}</strong>
+                <div className="space-y-3">
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
+                    ✓ Selected: <strong>{fileInputRef.current.files[0].name}</strong>
+                  </div>
+                  {uploadPreview && (
+                    <div className="border border-border rounded-lg p-4 bg-white flex flex-col items-center">
+                      <p className="text-sm font-medium mb-2">Preview</p>
+                      <img
+                        src={uploadPreview}
+                        alt="Signature preview"
+                        className="max-w-full max-h-40 object-contain border border-border rounded p-2"
+                      />
+                    </div>
+                  )}
                 </div>
               )}
               <Button 
