@@ -66,17 +66,22 @@ export async function POST(request: Request) {
       console.error('[v0] Error deactivating other signatures:', updateError)
     }
 
+    // For blob URLs (upload type), signature_data will be a URL
+    // For drawn/typed, it will be data (base64 or text)
+    // For blob URLs, we store them as-is
+    const dataToStore = signature_data
+
     // Insert new signature
     const { data: newSignature, error } = await adminDb
       .from('signatures')
       .insert({
         user_id: user.id,
         signature_type,
-        signature_data,
+        signature_data: dataToStore,
         signature_name: signature_name.trim(),
         is_active: true,
       })
-      .select('id, signature_type, signature_name, is_active, created_at')
+      .select('id, signature_type, signature_name, is_active, created_at, signature_data')
       .single()
 
     if (error) {

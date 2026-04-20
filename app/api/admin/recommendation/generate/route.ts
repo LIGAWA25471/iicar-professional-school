@@ -69,6 +69,23 @@ export async function POST(request: Request) {
       .eq('is_active', true)
       .single()
 
+    // Convert blob URLs to base64 if needed
+    let processedSignature = activeSignature
+    if (activeSignature?.signature_type === 'upload' && activeSignature.signature_data?.startsWith('http')) {
+      try {
+        const response = await fetch(activeSignature.signature_data)
+        const buffer = await response.arrayBuffer()
+        const base64 = Buffer.from(buffer).toString('base64')
+        processedSignature = {
+          ...activeSignature,
+          signature_data: `data:image/png;base64,${base64}`
+        }
+      } catch (err) {
+        console.error('[v0] Error converting blob URL to base64:', err)
+        // Fall back to original signature_data
+      }
+    }
+
     const translations = recommendationTranslations[language]
 
     // Generate PDF
@@ -149,19 +166,19 @@ export async function POST(request: Request) {
     yPosition += 12
 
     // Add signature (if available)
-    if (activeSignature) {
+    if (processedSignature) {
       try {
-        if (activeSignature.signature_type === 'typed') {
+        if (processedSignature.signature_type === 'typed') {
           // Display typed signature
           doc.setFont('times', 'italic')
           doc.setFontSize(14)
           doc.setTextColor(15, 23, 42)
-          doc.text(activeSignature.signature_data, 25, yPosition)
+          doc.text(processedSignature.signature_data, 25, yPosition)
           yPosition += 8
-        } else if (activeSignature.signature_type === 'drawn' || activeSignature.signature_type === 'upload') {
-          // Display image signature
+        } else if (processedSignature.signature_type === 'drawn' || processedSignature.signature_type === 'upload') {
+          // Display image signature (base64 PNG)
           try {
-            doc.addImage(activeSignature.signature_data, 'PNG', 25, yPosition - 2, 50, 10)
+            doc.addImage(processedSignature.signature_data, 'PNG', 25, yPosition - 2, 50, 10)
             yPosition += 10
           } catch (imgErr) {
             console.log('[v0] Could not add image signature, using line')
