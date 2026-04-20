@@ -133,15 +133,15 @@ export async function POST(request: Request) {
 
     const splitBody = doc.splitTextToSize(bodyText, pageWidth - 50)
     doc.text(splitBody, 25, yPosition)
-    yPosition += splitBody.length * 5.5 + 8
+    yPosition += splitBody.length * 4 + 10
 
     // Conclusion paragraph
     if (type === 'recommendation') {
       const splitConclusion = doc.splitTextToSize(translations.conclusion, pageWidth - 50)
       doc.text(splitConclusion, 25, yPosition)
-      yPosition += splitConclusion.length * 5.5 + 12
+      yPosition += splitConclusion.length * 4 + 15
     } else {
-      yPosition += 8
+      yPosition += 10
     }
 
     // Signature Section
@@ -149,7 +149,7 @@ export async function POST(request: Request) {
     doc.setFontSize(10)
     doc.setTextColor(40, 40, 40)
     doc.text(translations.sincerely, 25, yPosition)
-    yPosition += 12
+    yPosition += 15
 
     // Add signature (if available)
     if (processedSignature) {
@@ -158,13 +158,13 @@ export async function POST(request: Request) {
           // Display image signature (base64 PNG)
           try {
             doc.addImage(processedSignature.signature_data, 'PNG', 25, yPosition - 2, 50, 10)
-            yPosition += 10
+            yPosition += 12
           } catch (imgErr) {
             console.log('[v0] Could not add image signature, using line')
             doc.setDrawColor(15, 23, 42)
             doc.setLineWidth(0.7)
             doc.line(25, yPosition, 75, yPosition)
-            yPosition += 4
+            yPosition += 8
           }
         } else {
           // Display typed signature
@@ -172,21 +172,21 @@ export async function POST(request: Request) {
           doc.setFontSize(14)
           doc.setTextColor(15, 23, 42)
           doc.text(processedSignature.signature_data, 25, yPosition)
-          yPosition += 8
+          yPosition += 10
         }
       } catch (err) {
         console.log('[v0] Error adding signature:', err)
         doc.setDrawColor(15, 23, 42)
         doc.setLineWidth(0.7)
         doc.line(25, yPosition, 75, yPosition)
-        yPosition += 4
+        yPosition += 8
       }
     } else {
       // Default signature line if no signature on file
       doc.setDrawColor(15, 23, 42)
       doc.setLineWidth(0.7)
       doc.line(25, yPosition, 75, yPosition)
-      yPosition += 4
+      yPosition += 8
     }
 
     // Registrar name
@@ -194,14 +194,14 @@ export async function POST(request: Request) {
     doc.setFontSize(11)
     doc.setTextColor(15, 23, 42)
     doc.text('Julia Thornton', 25, yPosition)
-    yPosition += 5
+    yPosition += 6
 
     // Registrar title
     doc.setFont('times', 'normal')
     doc.setFontSize(10)
     doc.setTextColor(80, 80, 80)
     doc.text('Office of the Registrar', 25, yPosition)
-    yPosition += 4
+    yPosition += 5
     doc.text('IICAR Global College', 25, yPosition)
 
     // Footer with decorative elements
