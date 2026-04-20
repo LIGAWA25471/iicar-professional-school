@@ -138,16 +138,38 @@ export default function SignaturesPageClient({ initialSignatures }: { initialSig
       return
     }
 
-    const file = fileInputRef.current.files[0]
-    const reader = new FileReader()
-    reader.onload = async (e) => {
-      const base64 = e.target?.result as string
-      await saveSignature('upload', base64, signatureName)
+    setLoading(true)
+    try {
+      const file = fileInputRef.current.files[0]
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('signatureName', signatureName)
+
+      // Upload to Vercel Blob first
+      const uploadRes = await fetch('/api/admin/signatures/upload-blob', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!uploadRes.ok) {
+        const errorData = await uploadRes.json()
+        throw new Error(errorData.error || 'Failed to upload file')
+      }
+
+      const { url } = await uploadRes.json()
+      console.log('[v0] File uploaded to Blob:', url)
+
+      // Now save the signature with the blob URL
+      await saveSignature('upload', url, signatureName, true)
+    } catch (err) {
+      console.error('[v0] Error uploading signature:', err)
+      alert(err instanceof Error ? err.message : 'Error uploading signature')
+    } finally {
+      setLoading(false)
     }
-    reader.readAsDataURL(file)
   }
 
-  const saveSignature = async (type: 'upload' | 'drawn' | 'typed', data: string, customName?: string) => {
+  const saveSignature = async (type: 'upload' | 'drawn' | 'typed', data: string, customName?: string, skipLoading = false) => {
     const name = customName || signatureName || typedName || `${type} Signature`
     
     if (!name.trim()) {
@@ -155,7 +177,10 @@ export default function SignaturesPageClient({ initialSignatures }: { initialSig
       return
     }
 
-    setLoading(true)
+    if (!skipLoading) {
+      setLoading(true)
+    }
+
     try {
       const res = await fetch('/api/admin/signatures', {
         method: 'POST',
@@ -185,7 +210,9 @@ export default function SignaturesPageClient({ initialSignatures }: { initialSig
       console.error('[v0] Error saving signature:', err)
       alert('Error saving signature')
     } finally {
-      setLoading(false)
+      if (!skipLoading) {
+        setLoading(false)
+      }
     }
   }
 
