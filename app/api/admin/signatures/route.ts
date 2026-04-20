@@ -39,14 +39,7 @@ export async function POST(request: Request) {
     // Step 1: Parse and log request
     console.log('[v0] POST /api/admin/signatures - Starting')
     const body = await request.json()
-    console.log('[v0] Request body received:', {
-      has_signature_type: !!body.signature_type,
-      signature_type: body.signature_type,
-      has_signature_data: !!body.signature_data,
-      signature_data_length: body.signature_data?.length,
-      has_signature_name: !!body.signature_name,
-      signature_name: body.signature_name
-    })
+    console.log('[v0] REQUEST BODY:', body)
 
     // Step 2: Validate request fields exist
     console.log('[v0] Validating required fields...')
@@ -114,7 +107,7 @@ export async function POST(request: Request) {
 
     // Step 5: Deactivate other signatures
     console.log('[v0] Deactivating other active signatures...')
-    const { error: deactivateError, count: deactivateCount } = await adminDb
+    const { error: deactivateError } = await adminDb
       .from('signatures')
       .update({ is_active: false })
       .eq('is_active', true)
@@ -123,33 +116,32 @@ export async function POST(request: Request) {
       console.warn('[v0] Warning - Could not deactivate other signatures:', deactivateError.message)
       // Don't fail on this - just warn
     } else {
-      console.log('[v0] Deactivated', deactivateCount || 0, 'signatures')
+      console.log('[v0] Successfully deactivated other signatures')
     }
 
-    // Step 6: Prepare data for insert
+    // Step 6: Prepare data for insert - MATCH EXACT SCHEMA
     console.log('[v0] Preparing data for insert...')
-    const insertData = {
+    const insertPayload = {
       user_id: user.id,
       signature_type: body.signature_type,
       signature_data: String(body.signature_data),
       signature_name: body.signature_name.trim(),
-      is_active: true
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     }
-    console.log('[v0] Insert payload:', {
-      user_id: insertData.user_id,
-      signature_type: insertData.signature_type,
-      signature_name: insertData.signature_name,
-      signature_data_length: insertData.signature_data.length,
-      is_active: insertData.is_active
-    })
+    console.log('[v0] INSERT PAYLOAD:', insertPayload)
 
-    // Step 7: Insert new signature
+    // Step 7: Insert new signature - FIXED SYNTAX
     console.log('[v0] Inserting signature into database...')
     const { data: newSignature, error: insertError } = await adminDb
       .from('signatures')
-      .insert([insertData])
-      .select('id, signature_type, signature_name, is_active, created_at, signature_data')
+      .insert(insertPayload)
+      .select('id, signature_type, signature_name, is_active, created_at')
       .single()
+
+    console.log('[v0] SUPABASE DATA:', newSignature)
+    console.log('[v0] SUPABASE ERROR:', insertError)
 
     if (insertError) {
       console.error('[v0] CRITICAL - Insert failed with error:', {

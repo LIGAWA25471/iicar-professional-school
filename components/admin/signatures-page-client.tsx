@@ -192,8 +192,11 @@ export default function SignaturesPageClient({ initialSignatures }: { initialSig
         }),
       })
 
-      if (res.ok) {
-        const newSignature = await res.json()
+      const responseData = await res.json()
+      console.log('[v0] Response from /api/admin/signatures:', responseData)
+
+      if (res.ok && responseData.success) {
+        const newSignature = responseData.data
         setSignatures([newSignature, ...signatures])
         setSignatureName('')
         setTypedName('')
@@ -204,12 +207,13 @@ export default function SignaturesPageClient({ initialSignatures }: { initialSig
         }
         alert('Signature saved successfully!')
       } else {
-        const errorData = await res.json()
-        alert(`Failed to save signature: ${errorData.error || 'Unknown error'}`)
+        const errorMsg = responseData.message || responseData.error || 'Unknown error'
+        console.error('[v0] Save failed:', responseData)
+        alert(`Failed to save signature: ${errorMsg}`)
       }
     } catch (err) {
       console.error('[v0] Error saving signature:', err)
-      alert('Error saving signature')
+      alert(err instanceof Error ? err.message : 'Error saving signature')
     } finally {
       if (!skipLoading) {
         setLoading(false)
