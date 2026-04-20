@@ -99,7 +99,7 @@ export default function SignaturesPageClient({ initialSignatures }: { initialSig
     if (!canvas) return
 
     const imageData = canvas.toDataURL('image/png')
-    await saveSignature('drawn', imageData)
+    await saveSignature('drawn', imageData, signatureName)
     clearCanvas()
     setSignatureName('')
   }
@@ -110,8 +110,7 @@ export default function SignaturesPageClient({ initialSignatures }: { initialSig
       return
     }
 
-    await saveSignature('typed', typedName)
-    setTypedName('')
+    await saveSignature('typed', typedName, typedName)
   }
 
   const handleFileUpload = async (file: File) => {
@@ -298,9 +297,7 @@ export default function SignaturesPageClient({ initialSignatures }: { initialSig
                   accept="image/*"
                   className="hidden"
                   onChange={(e) => {
-                    if (e.target.files?.[0]) {
-                      // Just set the file, user will click save button
-                    }
+                    // File is now selected, UI will show the filename below
                   }}
                 />
                 <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
@@ -316,14 +313,14 @@ export default function SignaturesPageClient({ initialSignatures }: { initialSig
                   Choose File
                 </Button>
               </div>
-              {fileInputRef.current?.files?.length ? (
-                <div className="text-sm text-muted-foreground">
-                  Selected: {fileInputRef.current.files[0]?.name}
+              {fileInputRef.current?.files && fileInputRef.current.files.length > 0 && (
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
+                  ✓ Selected: <strong>{fileInputRef.current.files[0].name}</strong>
                 </div>
-              ) : null}
+              )}
               <Button 
                 onClick={saveUploadedSignature} 
-                disabled={loading || !fileInputRef.current?.files?.length} 
+                disabled={loading || !fileInputRef.current?.files?.length || !signatureName.trim()} 
                 className="w-full"
               >
                 {loading ? (
