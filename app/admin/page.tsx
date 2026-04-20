@@ -2,6 +2,7 @@ import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Users, BookOpen, Award, TrendingUp, ChevronRight } from 'lucide-react'
+import SignatureManager from '@/components/admin/signature-manager'
 
 export default async function AdminPage() {
   const supabase = await createClient()
@@ -46,9 +47,12 @@ export default async function AdminPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-2xl font-bold text-primary">Admin Overview</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Platform snapshot and recent activity</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-primary">Admin Overview</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Platform snapshot and recent activity</p>
+        </div>
+        <SignatureManager />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
