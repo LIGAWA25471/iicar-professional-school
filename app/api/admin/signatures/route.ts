@@ -34,17 +34,37 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { signature_type, signature_data, signature_name } = body
 
+    console.log('[v0] Creating signature:', { signature_type, signature_name, has_data: !!signature_data })
+
     if (!signature_type || !signature_data) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+      return NextResponse.json({ 
+        error: 'Missing required fields',
+        missing: {
+          signature_type: !signature_type,
+          signature_data: !signature_data
+        }
+      }, { status: 400 })
+    }
+
+    if (!['upload', 'drawn', 'typed'].includes(signature_type)) {
+      return NextResponse.json({ error: 'Invalid signature type' }, { status: 400 })
+    }
+
+    if (!signature_name || !signature_name.trim()) {
+      return NextResponse.json({ error: 'Signature name is required' }, { status: 400 })
     }
 
     const adminDb = createAdminClient()
 
-    // Set all other signatures to inactive if this one is being set as active
-    await adminDb
+    // Set all other signatures to inactive
+    const { error: updateError } = await adminDb
       .from('signatures')
       .update({ is_active: false })
       .eq('is_active', true)
+
+    if (updateError) {
+      console.error('[v0] Error deactivating other signatures:', updateError)
+    }
 
     // Insert new signature
     const { data: newSignature, error } = await adminDb
@@ -53,19 +73,24 @@ export async function POST(request: Request) {
         user_id: user.id,
         signature_type,
         signature_data,
-        signature_name: signature_name || `${signature_type} Signature`,
+        signature_name: signature_name.trim(),
         is_active: true,
       })
       .select('id, signature_type, signature_name, is_active, created_at')
       .single()
 
     if (error) {
+      console.error('[v0] Error inserting signature:', error)
       throw error
     }
 
+    console.log('[v0] Signature created successfully:', newSignature.id)
     return NextResponse.json(newSignature)
   } catch (err) {
     console.error('[v0] Error creating signature:', err)
-    return NextResponse.json({ error: 'Failed to create signature' }, { status: 500 })
+    return NextResponse.json({ 
+      error: 'Failed to create signature',
+      details: err instanceof Error ? err.message : String(err)
+    }, { status: 500 })
   }
 }
