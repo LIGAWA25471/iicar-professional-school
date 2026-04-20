@@ -10,8 +10,9 @@ export async function GET() {
     const adminDb = createAdminClient()
 
     const { data: signatures, error } = await adminDb
-      .from('signatures')
-      .select('id, signature_type, signature_name, is_active, created_at')
+      .from('admin_signatures')
+      .select('id, signature_name, is_primary, created_at')
+      .order('is_primary', { ascending: false })
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -43,15 +44,6 @@ export async function POST(request: Request) {
 
     // Step 2: Validate request fields exist
     console.log('[v0] Validating required fields...')
-    if (!body.signature_type) {
-      console.warn('[v0] Validation failed: missing signature_type')
-      return NextResponse.json({ 
-        success: false,
-        error: 'Validation failed',
-        field: 'signature_type',
-        message: 'signature_type is required'
-      }, { status: 400 })
-    }
     if (!body.signature_data) {
       console.warn('[v0] Validation failed: missing signature_data')
       return NextResponse.json({ 
@@ -68,15 +60,6 @@ export async function POST(request: Request) {
         error: 'Validation failed',
         field: 'signature_name',
         message: 'signature_name is required and must not be empty'
-      }, { status: 400 })
-    }
-    if (!['upload', 'drawn', 'typed'].includes(body.signature_type)) {
-      console.warn('[v0] Validation failed: invalid signature_type:', body.signature_type)
-      return NextResponse.json({ 
-        success: false,
-        error: 'Validation failed',
-        field: 'signature_type',
-        message: `Must be 'upload', 'drawn', or 'typed', got: ${body.signature_type}`
       }, { status: 400 })
     }
 
@@ -101,43 +84,56 @@ export async function POST(request: Request) {
     }
     console.log('[v0] User authenticated:', user.id)
 
-    // Step 4: Initialize admin client
+    // Step 4: Get user profile to get admin_id
+    console.log('[v0] Fetching user profile...')
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', user.id)
+      .single()
+
+    if (profileError || !profile) {
+      console.error('[v0] Could not find profile:', profileError)
+      return NextResponse.json({ 
+        success: false,
+        error: 'User profile not found'
+      }, { status: 401 })
+    }
+
+    // Step 5: Initialize admin client
     console.log('[v0] Initializing admin client...')
     const adminDb = createAdminClient()
 
-    // Step 5: Deactivate other signatures
-    console.log('[v0] Deactivating other active signatures...')
+    // Step 6: Deactivate other signatures if this one is primary
+    console.log('[v0] Deactivating other primary signatures...')
     const { error: deactivateError } = await adminDb
-      .from('signatures')
-      .update({ is_active: false })
-      .eq('is_active', true)
+      .from('admin_signatures')
+      .update({ is_primary: false })
+      .eq('is_primary', true)
     
     if (deactivateError) {
       console.warn('[v0] Warning - Could not deactivate other signatures:', deactivateError.message)
-      // Don't fail on this - just warn
-    } else {
-      console.log('[v0] Successfully deactivated other signatures')
     }
 
-    // Step 6: Prepare data for insert - MATCH EXACT SCHEMA
+    // Step 7: Prepare data for insert - MATCH EXACT admin_signatures SCHEMA
     console.log('[v0] Preparing data for insert...')
     const insertPayload = {
-      user_id: user.id,
-      signature_type: body.signature_type,
-      signature_data: String(body.signature_data),
+      admin_id: profile.id,
       signature_name: body.signature_name.trim(),
-      is_active: true,
+      signature_title: body.signature_title || 'Administrator',
+      signature_data: String(body.signature_data),
+      is_primary: true,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }
-    console.log('[v0] INSERT PAYLOAD:', insertPayload)
+    console.log('[v0] INSERT PAYLOAD:', { ...insertPayload, signature_data: 'DATA_TRUNCATED' })
 
-    // Step 7: Insert new signature - FIXED SYNTAX
-    console.log('[v0] Inserting signature into database...')
+    // Step 8: Insert new signature into admin_signatures table
+    console.log('[v0] Inserting signature into admin_signatures...')
     const { data: newSignature, error: insertError } = await adminDb
-      .from('signatures')
+      .from('admin_signatures')
       .insert(insertPayload)
-      .select('id, signature_type, signature_name, is_active, created_at')
+      .select('id, signature_name, is_primary, created_at')
       .single()
 
     console.log('[v0] SUPABASE DATA:', newSignature)
