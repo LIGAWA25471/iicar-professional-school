@@ -9,9 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 interface Signature {
   id: string
-  signature_type: 'upload' | 'drawn' | 'typed'
   signature_name: string
-  is_active: boolean
+  is_primary: boolean
   created_at: string
 }
 
@@ -103,7 +102,6 @@ export default function SignatureManager() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          signature_type: type,
           signature_data: data,
           signature_name: name || `${type.charAt(0).toUpperCase() + type.slice(1)} Signature`,
         }),
@@ -111,7 +109,8 @@ export default function SignatureManager() {
 
       if (res.ok) {
         const newSignature = await res.json()
-        setSignatures([...signatures, newSignature])
+        setSignatures([newSignature, ...signatures])
+        setOpen(false)
       }
     } catch (err) {
       console.error('[v0] Error saving signature:', err)
@@ -136,14 +135,16 @@ export default function SignatureManager() {
 
   const setActiveSignature = async (id: string) => {
     try {
-      const res = await fetch(`/api/admin/signatures/${id}/activate`, {
+      const res = await fetch(`/api/admin/signatures/${id}`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'activate' }),
       })
 
       if (res.ok) {
         setSignatures(signatures.map(s => ({
           ...s,
-          is_active: s.id === id
+          is_primary: s.id === id
         })))
       }
     } catch (err) {
@@ -282,12 +283,11 @@ export default function SignatureManager() {
                   <div className="flex-1">
                     <p className="text-sm font-medium">{sig.signature_name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {sig.signature_type.charAt(0).toUpperCase() + sig.signature_type.slice(1)}
-                      {sig.is_active && <Badge className="ml-2 h-5" variant="default">Active</Badge>}
+                      {sig.is_primary && <Badge className="ml-0 h-5" variant="default">Active</Badge>}
                     </p>
                   </div>
                   <div className="flex gap-2">
-                    {!sig.is_active && (
+                    {!sig.is_primary && (
                       <Button
                         variant="ghost"
                         size="sm"

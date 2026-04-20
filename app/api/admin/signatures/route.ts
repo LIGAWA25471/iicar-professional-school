@@ -24,11 +24,10 @@ export async function GET() {
       }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, data: signatures })
+    return NextResponse.json(signatures)
   } catch (err) {
     console.error('[v0] Error in GET /api/admin/signatures:', err)
     return NextResponse.json({ 
-      success: false,
       error: 'Failed to fetch signatures',
       details: err instanceof Error ? err.message : String(err)
     }, { status: 500 })
@@ -149,10 +148,7 @@ export async function POST(request: Request) {
     }
 
     console.log('[v0] SUCCESS - Signature created:', newSignature.id)
-    return NextResponse.json({ 
-      success: true, 
-      data: newSignature 
-    }, { status: 201 })
+    return NextResponse.json(newSignature)
 
   } catch (err) {
     console.error('[v0] CRITICAL - Unhandled exception in POST /api/admin/signatures:', {

@@ -45,14 +45,12 @@ export async function POST(
     const { id } = await params
     console.log('[v0] POST /api/admin/signatures/{id} - ID:', id)
 
-    const adminDb = createAdminClient()
-
-    // Get the action from the URL path
-    const url = new URL(request.url)
-    const pathParts = url.pathname.split('/')
-    const action = pathParts[pathParts.length - 1]
+    const body = await request.json()
+    const action = body.action
 
     console.log('[v0] Action:', action)
+
+    const adminDb = createAdminClient()
 
     if (action === 'activate') {
       // Deactivate all other signatures
