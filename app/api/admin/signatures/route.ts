@@ -84,27 +84,11 @@ export async function POST(request: Request) {
     }
     console.log('[v0] User authenticated:', user.id)
 
-    // Step 4: Get user profile to get admin_id
-    console.log('[v0] Fetching user profile...')
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('id', user.id)
-      .single()
-
-    if (profileError || !profile) {
-      console.error('[v0] Could not find profile:', profileError)
-      return NextResponse.json({ 
-        success: false,
-        error: 'User profile not found'
-      }, { status: 401 })
-    }
-
-    // Step 5: Initialize admin client
+    // Step 4: Initialize admin client
     console.log('[v0] Initializing admin client...')
     const adminDb = createAdminClient()
 
-    // Step 6: Deactivate other signatures if this one is primary
+    // Step 5: Deactivate other signatures if this one is primary
     console.log('[v0] Deactivating other primary signatures...')
     const { error: deactivateError } = await adminDb
       .from('admin_signatures')
@@ -115,10 +99,10 @@ export async function POST(request: Request) {
       console.warn('[v0] Warning - Could not deactivate other signatures:', deactivateError.message)
     }
 
-    // Step 7: Prepare data for insert - MATCH EXACT admin_signatures SCHEMA
+    // Step 6: Prepare data for insert - Use authenticated user.id as admin_id (system-level)
     console.log('[v0] Preparing data for insert...')
     const insertPayload = {
-      admin_id: profile.id,
+      admin_id: user.id,
       signature_name: body.signature_name.trim(),
       signature_title: body.signature_title || 'Administrator',
       signature_data: String(body.signature_data),
@@ -128,7 +112,7 @@ export async function POST(request: Request) {
     }
     console.log('[v0] INSERT PAYLOAD:', { ...insertPayload, signature_data: 'DATA_TRUNCATED' })
 
-    // Step 8: Insert new signature into admin_signatures table
+    // Step 7: Insert new signature into admin_signatures table
     console.log('[v0] Inserting signature into admin_signatures...')
     const { data: newSignature, error: insertError } = await adminDb
       .from('admin_signatures')
