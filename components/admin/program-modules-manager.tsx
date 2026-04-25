@@ -200,11 +200,7 @@ export default function ProgramModulesManager({
       return
     }
     if (!mod.id) {
-      setError('Save the modules first before publishing the assessment.')
-      return
-    }
-    if (!modules.every(m => m.id)) {
-      setError('All modules must be saved before publishing any assessment.')
+      setError('Save this module first before publishing its assessment.')
       return
     }
     setSavingQuizFor(idx)
