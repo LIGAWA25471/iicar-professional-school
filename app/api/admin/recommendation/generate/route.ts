@@ -95,25 +95,34 @@ export async function POST(request: Request) {
 
     if (language === 'ar') {
       // Use HTML rendering for Arabic with Puppeteer
-      const generatedDate = new Date().toLocaleDateString('ar-SA', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      })
+      try {
+        const generatedDate = new Date().toLocaleDateString('ar-SA', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        })
 
-      const htmlContent = generateArabicDocumentHTML({
-        type: type as RecommendationType,
-        studentName: student.full_name,
-        programTitle: program.title,
-        bodyText,
-        conclusionText,
-        registrarName: 'Julia Thornton',
-        registrarTitle: 'مكتب المسجل',
-        schoolName: 'مدرسة IICAR المهنية',
-        generatedDate,
-      })
+        console.log('[v0] Generating Arabic document HTML...')
+        const htmlContent = generateArabicDocumentHTML({
+          type: type as RecommendationType,
+          studentName: student.full_name,
+          programTitle: program.title,
+          bodyText,
+          conclusionText,
+          registrarName: 'Julia Thornton',
+          registrarTitle: 'مكتب المسجل',
+          schoolName: 'مدرسة IICAR المهنية',
+          generatedDate,
+        })
+        console.log('[v0] Arabic HTML generated successfully, length:', htmlContent.length)
 
-      pdfBuffer = await generatePDFFromHTML(htmlContent)
+        console.log('[v0] Starting PDF generation from HTML...')
+        pdfBuffer = await generatePDFFromHTML(htmlContent)
+        console.log('[v0] PDF generated successfully, size:', pdfBuffer.length, 'bytes')
+      } catch (arabicError) {
+        console.error('[v0] Arabic PDF generation error:', arabicError)
+        throw arabicError
+      }
     } else {
       // Use jsPDF for other languages (legacy support)
       const doc = new jsPDF({
@@ -296,6 +305,10 @@ export async function POST(request: Request) {
     })
   } catch (error) {
     console.error('[v0] Recommendation generation error:', error)
-    return NextResponse.json({ error: 'Failed to generate recommendation' }, { status: 500 })
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    return NextResponse.json({ 
+      error: 'Failed to generate recommendation',
+      details: errorMessage
+    }, { status: 500 })
   }
 }

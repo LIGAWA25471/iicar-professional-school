@@ -20,7 +20,8 @@ async function getBrowser(): Promise<Browser> {
     return browserInstance
   } catch (error) {
     console.error('[v0] Failed to launch Puppeteer:', error)
-    throw new Error('Failed to initialize PDF generation service')
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    throw new Error(`Failed to launch browser: ${errorMessage}`)
   }
 }
 
@@ -39,8 +40,8 @@ export async function generatePDFFromHTML(
     // Set viewport for proper rendering
     await page.setViewport({ width: 1200, height: 1600 })
 
-    // Load HTML content
-    await page.setContent(htmlContent, { waitUntil: 'networkidle0' })
+    // Load HTML content with relaxed wait condition
+    await page.setContent(htmlContent, { waitUntil: 'domcontentloaded' })
 
     // Generate PDF
     const pdfBuffer = await page.pdf({
@@ -60,7 +61,8 @@ export async function generatePDFFromHTML(
     return Buffer.from(pdfBuffer)
   } catch (error) {
     console.error('[v0] PDF generation failed:', error)
-    throw new Error('Failed to generate PDF')
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    throw new Error(`PDF generation failed: ${errorMessage}`)
   }
 }
 
