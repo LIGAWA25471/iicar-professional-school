@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Download, Printer, Share2, CheckCircle, XCircle, ChevronDown } from 'lucide-react'
+import { Download, Printer, Share2, CheckCircle, XCircle, ChevronDown, Eye, FileText } from 'lucide-react'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -17,6 +17,7 @@ interface CertificateTableRowProps {
 const LEVEL_NAMES = ['Foundation', 'Intermediate', 'Advanced', 'Professional', 'Expert']
 const LANGUAGES: { code: CertificateLanguage; label: string }[] = [
   { code: 'en', label: 'English' },
+  { code: 'ar', label: 'العربية' },
   { code: 'fr', label: 'Français' },
   { code: 'pt', label: 'Português' },
 ]
@@ -25,6 +26,7 @@ export default function CertificateTableRow({ cert, profile, program }: Certific
   const levelName = LEVEL_NAMES[(cert.certificate_level || 1) - 1]
   const [copied, setCopied] = useState(false)
   const [showLanguageMenu, setShowLanguageMenu] = useState(false)
+  const [showDocMenu, setShowDocMenu] = useState(false)
 
   const handleDownload = (lang: CertificateLanguage = 'en') => {
     const link = document.createElement('a')
@@ -51,6 +53,18 @@ export default function CertificateTableRow({ cert, profile, program }: Certific
     navigator.clipboard.writeText(shareUrl)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleViewRecommendation = (lang: 'ar' | 'en' = 'ar') => {
+    const previewUrl = `/api/admin/recommendation/preview?studentId=${cert.student_id}&programId=${cert.program_id}&type=recommendation&language=${lang}`
+    window.open(previewUrl, '_blank')
+    setShowDocMenu(false)
+  }
+
+  const handleViewEndorsement = (lang: 'ar' | 'en' = 'ar') => {
+    const previewUrl = `/api/admin/recommendation/preview?studentId=${cert.student_id}&programId=${cert.program_id}&type=endorsement&language=${lang}`
+    window.open(previewUrl, '_blank')
+    setShowDocMenu(false)
   }
 
   return (
@@ -110,6 +124,47 @@ export default function CertificateTableRow({ cert, profile, program }: Certific
                   </button>
                 ))}
               </div>
+            </div>
+
+            <div className="relative">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-xs" 
+                title="Generate Documents"
+                onClick={() => setShowDocMenu(!showDocMenu)}
+              >
+                <FileText className="h-3 w-3" />
+              </Button>
+              {showDocMenu && (
+                <div className="absolute right-0 mt-1 flex flex-col bg-background border border-border rounded shadow-md z-10 min-w-[150px]">
+                  <button
+                    onClick={() => handleViewRecommendation('ar')}
+                    className="px-3 py-2 text-xs hover:bg-muted text-left hover:text-foreground flex items-center gap-2"
+                  >
+                    <Eye className="h-3 w-3" /> Arabic Recommendation
+                  </button>
+                  <button
+                    onClick={() => handleViewEndorsement('ar')}
+                    className="px-3 py-2 text-xs hover:bg-muted text-left hover:text-foreground flex items-center gap-2"
+                  >
+                    <Eye className="h-3 w-3" /> Arabic Endorsement
+                  </button>
+                  <div className="border-t border-border my-1"></div>
+                  <button
+                    onClick={() => handleViewRecommendation('en')}
+                    className="px-3 py-2 text-xs hover:bg-muted text-left hover:text-foreground flex items-center gap-2"
+                  >
+                    <Eye className="h-3 w-3" /> English Recommendation
+                  </button>
+                  <button
+                    onClick={() => handleViewEndorsement('en')}
+                    className="px-3 py-2 text-xs hover:bg-muted text-left hover:text-foreground flex items-center gap-2"
+                  >
+                    <Eye className="h-3 w-3" /> English Endorsement
+                  </button>
+                </div>
+              )}
             </div>
 
             <Button variant="ghost" size="sm" className="text-xs" onClick={handleShare} title={copied ? "Copied!" : "Share Certificate"}>
