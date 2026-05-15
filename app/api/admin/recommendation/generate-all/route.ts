@@ -71,6 +71,11 @@ export async function POST(request: Request) {
 
     const pageWidth = doc.internal.pageSize.getWidth()
     const pageHeight = doc.internal.pageSize.getHeight()
+    
+    // Add font support for Arabic (use Arabic-compatible font)
+    if (language === 'ar') {
+      doc.setFont('times', 'normal')
+    }
 
     // Professional Header with Navy Background
     doc.setFillColor(15, 23, 42) // Navy blue
