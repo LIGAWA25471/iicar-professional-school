@@ -21,6 +21,7 @@ const LANGUAGES: { code: RecommendationLanguage; label: string }[] = [
   { code: 'en', label: 'English' },
   { code: 'fr', label: 'Français' },
   { code: 'pt', label: 'Português' },
+  { code: 'ar', label: 'العربية' },
 ]
 
 export default function RecommendationGenerator({

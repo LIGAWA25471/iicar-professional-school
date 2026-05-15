@@ -1,5 +1,5 @@
 export type RecommendationType = 'recommendation' | 'endorsement'
-export type RecommendationLanguage = 'en' | 'fr' | 'pt'
+export type RecommendationLanguage = 'en' | 'fr' | 'pt' | 'ar'
 
 export const recommendationTranslations = {
   en: {
@@ -70,5 +70,28 @@ export const recommendationTranslations = {
       `Ao longo desses programas de desenvolvimento profissional, ${studentName} demonstrou comprometimento excepcional com a aprendizagem, proficiência técnica notável e compreensão completa do assunto. ${studentName} demonstrou consistentemente uma forte ética de trabalho, excelentes capacidades de resolução de problemas e a capacidade de aplicar conhecimento teórico a situações práticas.\n\nA conclusão de múltiplas certificações demonstra o compromisso de ${studentName} com o desenvolvimento profissional e o domínio de competências profissionais diversas. Este indivíduo está bem preparado para aplicar essas habilidades em funções profissionais que exigem experiência especializada e qualidades de liderança.`,
     multipleEndorsementBody: (studentName: string) =>
       `Através da conclusão desses programas de certificação profissional, ${studentName} demonstrou proficiência técnica excepcional e domínio das práticas relevantes da indústria em múltiplos domínios especializados. As habilidades e conhecimentos adquiridos através desses programas abrangentes incluem competências técnicas avançadas, metodologias profissionais e melhores práticas em múltiplos campos.\n\n${studentName} provou a capacidade de aplicar essas competências efetivamente em contextos profissionais e de continuar desenvolvendo expertise de forma independente. Essas múltiplas certificações representam uma realização verificada dos padrões profissionais e prontidão para avanço em múltiplos domínios profissionais.`,
+  },
+  ar: {
+    recommendationTitle: 'خطاب التوصية',
+    endorsementTitle: 'التصديق المهني',
+    toWhomItMayConcern: 'إلى من يهمه الأمر،',
+    recommendationBody: (studentName: string, programTitle: string) =>
+      `يسعدني تقديم خطاب التوصية هذا لـ ${studentName}، الذي أكمل بنجاح شهادة احترافية في ${programTitle} بمدرسة IICAR المهنية. طوال البرنامج، أظهر ${studentName} التزاماً استثنائياً بالتعلم وإتقاناً تقنياً رائعاً وفهماً شاملاً لمواد الدورة.\n\nأظهر ${studentName} باستمرار أخلاقيات عمل قوية وقدرات ممتازة في حل المشاكل والقدرة على تطبيق المعرفة النظرية على الحالات العملية. كان تفاعله مع الأقران والمدربين احترافياً وتعاونياً، مما ساهم بشكل إيجابي في بيئة التعلم.\n\nلقد أعد البرنامج ${studentName} للتفوق في الأدوار المهنية التي تتطلب خبرة متخصصة وصفات قيادية. بناءً على الأداء والإنجازات المثبتة طوال البرنامج، أنا واثق من أن ${studentName} يمتلك المعرفة والمهارات والشخصية للنجاح في تقدمه الوظيفي.`,
+    endorsementBody: (studentName: string, programTitle: string) =>
+      `يشهد هذا بأن ${studentName} أكمل بنجاح وأثبت الكفاءة المهنية والإتقان في برنامج شهادة ${programTitle} الذي تقدمه مدرسة IICAR المهنية. طوال عملية التدريب والتقييم المكثفة، أظهر ${studentName} كفاءة تقنية استثنائية وفهماً عميقاً للممارسات ذات الصلة بالصناعة.\n\nتتضمن المهارات والمعرفة المكتسبة كفاءات تقنية متقدمة ومنهجيات مهنية وأفضل الممارسات في المجال. أثبت ${studentName} القدرة على تطبيق هذه الكفاءات بفعالية في السياقات المهنية والاستمرار في تطوير الخبرة بشكل مستقل.\n\nنصادق بموجب هذا على المؤهلات المهنية وكفاءة ${studentName} في ${programTitle}. تمثل هذه الشهادة إنجازاً معترفاً به للمعايير المهنية والاستعداد للتقدم في المجال.`,
+    conclusion: 'أنا واثق من أن هذا الشخص سيقدم مساهمة قيمة لأي منظمة وأنا متاح لمناقشة مؤهلاته بمزيد من التفاصيل عند الطلب.',
+    sincerely: 'مع أطيب التحيات،',
+    registrar: 'مكتب المسجل',
+    directorPrograms: 'مدير البرامج المهنية',
+    icarAcademy: 'مدرسة IICAR المهنية',
+    generatedDate: 'تاريخ الإنشاء:',
+    multipleRecommendationIntro: (studentName: string) =>
+      `يتم تقديم خطاب التوصية هذا لـ ${studentName}، الذي أكمل بنجاح برنامج(ج) الشهادة المهنية التالية بكلية IICAR العالمية:`,
+    multipleEndorsementIntro: (studentName: string) =>
+      `يتم تقديم هذا التصديق المهني لـ ${studentName}، الذي أكمل بنجاح وأثبت الكفاءة في برنامج(ج) الشهادة المهنية التالية بكلية IICAR العالمية:`,
+    multipleRecommendationBody: (studentName: string) =>
+      `طوال برامج التطوير المهني هذه، أظهر ${studentName} التزاماً استثنائياً بالتعلم وإتقاناً تقنياً رائعاً وفهماً شاملاً للمادة. أظهر ${studentName} باستمرار أخلاقيات عمل قوية وقدرات ممتازة في حل المشاكل والقدرة على تطبيق المعرفة النظرية على الحالات العملية.\n\nيوضح إكمال هذه الشهادات المتعددة التزام ${studentName} بالتطوير المهني وإتقانه لكفاءات مهنية متنوعة. هذا الشخص مستعد جيداً لتطبيق هذه المهارات في الأدوار المهنية التي تتطلب خبرة متخصصة وصفات قيادية.`,
+    multipleEndorsementBody: (studentName: string) =>
+      `من خلال إكمال برامج شهادة المهنية هذه، أظهر ${studentName} كفاءة تقنية استثنائية وإتقاناً للممارسات ذات الصلة بالصناعة عبر مجالات متخصصة متعددة. تتضمن المهارات والمعرفة المكتسبة من خلال هذه البرامج الشاملة كفاءات تقنية متقدمة ومنهجيات مهنية وأفضل الممارسات في حقول متعددة.\n\nأثبت ${studentName} القدرة على تطبيق هذه الكفاءات بفعالية في السياقات المهنية والاستمرار في تطوير الخبرة بشكل مستقل. تمثل هذه الشهادات المتعددة إنجازاً معترفاً به للمعايير المهنية والاستعداد للتقدم في مجالات مهنية متعددة.`,
   },
 }
