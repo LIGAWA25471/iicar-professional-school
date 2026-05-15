@@ -1,4 +1,15 @@
-import puppeteer from 'puppeteer'
+const puppeteer = require('puppeteer')
+
+// Get the browser executable path
+async function getBrowserPath(): Promise<string> {
+  try {
+    // Puppeteer 24.x handles browser binary automatically
+    return 'chrome'
+  } catch (error) {
+    console.error('[v0] Error getting browser path:', error)
+    return 'chrome'
+  }
+}
 
 // Don't persist browser - create fresh for each request
 export async function generatePDFFromHTML(
@@ -12,7 +23,12 @@ export async function generatePDFFromHTML(
   
   try {
     console.log('[v0] Launching Puppeteer browser...')
+    
+    // Try to launch with executablePath
+    const executablePath = await getBrowserPath()
+    
     browser = await puppeteer.launch({
+      executablePath,
       headless: 'new',
       args: [
         '--no-sandbox',
@@ -21,10 +37,11 @@ export async function generatePDFFromHTML(
         '--disable-gpu',
       ],
     })
+    
     console.log('[v0] Browser launched successfully')
 
     console.log('[v0] Creating new page for PDF generation...')
-    const page = await browser.createPage()
+    const page = await browser.newPage()
 
     // Set viewport for proper rendering
     await page.setViewport({ width: 1200, height: 1600 })
