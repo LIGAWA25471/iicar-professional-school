@@ -29,6 +29,15 @@ export default function CertificateTableRow({ cert, profile, program }: Certific
   const [showDocMenu, setShowDocMenu] = useState(false)
 
   const handleDownload = (lang: CertificateLanguage = 'en') => {
+    // For Arabic, open preview instead of downloading
+    if (lang === 'ar') {
+      const previewUrl = `/api/certificate/preview/${cert.cert_id}?lang=${lang}`
+      window.open(previewUrl, '_blank')
+      setShowLanguageMenu(false)
+      return
+    }
+
+    // For other languages, download PDF
     const link = document.createElement('a')
     link.href = `/api/certificate/download/${cert.cert_id}?lang=${lang}`
     link.download = `${cert.cert_id}_certificate_${lang}.pdf`
@@ -39,6 +48,15 @@ export default function CertificateTableRow({ cert, profile, program }: Certific
   }
 
   const handlePrint = (lang: CertificateLanguage = 'en') => {
+    // For Arabic, open preview instead of downloading
+    if (lang === 'ar') {
+      const previewUrl = `/api/certificate/preview/${cert.cert_id}?lang=${lang}`
+      window.open(previewUrl, '_blank')
+      setShowLanguageMenu(false)
+      return
+    }
+
+    // For other languages, open PDF in new tab
     const link = document.createElement('a')
     link.href = `/api/certificate/download/${cert.cert_id}?lang=${lang}`
     link.target = '_blank'
