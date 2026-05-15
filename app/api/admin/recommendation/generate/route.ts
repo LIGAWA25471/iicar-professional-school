@@ -83,11 +83,6 @@ export async function POST(request: Request) {
 
     const pageWidth = doc.internal.pageSize.getWidth()
     const pageHeight = doc.internal.pageSize.getHeight()
-    
-    // Add font support for Arabic (use Arabic-compatible font)
-    if (language === 'ar') {
-      doc.setFont('times', 'normal')
-    }
 
     // Professional Header with Navy Background
     doc.setFillColor(15, 23, 42) // Navy blue
@@ -114,7 +109,13 @@ export async function POST(request: Request) {
     doc.setFont('times', 'bold')
     doc.setFontSize(16)
     doc.setTextColor(15, 23, 42)
-    doc.text(type === 'recommendation' ? translations.recommendationTitle : translations.endorsementTitle, pageWidth / 2, 57, { align: 'center' })
+    
+    // For Arabic, use English title in PDF due to jsPDF limitations
+    const titleText = language === 'ar' 
+      ? (type === 'recommendation' ? 'Letter of Recommendation' : 'Professional Endorsement')
+      : (type === 'recommendation' ? translations.recommendationTitle : translations.endorsementTitle)
+    
+    doc.text(titleText, pageWidth / 2, 57, { align: 'center' })
 
     // Decorative line under title
     doc.setDrawColor(184, 134, 11)
@@ -128,13 +129,22 @@ export async function POST(request: Request) {
     doc.setTextColor(40, 40, 40)
 
     // Greeting
-    doc.text(translations.toWhomItMayConcern, 25, yPosition)
+    const greetingText = language === 'ar' ? 'To Whom It May Concern,' : translations.toWhomItMayConcern
+    doc.text(greetingText, 25, yPosition)
     yPosition += 8
 
     // Main body text with better formatting
-    const bodyText = type === 'recommendation'
-      ? translations.recommendationBody(student.full_name, program.title)
-      : translations.endorsementBody(student.full_name, program.title)
+    let bodyText: string
+    if (language === 'ar') {
+      // Use English as fallback for Arabic due to jsPDF limitations
+      bodyText = type === 'recommendation'
+        ? `I am pleased to provide this letter of recommendation for ${student.full_name}, who has successfully completed the professional certification in ${program.title} at IICAR Professional School. Throughout the program, ${student.full_name} demonstrated exceptional commitment to learning, outstanding technical proficiency, and a comprehensive grasp of the course material.\n\n${student.full_name} consistently displayed a strong work ethic, excellent problem-solving abilities, and the capacity to apply theoretical knowledge to practical situations. Their engagement with peers and instructors was professional and collaborative, contributing positively to the learning environment.\n\nThe competencies acquired during this certification program have prepared ${student.full_name} to excel in professional roles requiring specialized expertise and leadership qualities. Based on the demonstrated performance and achievements throughout the program, I am confident that ${student.full_name} possesses the knowledge, skills, and character to succeed in advancing their professional career.`
+        : `This is to certify that ${student.full_name} has successfully completed and demonstrated professional competency and mastery in the ${program.title} certification program offered by IICAR Professional School. Throughout the intensive training and assessment process, ${student.full_name} exhibited exceptional technical proficiency and a thorough understanding of industry-relevant practices.\n\nThe skills and knowledge acquired include advanced technical competencies, professional methodologies, and best practices in the field. ${student.full_name} has proven the ability to apply these competencies effectively in professional contexts and to continue developing expertise independently.\n\nWe hereby endorse ${student.full_name}'s professional qualifications and competency in ${program.title}. This certification represents a verified achievement of professional standards and readiness for advancement in the field.`
+    } else {
+      bodyText = type === 'recommendation'
+        ? translations.recommendationBody(student.full_name, program.title)
+        : translations.endorsementBody(student.full_name, program.title)
+    }
 
     const maxWidth = pageWidth - 50 // 25mm left margin + 25mm right margin
     const splitBody = doc.splitTextToSize(bodyText, maxWidth)
@@ -143,7 +153,11 @@ export async function POST(request: Request) {
 
     // Conclusion paragraph
     if (type === 'recommendation') {
-      const splitConclusion = doc.splitTextToSize(translations.conclusion, maxWidth)
+      const conclusionText = language === 'ar'
+        ? 'I am confident that this individual will make a valuable contribution to any organization and am available to discuss their qualifications in further detail upon request.'
+        : translations.conclusion
+      
+      const splitConclusion = doc.splitTextToSize(conclusionText, maxWidth)
       doc.text(splitConclusion, 25, yPosition)
       yPosition += splitConclusion.length * 4 + 15
     } else {
@@ -154,7 +168,8 @@ export async function POST(request: Request) {
     doc.setFont('times', 'normal')
     doc.setFontSize(10)
     doc.setTextColor(40, 40, 40)
-    doc.text(translations.sincerely, 25, yPosition)
+    const sincerelyText = language === 'ar' ? 'Sincerely,' : translations.sincerely
+    doc.text(sincerelyText, 25, yPosition)
     yPosition += 15
 
     // Add signature (if available)
