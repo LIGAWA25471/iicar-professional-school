@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { FileText, Download, Loader2 } from 'lucide-react'
+import { FileText, Download, Eye, Loader2 } from 'lucide-react'
 import { RecommendationLanguage } from '@/lib/recommendation-translations'
 
 interface RecommendationGeneratorProps {
@@ -34,12 +34,21 @@ export default function RecommendationGenerator({
   const [error, setError] = useState<string | null>(null)
 
   const completedEnrollments = enrollments.filter(e => e.status === 'completed' || e.status === 'active')
+  const isArabic = selectedLang === 'ar'
 
   const handleGenerateRecommendation = async (programId: string, type: 'recommendation' | 'endorsement') => {
     setLoading(`${programId}-${type}`)
     setError(null)
 
     try {
+      // For Arabic, open the preview page instead of downloading
+      if (selectedLang === 'ar') {
+        const previewUrl = `/api/admin/recommendation/preview?studentId=${studentId}&programId=${programId}&type=${type}&language=${selectedLang}`
+        window.open(previewUrl, '_blank')
+        setLoading(null)
+        return
+      }
+
       const res = await fetch('/api/admin/recommendation/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -78,6 +87,14 @@ export default function RecommendationGenerator({
     setError(null)
 
     try {
+      // For Arabic, open the preview page instead of downloading
+      if (selectedLang === 'ar') {
+        const previewUrl = `/api/admin/recommendation/preview-all?studentId=${studentId}&type=${type}&language=${selectedLang}`
+        window.open(previewUrl, '_blank')
+        setLoading(null)
+        return
+      }
+
       const res = await fetch('/api/admin/recommendation/generate-all', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -111,6 +128,19 @@ export default function RecommendationGenerator({
   }
 
   const handleGenerateAll = async (type: 'recommendation' | 'endorsement') => {
+    // For Arabic, open each preview page instead of downloading
+    if (selectedLang === 'ar') {
+      for (const enrollment of completedEnrollments) {
+        const programId = enrollment.programs?.id || enrollment.program_id
+        if (programId) {
+          const previewUrl = `/api/admin/recommendation/preview?studentId=${studentId}&programId=${programId}&type=${type}&language=${selectedLang}`
+          window.open(previewUrl, '_blank')
+          await new Promise(resolve => setTimeout(resolve, 300))
+        }
+      }
+      return
+    }
+
     for (const enrollment of completedEnrollments) {
       const programId = enrollment.programs?.id || enrollment.program_id
       if (programId) {
@@ -206,9 +236,9 @@ export default function RecommendationGenerator({
                         onClick={() => handleGenerateRecommendation(programId, 'recommendation')}
                       >
                         {loading === `${programId}-recommendation` ? (
-                          <><Loader2 className="h-3 w-3 mr-1 animate-spin" />Generating...</>
+                          <><Loader2 className="h-3 w-3 mr-1 animate-spin" />{isArabic ? 'Opening...' : 'Generating...'}</>
                         ) : (
-                          <><Download className="h-3 w-3 mr-1" />Recommendation</>
+                          <>{isArabic ? <Eye className="h-3 w-3 mr-1" /> : <Download className="h-3 w-3 mr-1" />}{isArabic ? 'View' : 'Download'} Recommendation</>
                         )}
                       </Button>
                       <Button
@@ -219,9 +249,9 @@ export default function RecommendationGenerator({
                         onClick={() => handleGenerateRecommendation(programId, 'endorsement')}
                       >
                         {loading === `${programId}-endorsement` ? (
-                          <><Loader2 className="h-3 w-3 mr-1 animate-spin" />Generating...</>
+                          <><Loader2 className="h-3 w-3 mr-1 animate-spin" />{isArabic ? 'Opening...' : 'Generating...'}</>
                         ) : (
-                          <><Download className="h-3 w-3 mr-1" />Endorsement</>
+                          <>{isArabic ? <Eye className="h-3 w-3 mr-1" /> : <Download className="h-3 w-3 mr-1" />}{isArabic ? 'View' : 'Download'} Endorsement</>
                         )}
                       </Button>
                     </div>
@@ -236,25 +266,25 @@ export default function RecommendationGenerator({
               <h4 className="text-sm font-medium mb-3">Combined Document (All Courses in One):</h4>
               <div className="flex gap-2 flex-wrap">
                 <Button
-                  className="flex-1 bg-indigo-600 hover:bg-indigo-700"
+                  className={`flex-1 ${isArabic ? 'bg-cyan-600 hover:bg-cyan-700' : 'bg-indigo-600 hover:bg-indigo-700'}`}
                   disabled={loading === 'combined-recommendation' || completedEnrollments.length === 0}
                   onClick={() => handleGenerateCombined('recommendation')}
                 >
                   {loading === 'combined-recommendation' ? (
-                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Generating...</>
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{isArabic ? 'Opening...' : 'Generating...'}</>
                   ) : (
-                    <><Download className="h-4 w-4 mr-2" />Combined Recommendation</>
+                    <>{isArabic ? <Eye className="h-4 w-4 mr-2" /> : <Download className="h-4 w-4 mr-2" />}{isArabic ? 'View' : 'Download'} Combined Recommendation</>
                   )}
                 </Button>
                 <Button
-                  className="flex-1 bg-amber-600 hover:bg-amber-700"
+                  className={`flex-1 ${isArabic ? 'bg-orange-600 hover:bg-orange-700' : 'bg-amber-600 hover:bg-amber-700'}`}
                   disabled={loading === 'combined-endorsement' || completedEnrollments.length === 0}
                   onClick={() => handleGenerateCombined('endorsement')}
                 >
                   {loading === 'combined-endorsement' ? (
-                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Generating...</>
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{isArabic ? 'Opening...' : 'Generating...'}</>
                   ) : (
-                    <><Download className="h-4 w-4 mr-2" />Combined Endorsement</>
+                    <>{isArabic ? <Eye className="h-4 w-4 mr-2" /> : <Download className="h-4 w-4 mr-2" />}{isArabic ? 'View' : 'Download'} Combined Endorsement</>
                   )}
                 </Button>
               </div>
@@ -273,9 +303,9 @@ export default function RecommendationGenerator({
                   onClick={() => handleGenerateAll('recommendation')}
                 >
                   {loading?.includes('recommendation') && !loading?.includes('combined') ? (
-                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Generating...</>
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{isArabic ? 'Opening...' : 'Generating...'}</>
                   ) : (
-                    <><Download className="h-4 w-4 mr-2" />All Recommendations Separately</>
+                    <>{isArabic ? <Eye className="h-4 w-4 mr-2" /> : <Download className="h-4 w-4 mr-2" />}{isArabic ? 'View' : 'Download'} All Recommendations Separately</>
                   )}
                 </Button>
                 <Button
@@ -285,14 +315,14 @@ export default function RecommendationGenerator({
                   onClick={() => handleGenerateAll('endorsement')}
                 >
                   {loading?.includes('endorsement') && !loading?.includes('combined') ? (
-                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Generating...</>
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{isArabic ? 'Opening...' : 'Generating...'}</>
                   ) : (
-                    <><Download className="h-4 w-4 mr-2" />All Endorsements Separately</>
+                    <>{isArabic ? <Eye className="h-4 w-4 mr-2" /> : <Download className="h-4 w-4 mr-2" />}{isArabic ? 'View' : 'Download'} All Endorsements Separately</>
                   )}
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                Separate document for each certification (sequential downloads)
+                {isArabic ? 'Opens separate page for each certification' : 'Separate document for each certification (sequential downloads)'}
               </p>
             </div>
           </div>
