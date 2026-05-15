@@ -181,6 +181,7 @@ export async function GET(
     // Determine locale for date formatting
     const localeMap: Record<CertificateLanguage, string> = {
       en: 'en-GB',
+      ar: 'ar-SA',
       fr: 'fr-FR',
       pt: 'pt-BR',
     }
@@ -206,7 +207,7 @@ export async function GET(
       doc.setFont('times', 'bold')
       doc.setFontSize(9)
       doc.setTextColor(184, 134, 11)
-      const scoreLabel = lang === 'fr' ? 'Note Finale' : lang === 'pt' ? 'Pontuação Final' : 'Final Score'
+      const scoreLabel = lang === 'ar' ? 'الدرجة النهائية' : lang === 'fr' ? 'Note Finale' : lang === 'pt' ? 'Pontuação Final' : 'Final Score'
       doc.text(`${scoreLabel}: ${cert.final_score}%`, 32, metricsY + 3, { align: 'left' })
       metricsY += 12
     }
