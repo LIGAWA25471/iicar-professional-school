@@ -1,14 +1,18 @@
-import puppeteer, { Browser } from 'puppeteer'
+import puppeteer from 'puppeteer'
 
-let browserInstance: Browser | null = null
-
-async function getBrowser(): Promise<Browser> {
-  if (browserInstance) {
-    return browserInstance
-  }
-
+// Don't persist browser - create fresh for each request
+export async function generatePDFFromHTML(
+  htmlContent: string,
+  options: {
+    format?: 'a4' | 'letter'
+    margin?: { top: string; right: string; bottom: string; left: string }
+  } = {}
+): Promise<Buffer> {
+  let browser: any = null
+  
   try {
-    browserInstance = await puppeteer.launch({
+    console.log('[v0] Launching Puppeteer browser...')
+    browser = await puppeteer.launch({
       headless: 'new',
       args: [
         '--no-sandbox',
@@ -17,33 +21,20 @@ async function getBrowser(): Promise<Browser> {
         '--disable-gpu',
       ],
     })
-    return browserInstance
-  } catch (error) {
-    console.error('[v0] Failed to launch Puppeteer:', error)
-    const errorMessage = error instanceof Error ? error.message : String(error)
-    throw new Error(`Failed to launch browser: ${errorMessage}`)
-  }
-}
+    console.log('[v0] Browser launched successfully')
 
-export async function generatePDFFromHTML(
-  htmlContent: string,
-  options: {
-    format?: 'a4' | 'letter'
-    margin?: { top: string; right: string; bottom: string; left: string }
-  } = {}
-): Promise<Buffer> {
-  const browser = await getBrowser()
-
-  try {
+    console.log('[v0] Creating new page for PDF generation...')
     const page = await browser.createPage()
 
     // Set viewport for proper rendering
     await page.setViewport({ width: 1200, height: 1600 })
 
     // Load HTML content with relaxed wait condition
+    console.log('[v0] Setting page content, HTML length:', htmlContent.length)
     await page.setContent(htmlContent, { waitUntil: 'domcontentloaded' })
 
     // Generate PDF
+    console.log('[v0] Generating PDF...')
     const pdfBuffer = await page.pdf({
       format: options.format || 'a4',
       margin: options.margin || {
@@ -56,11 +47,20 @@ export async function generatePDFFromHTML(
       preferCSSPageBreak: true,
     })
 
+    console.log('[v0] PDF generated, size:', pdfBuffer.length, 'bytes')
     await page.close()
+    await browser.close()
 
     return Buffer.from(pdfBuffer)
   } catch (error) {
     console.error('[v0] PDF generation failed:', error)
+    if (browser) {
+      try {
+        await browser.close()
+      } catch (closeErr) {
+        console.error('[v0] Error closing browser:', closeErr)
+      }
+    }
     const errorMessage = error instanceof Error ? error.message : String(error)
     throw new Error(`PDF generation failed: ${errorMessage}`)
   }
