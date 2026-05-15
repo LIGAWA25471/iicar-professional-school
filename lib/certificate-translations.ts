@@ -1,4 +1,4 @@
-export type CertificateLanguage = 'en' | 'fr' | 'pt'
+export type CertificateLanguage = 'en' | 'ar' | 'fr' | 'pt'
 
 export const certificateTranslations: Record<CertificateLanguage, {
   certificateTitle: string
@@ -52,10 +52,24 @@ export const certificateTranslations: Record<CertificateLanguage, {
     principal: 'Reitor, IICAR',
     recognitionStatement: 'Este certificado reconhece a excelência demonstrada e a proficiência profissional no desenvolvimento.',
   },
+  ar: {
+    certificateTitle: 'شهادة الإنجاز',
+    certificateSubtitle: 'شهادة مهنية',
+    awardedTo: 'تُمنح هذه الشهادة المرموقة إلى',
+    forSuccessfullyCompleting: 'لاستكمال برنامج الشهادة المهنية بنجاح في',
+    levelLabel: 'المستوى',
+    issuedLabel: 'أصدرت في',
+    verifyLabel: 'التحقق من الشهادة',
+    authorizedSignatory: 'الموقع المفوض',
+    directorPrograms: 'مدير البرامج',
+    principal: 'مدير المدرسة، IICAR',
+    recognitionStatement: 'تعترف هذه الشهادة بالتميز والكفاءة المهنية المثبتة في التطوير المهني.',
+  },
 }
 
 export const levelNames: Record<CertificateLanguage, string[]> = {
   en: ['Foundation', 'Intermediate', 'Advanced', 'Professional', 'Expert'],
+  ar: ['أساسي', 'متوسط', 'متقدم', 'احترافي', 'خبير'],
   fr: ['Fondation', 'Intermédiaire', 'Avancé', 'Professionnel', 'Expert'],
   pt: ['Fundação', 'Intermediário', 'Avançado', 'Profissional', 'Especialista'],
 }
