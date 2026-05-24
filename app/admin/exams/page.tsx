@@ -45,14 +45,17 @@ export default async function ExamsPage() {
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-6">
           <h2 className="mb-3 font-semibold text-amber-900">Database Setup Required</h2>
           <p className="mb-4 text-sm text-amber-800">
-            The exams table hasn&apos;t been created yet. Please follow these steps to set up the database:
+            The exams table hasn&apos;t been created yet. Follow the setup guide to complete database configuration:
           </p>
           <ol className="mb-4 list-inside list-decimal space-y-2 text-sm text-amber-800">
-            <li>Visit your Supabase Dashboard SQL Editor</li>
-            <li>Copy all SQL from the file: <code className="rounded bg-white px-2 py-1 font-mono">/EXAMS_SETUP.md</code></li>
-            <li>Paste it into the SQL Editor and click Run</li>
-            <li>Refresh this page once complete</li>
+            <li>Copy the SQL script from: <code className="rounded bg-white px-2 py-1 font-mono">scripts/db/01_create_exams_tables.sql</code></li>
+            <li>Open Supabase Dashboard → SQL Editor</li>
+            <li>Paste the entire SQL and click Run</li>
+            <li>Refresh this page when complete</li>
           </ol>
+          <p className="mb-3 text-sm text-amber-800">
+            For detailed instructions, see: <code className="rounded bg-white px-2 py-1 font-mono">EXAMS_SETUP.md</code>
+          </p>
           <a 
             href="https://app.supabase.com/" 
             target="_blank" 
@@ -62,7 +65,7 @@ export default async function ExamsPage() {
             Open Supabase Dashboard →
           </a>
           <p className="mt-4 text-xs text-amber-700">
-            Error details: {examsError.message}
+            Error: {examsError.message}
           </p>
         </div>
       )}
