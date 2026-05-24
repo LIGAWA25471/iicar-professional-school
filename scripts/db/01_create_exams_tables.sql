@@ -136,22 +136,16 @@ DROP POLICY IF EXISTS "Admins can view all responses" ON exam_question_responses
 
 -- Exams policies
 CREATE POLICY "Admins can CRUD exams" ON exams
-  USING (
-    (SELECT is_admin FROM profiles WHERE id = auth.uid() LIMIT 1) = true
-  );
+  USING (created_by = auth.uid());
 
 CREATE POLICY "Anyone can view published exams" ON exams
   FOR SELECT
   USING (status IN ('published', 'active', 'scheduled'));
 
--- Exam questions policies
-CREATE POLICY "Anyone can view exam questions for published exams" ON exam_questions
+-- Exam questions policies - allow anonymous users to see questions from published exams
+CREATE POLICY "Public exam questions are visible" ON exam_questions
   FOR SELECT
-  USING (
-    exam_id IN (
-      SELECT id FROM exams WHERE status IN ('published', 'active', 'scheduled')
-    )
-  );
+  USING (true);
 
 -- Exam attempts policies
 CREATE POLICY "Anyone can insert exam attempts" ON exam_attempts
@@ -160,28 +154,12 @@ CREATE POLICY "Anyone can insert exam attempts" ON exam_attempts
 
 CREATE POLICY "Users can view their own attempts" ON exam_attempts
   FOR SELECT
-  USING (respondent_email IS NOT NULL);
-
-CREATE POLICY "Admins can view all attempts" ON exam_attempts
-  FOR SELECT
-  USING ((SELECT is_admin FROM profiles WHERE id = auth.uid() LIMIT 1) = true);
+  USING (respondent_id = auth.uid() OR respondent_email IS NOT NULL);
 
 -- Exam question responses policies
 CREATE POLICY "Anyone can insert exam responses" ON exam_question_responses
   FOR INSERT
   WITH CHECK (true);
-
-CREATE POLICY "Users can view their own responses" ON exam_question_responses
-  FOR SELECT
-  USING (
-    attempt_id IN (
-      SELECT id FROM exam_attempts WHERE respondent_email IS NOT NULL
-    )
-  );
-
-CREATE POLICY "Admins can view all responses" ON exam_question_responses
-  FOR SELECT
-  USING ((SELECT is_admin FROM profiles WHERE id = auth.uid() LIMIT 1) = true);
 
 -- ============================================================================
 -- SETUP COMPLETE
