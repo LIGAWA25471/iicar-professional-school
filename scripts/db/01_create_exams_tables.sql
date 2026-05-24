@@ -100,12 +100,14 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER IF NOT EXISTS update_exams_timestamp
+DROP TRIGGER IF EXISTS update_exams_timestamp ON exams;
+CREATE TRIGGER update_exams_timestamp
 BEFORE UPDATE ON exams
 FOR EACH ROW
 EXECUTE FUNCTION update_timestamp();
 
-CREATE TRIGGER IF NOT EXISTS update_exam_questions_timestamp
+DROP TRIGGER IF EXISTS update_exam_questions_timestamp ON exam_questions;
+CREATE TRIGGER update_exam_questions_timestamp
 BEFORE UPDATE ON exam_questions
 FOR EACH ROW
 EXECUTE FUNCTION update_timestamp();
