@@ -1,6 +1,6 @@
 import { createAdminClient, createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { generateObject } from 'ai'
+import { generateObject, generateText } from 'ai'
 import { z } from 'zod'
 import crypto from 'crypto'
 
@@ -91,14 +91,69 @@ Requirements:
 Return the questions in the exact JSON format specified.`
 
     try {
-      const { object: questionData } = await generateObject({
-        model: 'grok-2-1212',
-        schema: ExamQuestions,
-        prompt,
-      })
+      const jsonPrompt = `You are an expert exam creator. Generate exactly ${total_questions} educational exam questions in valid JSON format for the following:
+Subject: ${subject}
+Difficulty Level: ${difficulty_level}
+Description: ${description || 'Professional certification exam'}
 
-      if (!questionData.questions || questionData.questions.length === 0) {
-        throw new Error('No questions generated')
+Requirements:
+- Mix of question types (multiple_choice, true_false, short_answer)
+- Appropriate difficulty level
+- Each question should have clear correct answers
+- Include explanations for each answer
+- For multiple choice, provide exactly 4 options as: {"A": "option 1", "B": "option 2", "C": "option 3", "D": "option 4"}
+- For true/false, options are: {"true": "True", "false": "False"}
+- Make questions comprehensive and professional
+- Each question difficulty should be easy, medium, or hard
+
+Return ONLY a valid JSON object with this exact structure (no markdown, no explanation):
+{
+  "questions": [
+    {
+      "question_text": "the question",
+      "question_type": "multiple_choice" or "true_false" or "short_answer",
+      "difficulty": "easy" or "medium" or "hard",
+      "options": {"A": "...", "B": "...", "C": "...", "D": "..."} or null for short_answer,
+      "correct_answer": "A" or "true" or "the answer text",
+      "explanation": "why this is correct"
+    }
+  ]
+}`
+
+      console.log('[v0] Calling AI to generate questions...')
+      let questionData: z.infer<typeof ExamQuestions>
+      
+      try {
+        const result = await generateObject({
+          model: 'xai/grok-2',
+          schema: ExamQuestions,
+          prompt: jsonPrompt,
+          temperature: 0.7,
+        })
+        questionData = result.object
+      } catch (structuredErr) {
+        console.log('[v0] Grok structured generation failed, trying text generation:', structuredErr)
+        
+        // Fallback: use generateText and parse JSON manually
+        const { text } = await generateText({
+          model: 'xai/grok-2',
+          prompt: jsonPrompt,
+          temperature: 0.7,
+        })
+        
+        // Extract JSON from response
+        const jsonMatch = text.match(/\{[\s\S]*\}/)
+        if (!jsonMatch) {
+          throw new Error('Failed to extract JSON from Grok response')
+        }
+        
+        questionData = JSON.parse(jsonMatch[0])
+      }
+
+      console.log('[v0] Received questions from Grok:', questionData?.questions?.length || 0)
+
+      if (!questionData?.questions || questionData.questions.length === 0) {
+        throw new Error('No questions were generated')
       }
 
       // Insert questions
@@ -114,13 +169,14 @@ Return the questions in the exact JSON format specified.`
         order_position: index + 1,
       }))
 
+      console.log('[v0] Inserting questions to database...')
       const { error: questionsError } = await adminDb
         .from('exam_questions')
         .insert(questionsToInsert)
 
       if (questionsError) {
         console.error('[v0] Questions insertion error:', questionsError)
-        return NextResponse.json({ error: 'Failed to insert questions' }, { status: 500 })
+        throw new Error(`Database insertion failed: ${questionsError.message}`)
       }
 
       // Update exam status to published
@@ -129,6 +185,7 @@ Return the questions in the exact JSON format specified.`
         .update({ status: 'published' })
         .eq('id', exam.id)
 
+      console.log('[v0] Exam published successfully')
       return NextResponse.json({
         exam: {
           ...exam,
@@ -139,9 +196,16 @@ Return the questions in the exact JSON format specified.`
       })
     } catch (aiError) {
       console.error('[v0] AI question generation error:', aiError)
+      const errorMsg = aiError instanceof Error ? aiError.message : 'Unknown error'
+      
       // Delete the exam if question generation fails
-      await adminDb.from('exams').delete().eq('id', exam.id)
-      return NextResponse.json({ error: 'Failed to generate questions with AI' }, { status: 500 })
+      try {
+        await adminDb.from('exams').delete().eq('id', exam.id)
+      } catch (deleteErr) {
+        console.error('[v0] Failed to delete exam on error:', deleteErr)
+      }
+      
+      return NextResponse.json({ error: `Failed to generate questions: ${errorMsg}` }, { status: 500 })
     }
   } catch (error) {
     console.error('[v0] Exam creation error:', error)
