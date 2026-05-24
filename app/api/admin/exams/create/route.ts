@@ -125,18 +125,18 @@ Return ONLY a valid JSON object with this exact structure (no markdown, no expla
       
       try {
         const result = await generateObject({
-          model: 'openai/gpt-4o-mini',
+          model: 'xai/grok-2',
           schema: ExamQuestions,
           prompt: jsonPrompt,
           temperature: 0.7,
         })
         questionData = result.object
       } catch (structuredErr) {
-        console.log('[v0] Structured generation failed, trying text generation:', structuredErr)
+        console.log('[v0] Grok structured generation failed, trying text generation:', structuredErr)
         
         // Fallback: use generateText and parse JSON manually
         const { text } = await generateText({
-          model: 'openai/gpt-4o-mini',
+          model: 'xai/grok-2',
           prompt: jsonPrompt,
           temperature: 0.7,
         })
@@ -144,13 +144,13 @@ Return ONLY a valid JSON object with this exact structure (no markdown, no expla
         // Extract JSON from response
         const jsonMatch = text.match(/\{[\s\S]*\}/)
         if (!jsonMatch) {
-          throw new Error('Failed to extract JSON from AI response')
+          throw new Error('Failed to extract JSON from Grok response')
         }
         
         questionData = JSON.parse(jsonMatch[0])
       }
 
-      console.log('[v0] Received questions:', questionData?.questions?.length || 0)
+      console.log('[v0] Received questions from Grok:', questionData?.questions?.length || 0)
 
       if (!questionData?.questions || questionData.questions.length === 0) {
         throw new Error('No questions were generated')
