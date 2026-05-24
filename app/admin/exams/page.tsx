@@ -42,8 +42,28 @@ export default async function ExamsPage() {
       </div>
 
       {examsError && (
-        <div className="rounded-lg bg-red-50 p-4 text-sm text-red-800">
-          Error loading exams: {examsError.message}
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-6">
+          <h2 className="mb-3 font-semibold text-amber-900">Database Setup Required</h2>
+          <p className="mb-4 text-sm text-amber-800">
+            The exams table hasn&apos;t been created yet. Please follow these steps to set up the database:
+          </p>
+          <ol className="mb-4 list-inside list-decimal space-y-2 text-sm text-amber-800">
+            <li>Visit your Supabase Dashboard SQL Editor</li>
+            <li>Copy all SQL from the file: <code className="rounded bg-white px-2 py-1 font-mono">/EXAMS_SETUP.md</code></li>
+            <li>Paste it into the SQL Editor and click Run</li>
+            <li>Refresh this page once complete</li>
+          </ol>
+          <a 
+            href="https://app.supabase.com/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="inline-block text-sm font-medium text-amber-700 hover:text-amber-900 underline"
+          >
+            Open Supabase Dashboard →
+          </a>
+          <p className="mt-4 text-xs text-amber-700">
+            Error details: {examsError.message}
+          </p>
         </div>
       )}
 
