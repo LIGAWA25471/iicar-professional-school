@@ -74,6 +74,10 @@ export async function POST(request: Request) {
     // Generate AI questions
     console.log(`[v0] Generating ${total_questions} exam questions for "${title}"...`)
 
+    const preferredAiModel = process.env.AI_MODEL ?? 'openai/gpt-4o-mini'
+    const defaultAiModel = 'openai/gpt-4o-mini'
+    let activeAiModel = preferredAiModel
+
     const prompt = `You are an expert exam creator. Generate exactly ${total_questions} educational exam questions for the following:
 Subject: ${subject}
 Difficulty Level: ${difficulty_level}
@@ -120,23 +124,29 @@ Return ONLY a valid JSON object with this exact structure (no markdown, no expla
   ]
 }`
 
-      console.log('[v0] Calling AI to generate questions...')
+      console.log('[v0] Calling AI to generate questions with model:', activeAiModel)
       let questionData: z.infer<typeof ExamQuestions>
       
       try {
         const result = await generateObject({
-          model: 'xai/grok-2',
+          model: activeAiModel,
           schema: ExamQuestions,
           prompt: jsonPrompt,
           temperature: 0.7,
         })
         questionData = result.object
       } catch (structuredErr) {
-        console.log('[v0] Grok structured generation failed, trying text generation:', structuredErr)
+        const errorText = String(structuredErr)
+        if (activeAiModel !== defaultAiModel && /model[_ ]not[_ ]found|not found/i.test(errorText)) {
+          console.warn(`[v0] AI model \"${activeAiModel}\" not found, falling back to ${defaultAiModel}`)
+          activeAiModel = defaultAiModel
+        }
+
+        console.log('[v0] Structured generation failed, trying text generation with model:', activeAiModel, structuredErr)
         
         // Fallback: use generateText and parse JSON manually
         const { text } = await generateText({
-          model: 'xai/grok-2',
+          model: activeAiModel,
           prompt: jsonPrompt,
           temperature: 0.7,
         })
@@ -144,13 +154,13 @@ Return ONLY a valid JSON object with this exact structure (no markdown, no expla
         // Extract JSON from response
         const jsonMatch = text.match(/\{[\s\S]*\}/)
         if (!jsonMatch) {
-          throw new Error('Failed to extract JSON from Grok response')
+          throw new Error('Failed to extract JSON from AI response')
         }
         
         questionData = JSON.parse(jsonMatch[0])
       }
 
-      console.log('[v0] Received questions from Grok:', questionData?.questions?.length || 0)
+      console.log('[v0] Received questions from AI:', questionData?.questions?.length || 0)
 
       if (!questionData?.questions || questionData.questions.length === 0) {
         throw new Error('No questions were generated')
