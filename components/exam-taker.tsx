@@ -42,6 +42,36 @@ export default function ExamTaker({ exam, questions, token }: ExamTakerProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submissionAttempt, setSubmissionAttempt] = useState(0)
+  const [savedEmails, setSavedEmails] = useState<string[]>([])
+
+  // Load saved progress when component mounts
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Load saved emails
+      const saved = localStorage.getItem('exam_emails_history')
+      if (saved) {
+        try {
+          setSavedEmails(JSON.parse(saved))
+        } catch (err) {
+          console.log('[v0] Could not load email history')
+        }
+      }
+
+      // Load saved exam progress
+      const savedExam = localStorage.getItem(`exam_progress_${exam.id}`)
+      if (savedExam) {
+        try {
+          const { answers: savedAnswers, email, name } = JSON.parse(savedExam)
+          setAnswers(savedAnswers)
+          setRespondentInfo({ email, name })
+          setShowForm(false)
+          setStartTime(new Date())
+        } catch (err) {
+          console.log('[v0] Could not restore saved exam progress')
+        }
+      }
+    }
+  }, [exam.id])
 
   // Timer effect
   useEffect(() => {
@@ -68,17 +98,36 @@ export default function ExamTaker({ exam, questions, token }: ExamTakerProps) {
     }
     setShowForm(false)
     setStartTime(new Date())
+    // Save respondent info and email history
+    if (typeof window !== 'undefined') {
+      const examProgress = { answers, email: respondentInfo.email, name: respondentInfo.name }
+      localStorage.setItem(`exam_progress_${exam.id}`, JSON.stringify(examProgress))
+      
+      // Save email to history (keep last 5 unique emails)
+      const uniqueEmails = [respondentInfo.email, ...savedEmails.filter(e => e !== respondentInfo.email)].slice(0, 5)
+      localStorage.setItem('exam_emails_history', JSON.stringify(uniqueEmails))
+    }
+  }
+
+  const handleEmailSelect = (email: string) => {
+    setRespondentInfo(prev => ({ ...prev, email }))
   }
 
   const handleAnswerChange = (questionId: string, answer: string) => {
-    setAnswers(prev => ({
-      ...prev,
+    const updatedAnswers = {
+      ...answers,
       [questionId]: answer
-    }))
-    // Save to localStorage as backup
+    }
+    setAnswers(updatedAnswers)
+    // Autosave to localStorage
     if (typeof window !== 'undefined') {
-      const backup = { answers: { ...answers, [questionId]: answer }, timestamp: Date.now() }
-      localStorage.setItem(`exam_backup_${exam.id}`, JSON.stringify(backup))
+      const examProgress = { 
+        answers: updatedAnswers, 
+        email: respondentInfo.email, 
+        name: respondentInfo.name,
+        timestamp: Date.now() 
+      }
+      localStorage.setItem(`exam_progress_${exam.id}`, JSON.stringify(examProgress))
     }
   }
 
@@ -114,8 +163,11 @@ export default function ExamTaker({ exam, questions, token }: ExamTakerProps) {
     const timeTakenSeconds = startTime ? Math.floor((Date.now() - startTime.getTime()) / 1000) : 0
     
     // Retry logic
-    let lastError = null
+    let lastError: string | null = null
+    let finalAttempt = 0
+
     for (let attempt = 1; attempt <= 3; attempt++) {
+      finalAttempt = attempt
       try {
         console.log(`[v0] Submitting exam attempt ${attempt}/3`)
         const response = await fetch('/api/exam/submit', {
@@ -147,6 +199,10 @@ export default function ExamTaker({ exam, questions, token }: ExamTakerProps) {
         }
 
         console.log('[v0] Submission successful')
+        // Clear saved progress on successful submission
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem(`exam_progress_${exam.id}`)
+        }
         setSubmitted(true)
         return
       } catch (err) {
@@ -159,9 +215,10 @@ export default function ExamTaker({ exam, questions, token }: ExamTakerProps) {
       }
     }
 
-    const errorMessage = getErrorMessage(lastError, attempt)
+    // Submission failed after all retries
+    const errorMessage = getErrorMessage(lastError, finalAttempt)
     setError(errorMessage)
-    setSubmissionAttempt(attempt)
+    setSubmissionAttempt(finalAttempt)
     setLoading(false)
   }
 
@@ -256,6 +313,23 @@ export default function ExamTaker({ exam, questions, token }: ExamTakerProps) {
                 className="w-full px-3 py-2 border border-border rounded-lg text-foreground bg-background text-sm"
                 placeholder="your@email.com"
               />
+              {savedEmails.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-xs text-muted-foreground mb-2">Quick select:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {savedEmails.map((email) => (
+                      <button
+                        key={email}
+                        type="button"
+                        onClick={() => handleEmailSelect(email)}
+                        className="px-3 py-1 text-xs bg-muted hover:bg-muted-foreground/20 text-foreground rounded border border-border transition-colors"
+                      >
+                        {email}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -332,10 +406,10 @@ export default function ExamTaker({ exam, questions, token }: ExamTakerProps) {
           {currentQuestionIndex === questions.length - 1 ? (
             <Button
               onClick={handleSubmit}
-              disabled={loading || answeredCount === 0}
+              disabled={loading && !error}
               className="px-8"
             >
-              {loading ? 'Submitting...' : 'Submit Exam'}
+              {loading && !error ? 'Submitting...' : error ? 'Retry Submit' : 'Submit Exam'}
             </Button>
           ) : (
             <Button
