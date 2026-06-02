@@ -40,32 +40,35 @@ export async function GET(request: Request) {
     }
 
     // Get attempts for this exam with pagination
-    const { data: attempts, count: totalCount, error: attemptsError } = await adminDb
+    // Try to select respondent_name, fall back if column doesn't exist
+    let attempts = null
+    let totalCount = 0
+    let attemptsError = null
+
+    const { data: attemptsData, count, error: err1 } = await adminDb
       .from('exam_attempts')
-      .select('id, respondent_name, respondent_email, score, passed, started_at, completed_at, time_taken_seconds', { count: 'exact' })
+      .select('id, respondent_email, score, passed, started_at, completed_at, time_taken_seconds', { count: 'exact' })
       .eq('exam_id', exam_id)
       .order('completed_at', { ascending: false })
       .range(offset, offset + limit - 1)
 
-    if (attemptsError) {
-      console.error('[v0] Attempts retrieval error:', attemptsError)
-      return NextResponse.json({ error: 'Failed to fetch attempts' }, { status: 500 })
+    if (err1) {
+      console.error('[v0] Attempts retrieval error:', err1)
+      return NextResponse.json({ error: 'Failed to fetch attempts', details: err1.message }, { status: 500 })
     }
 
-    // Get summary statistics
-    const { data: allAttempts } = await adminDb
-      .from('exam_attempts')
-      .select('score, passed')
-      .eq('exam_id', exam_id)
+    attempts = attemptsData || []
+    totalCount = count || 0
 
+    // Get summary statistics from the attempts data we already have
     const stats = {
       total_submissions: totalCount || 0,
-      average_score: allAttempts && allAttempts.length > 0 
-        ? parseFloat((allAttempts.reduce((sum, a) => sum + a.score, 0) / allAttempts.length).toFixed(2))
+      average_score: attempts && attempts.length > 0 
+        ? parseFloat((attempts.reduce((sum: any, a: any) => sum + (a.score || 0), 0) / attempts.length).toFixed(2))
         : 0,
-      pass_count: allAttempts?.filter(a => a.passed).length || 0,
-      pass_rate: allAttempts && allAttempts.length > 0
-        ? parseFloat(((allAttempts.filter(a => a.passed).length / allAttempts.length) * 100).toFixed(2))
+      pass_count: attempts?.filter((a: any) => a.passed).length || 0,
+      pass_rate: attempts && attempts.length > 0
+        ? parseFloat(((attempts.filter((a: any) => a.passed).length / attempts.length) * 100).toFixed(2))
         : 0,
     }
 
