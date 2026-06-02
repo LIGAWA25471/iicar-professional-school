@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ChevronLeft, BarChart3, UserCircle2 } from 'lucide-react'
 
-export default async function ExamResponsesPage({ params }: { params: Promise<{ examId: string }> }) {
-  const { examId } = await params
+export default async function ExamResponsesPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: examId } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')

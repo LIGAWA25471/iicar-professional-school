@@ -125,9 +125,9 @@ export default function ExamsTable({ exams }: ExamsTableProps) {
                     asChild
                     size="sm"
                     variant="ghost"
-                    title="View responses"
+                    title="View live monitoring and responses"
                   >
-                    <Link href={`/admin/exams/${exam.id}/responses`}>
+                    <Link href={`/admin/exams/${exam.id}`}>
                       <BarChart3 className="h-4 w-4" />
                     </Link>
                   </Button>

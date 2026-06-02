@@ -41,6 +41,7 @@ export default function ExamTaker({ exam, questions, token }: ExamTakerProps) {
   const [showForm, setShowForm] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [submissionAttempt, setSubmissionAttempt] = useState(0)
 
   // Timer effect
   useEffect(() => {
@@ -74,6 +75,11 @@ export default function ExamTaker({ exam, questions, token }: ExamTakerProps) {
       ...prev,
       [questionId]: answer
     }))
+    // Save to localStorage as backup
+    if (typeof window !== 'undefined') {
+      const backup = { answers: { ...answers, [questionId]: answer }, timestamp: Date.now() }
+      localStorage.setItem(`exam_backup_${exam.id}`, JSON.stringify(backup))
+    }
   }
 
   const handlePrevious = () => {
@@ -89,40 +95,98 @@ export default function ExamTaker({ exam, questions, token }: ExamTakerProps) {
   }
 
   const handleSubmit = async () => {
-    if (Object.keys(answers).length === 0) {
-      setError('Please answer at least one question')
+    const answeredQuestions = Object.keys(answers).length
+    if (answeredQuestions === 0) {
+      setError('Please answer at least one question before submitting')
       return
     }
 
     setLoading(true)
     setError(null)
 
-    try {
-      const response = await fetch('/api/exam/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          exam_id: exam.id,
-          token,
-          respondent_name: respondentInfo.name,
-          respondent_email: respondentInfo.email,
-          answers,
-          time_taken_seconds: startTime ? Math.floor((Date.now() - startTime.getTime()) / 1000) : 0,
-        }),
-      })
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Failed to submit exam')
-      }
-
-      const result = await response.json()
-      setSubmitted(true)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit exam')
-    } finally {
+    // Check internet connectivity
+    if (!navigator.onLine) {
+      setError('No internet connection. Please check your network and try again.')
       setLoading(false)
+      return
     }
+
+    const timeTakenSeconds = startTime ? Math.floor((Date.now() - startTime.getTime()) / 1000) : 0
+    
+    // Retry logic
+    let lastError = null
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        console.log(`[v0] Submitting exam attempt ${attempt}/3`)
+        const response = await fetch('/api/exam/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            exam_id: exam.id,
+            token,
+            respondent_name: respondentInfo.name.trim(),
+            respondent_email: respondentInfo.email.trim(),
+            answers,
+            time_taken_seconds: timeTakenSeconds,
+          }),
+        })
+
+        const data = await response.json()
+        console.log(`[v0] Submission response status: ${response.status}`)
+
+        if (!response.ok) {
+          lastError = data.error || `Server error: ${response.status}`
+          console.error(`[v0] Submission attempt ${attempt} failed:`, lastError)
+          
+          if (attempt < 3 && response.status >= 500) {
+            // Retry on server errors
+            await new Promise(resolve => setTimeout(resolve, 1000 * attempt))
+            continue
+          }
+          throw new Error(lastError)
+        }
+
+        console.log('[v0] Submission successful')
+        setSubmitted(true)
+        return
+      } catch (err) {
+        lastError = err instanceof Error ? err.message : 'Failed to submit exam'
+        console.error(`[v0] Submission attempt ${attempt} error:`, lastError)
+        
+        if (attempt < 3) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt))
+        }
+      }
+    }
+
+    const errorMessage = getErrorMessage(lastError, attempt)
+    setError(errorMessage)
+    setSubmissionAttempt(attempt)
+    setLoading(false)
+  }
+
+  const getErrorMessage = (error: string | null, attempt: number): string => {
+    if (!error) return 'Failed to submit exam after multiple attempts.'
+    
+    if (error.includes('No internet')) {
+      return 'No internet connection detected. Please check your WiFi or mobile data and try again.'
+    }
+    if (error.includes('Exam not found')) {
+      return 'The exam link is invalid or expired. Contact your instructor for a new link.'
+    }
+    if (error.includes('Invalid or expired')) {
+      return 'This exam link has expired. Ask your instructor to share it again.'
+    }
+    if (error.includes('Invalid email')) {
+      return 'Please enter a valid email address (e.g., name@domain.com).'
+    }
+    if (error.includes('No answers')) {
+      return 'Please answer at least one question before submitting.'
+    }
+    if (attempt >= 3) {
+      return `Submission failed after ${attempt} attempts. This may be a temporary server issue. Please wait a few minutes and try again, or contact your instructor.`
+    }
+    return `Submission error: ${error}. Retrying...`
   }
 
   const formatTime = (seconds: number) => {
