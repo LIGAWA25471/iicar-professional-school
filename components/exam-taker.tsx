@@ -41,6 +41,7 @@ export default function ExamTaker({ exam, questions, token }: ExamTakerProps) {
   const [showForm, setShowForm] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [submissionAttempt, setSubmissionAttempt] = useState(0)
 
   // Timer effect
   useEffect(() => {
@@ -74,6 +75,11 @@ export default function ExamTaker({ exam, questions, token }: ExamTakerProps) {
       ...prev,
       [questionId]: answer
     }))
+    // Save to localStorage as backup
+    if (typeof window !== 'undefined') {
+      const backup = { answers: { ...answers, [questionId]: answer }, timestamp: Date.now() }
+      localStorage.setItem(`exam_backup_${exam.id}`, JSON.stringify(backup))
+    }
   }
 
   const handlePrevious = () => {
@@ -153,8 +159,34 @@ export default function ExamTaker({ exam, questions, token }: ExamTakerProps) {
       }
     }
 
-    setError(lastError || 'Failed to submit exam after multiple attempts. Please try again or contact support.')
+    const errorMessage = getErrorMessage(lastError, attempt)
+    setError(errorMessage)
+    setSubmissionAttempt(attempt)
     setLoading(false)
+  }
+
+  const getErrorMessage = (error: string | null, attempt: number): string => {
+    if (!error) return 'Failed to submit exam after multiple attempts.'
+    
+    if (error.includes('No internet')) {
+      return 'No internet connection detected. Please check your WiFi or mobile data and try again.'
+    }
+    if (error.includes('Exam not found')) {
+      return 'The exam link is invalid or expired. Contact your instructor for a new link.'
+    }
+    if (error.includes('Invalid or expired')) {
+      return 'This exam link has expired. Ask your instructor to share it again.'
+    }
+    if (error.includes('Invalid email')) {
+      return 'Please enter a valid email address (e.g., name@domain.com).'
+    }
+    if (error.includes('No answers')) {
+      return 'Please answer at least one question before submitting.'
+    }
+    if (attempt >= 3) {
+      return `Submission failed after ${attempt} attempts. This may be a temporary server issue. Please wait a few minutes and try again, or contact your instructor.`
+    }
+    return `Submission error: ${error}. Retrying...`
   }
 
   const formatTime = (seconds: number) => {

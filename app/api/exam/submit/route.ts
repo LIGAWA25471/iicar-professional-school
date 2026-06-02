@@ -114,9 +114,20 @@ export async function POST(request: Request) {
 
     if (attemptError || !attempt) {
       console.error('[v0] Attempt creation failed after retries:', attemptError)
+      
+      // Check if it's a database constraint issue
+      const errorStr = attemptError?.message || ''
+      if (errorStr.includes('constraint') || errorStr.includes('CONSTRAINT')) {
+        return NextResponse.json({ 
+          error: 'Database validation failed. Please check your email and try again.',
+          details: 'A required field may be missing or invalid.' 
+        }, { status: 400 })
+      }
+      
       return NextResponse.json({ 
         error: 'Failed to save exam attempt. Please try again or contact support.',
-        details: attemptError?.message 
+        details: attemptError?.message,
+        errorCode: 'ATTEMPT_CREATION_FAILED'
       }, { status: 500 })
     }
 
@@ -161,10 +172,15 @@ export async function POST(request: Request) {
       message: `Exam submitted successfully. You scored ${percentage.toFixed(2)}%`
     })
   } catch (error) {
-    console.error('[v0] Exam submission error:', error)
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error'
+    const errorStack = error instanceof Error ? error.stack : ''
+    console.error('[v0] Exam submission error:', { message: errorMsg, stack: errorStack })
+    
+    // Return more detailed error for debugging
     return NextResponse.json({ 
       error: 'Server error processing your submission. Please try again.',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: errorMsg,
+      timestamp: new Date().toISOString()
     }, { status: 500 })
   }
 }
