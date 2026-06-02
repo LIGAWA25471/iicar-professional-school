@@ -27,15 +27,16 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'exam_id parameter required' }, { status: 400 })
     }
 
-    // Verify exam belongs to this admin
+    // Verify exam exists (any admin can view attempts)
     const { data: exam, error: examError } = await adminDb
       .from('exams')
-      .select('id, created_by')
+      .select('id')
       .eq('id', exam_id)
       .single()
 
-    if (examError || !exam || exam.created_by !== user.id) {
-      return NextResponse.json({ error: 'Exam not found or unauthorized' }, { status: 404 })
+    if (examError || !exam) {
+      console.error('[v0] Exam not found:', examError)
+      return NextResponse.json({ error: 'Exam not found' }, { status: 404 })
     }
 
     // Get attempts for this exam with pagination
@@ -79,7 +80,15 @@ export async function GET(request: Request) {
       }
     })
   } catch (error) {
-    console.error('[v0] Attempts API error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    console.error('[v0] Attempts API error:', {
+      message: errorMsg,
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString()
+    })
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: errorMsg
+    }, { status: 500 })
   }
 }
