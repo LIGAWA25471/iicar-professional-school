@@ -7,6 +7,19 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { AlertCircle, RefreshCw, ArrowLeft, BarChart3, Users, TrendingUp, CheckCircle } from 'lucide-react'
 
+// Component to render timestamp only on client to avoid hydration mismatch
+function LastRefreshTime({ date }: { date: Date }) {
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) return <span className="text-xs text-muted-foreground">Updating...</span>
+
+  return <span className="text-xs text-muted-foreground">{date.toLocaleTimeString()}</span>
+}
+
 interface Attempt {
   id: string
   respondent_name: string
@@ -172,7 +185,7 @@ export default function ExamDetailsPage() {
         <div className="p-4 border-b border-border">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-foreground">Recent Submissions</h2>
-            <p className="text-xs text-muted-foreground">Last updated: {lastRefresh.toLocaleTimeString()}</p>
+            <div className="text-xs text-muted-foreground">Last updated: <LastRefreshTime date={lastRefresh} /></div>
           </div>
         </div>
 
