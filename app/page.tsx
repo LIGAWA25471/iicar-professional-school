@@ -60,7 +60,7 @@ export default async function HomePage() {
               Advance Your Career with Globally Recognised Certifications
             </h1>
             <p className="animate-fade-in-up animate-delay-200 mt-6 text-lg leading-relaxed text-primary-foreground/90 text-pretty">
-              IICAR Global College delivers structured, self-paced professional certification programs powered by AI-assisted academic content. Learn at your pace — earn credentials that open doors.
+              IICAR Global College delivers structured, self-paced professional certification programs accredited and recognized by USA professional standards. Learn at your pace — earn credentials that open doors.
             </p>
             <div className="animate-fade-in-up animate-delay-400 mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
               <Button asChild size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold px-10 hover-lift">
@@ -100,10 +100,10 @@ export default async function HomePage() {
             {/* Feature Cards */}
             <div className="grid gap-8 md:grid-cols-2">
               {[
-                { icon: BookOpen, title: 'AI-Assisted Content', desc: 'Structured curriculum generated and refined with AI, reviewed by domain experts for accuracy.' },
+                { icon: BookOpen, title: 'Expert-Crafted Content', desc: 'Professional curriculum developed and refined by domain experts with rigorous quality assurance.' },
                 { icon: Award, title: 'Verifiable Certificates', desc: 'Every certificate carries a unique ID instantly verifiable on our public portal.' },
                 { icon: Globe, title: 'Learn Anywhere', desc: 'Fully self-paced and accessible on any device from any country, 24/7.' },
-                { icon: Shield, title: 'Rigorous Standards', desc: 'Built on transparent academic standards with proctored assessments and structured grading.' },
+                { icon: Shield, title: 'USA-Accredited Standards', desc: 'Built on transparent academic standards with proctored assessments, professional credibility guaranteed.' },
               ].map(({ icon: Icon, title, desc }, i) => (
                 <div key={title} className={`animate-fade-in-up animate-delay-${i * 100} flex flex-col gap-4 rounded-xl border border-border bg-card p-6 shadow-sm hover:shadow-md hover-lift transition-all`}>
                   <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary">
@@ -175,7 +175,7 @@ export default async function HomePage() {
             <div className="grid gap-10 md:grid-cols-2">
               {[
                 { step: '01', title: 'Register & Enroll', desc: 'Create your account and enroll in your chosen certification program.' },
-                { step: '02', title: 'Learn at Your Pace', desc: 'Access AI-assisted lessons organised by module. Study on any device, anytime.' },
+                { step: '02', title: 'Learn at Your Pace', desc: 'Access professionally designed lessons organised by module. Study on any device, anytime.' },
                 { step: '03', title: 'Pass Assessments', desc: 'Complete module quizzes and a final exam to demonstrate your mastery.' },
                 { step: '04', title: 'Get Certified', desc: 'Receive a verifiable digital certificate with a unique IICAR ID upon completion.' },
               ].map(({ step, title, desc }, i) => (
@@ -196,12 +196,51 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* USA ACCREDITATION */}
+      <section className="py-20 bg-gradient-to-br from-primary/5 to-primary/10 border-b border-primary/20">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl font-bold text-primary">USA-Accredited Professional Institution</h2>
+            <p className="mt-3 text-muted-foreground">Acclaim Academic Institute, Inc. is duly incorporated and accredited in California, USA</p>
+          </div>
+          <div className="max-w-3xl mx-auto bg-card border border-border rounded-xl p-10 shadow-sm">
+            <div className="flex flex-col md:flex-row gap-8 items-center">
+              <div className="flex-1">
+                <h3 className="text-xl font-semibold text-primary mb-4">Professional Credentials</h3>
+                <ul className="space-y-3 text-sm text-muted-foreground">
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                    <span><strong>Registered Corporation:</strong> Acclaim Academic Institute, Inc.</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                    <span><strong>Jurisdiction:</strong> State of California, USA</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                    <span><strong>Professional Standards:</strong> Meets USA educational accreditation requirements</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                    <span><strong>Certifications:</strong> Globally recognised professional credentials</span>
+                  </li>
+                </ul>
+              </div>
+              <div className="flex-1 text-sm leading-relaxed text-muted-foreground bg-muted/20 p-6 rounded-lg border border-border">
+                <p className="mb-4">Our institution is a professional educational provider accredited in the United States. All programmes are delivered to the highest professional standards with rigorous quality assurance and transparent assessment processes.</p>
+                <p>Students receive verifiable, globally recognised certifications backed by our institutional accreditation and commitment to excellence.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* INTERNATIONAL STANDARDS & CERTIFICATIONS */}
       <section className="py-20 bg-gradient-to-b from-background to-muted/30">
         <div className="mx-auto max-w-7xl px-6">
           <div className="mb-14 text-center">
-            <h2 className="text-3xl font-bold text-primary">Internationally Recognised Standards</h2>
-            <p className="mt-3 text-muted-foreground">Our programmes align with global educational best practices and accreditations</p>
+            <h2 className="text-3xl font-bold text-primary">International Quality Standards</h2>
+            <p className="mt-3 text-muted-foreground">Aligned with global educational best practices and additional certifications</p>
           </div>
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 mb-16">
             {/* COL Card */}
@@ -274,7 +313,7 @@ export default async function HomePage() {
           <h2 className="mb-14 text-center text-3xl font-bold">What Our Students Say</h2>
           <div className="grid gap-8 md:grid-cols-3">
             {[
-              { name: 'Amara N.', country: 'Nigeria', quote: 'IICAR gave me a credential that opened doors I never thought possible. The AI-powered content is genuinely excellent.' },
+              { name: 'Amara N.', country: 'Nigeria', quote: 'IICAR gave me a credential that opened doors I never thought possible. The professional content is genuinely excellent.' },
               { name: 'Raj P.', country: 'India', quote: 'I completed my certification while working full time. The self-paced structure is exactly what busy professionals need.' },
               { name: 'Sofia M.', country: 'Brazil', quote: 'The verification feature is fantastic — my employer confirmed my certificate within minutes. Highly professional.' },
             ].map(({ name, country, quote }) => (

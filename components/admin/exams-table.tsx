@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -24,12 +24,42 @@ interface ExamsTableProps {
 
 export default function ExamsTable({ exams }: ExamsTableProps) {
   const [copied, setCopied] = useState<string | null>(null)
+  const hiddenInputRef = useRef<HTMLInputElement>(null)
 
   const handleCopyLink = (token: string) => {
     const shareUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/exam/${token}`
-    navigator.clipboard.writeText(shareUrl)
-    setCopied(token)
-    setTimeout(() => setCopied(null), 2000)
+    
+    // Try modern Clipboard API first
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(shareUrl)
+        .then(() => {
+          setCopied(token)
+          setTimeout(() => setCopied(null), 2000)
+        })
+        .catch(() => {
+          // Fallback if clipboard API fails
+          fallbackCopy(shareUrl, token)
+        })
+    } else {
+      // Fallback for browsers without clipboard API
+      fallbackCopy(shareUrl, token)
+    }
+  }
+
+  const fallbackCopy = (text: string, token: string) => {
+    if (hiddenInputRef.current) {
+      hiddenInputRef.current.value = text
+      hiddenInputRef.current.select()
+      try {
+        document.execCommand('copy')
+        setCopied(token)
+        setTimeout(() => setCopied(null), 2000)
+      } catch (err) {
+        console.error('[v0] Fallback copy failed:', err)
+        // If all else fails, just show the URL in an alert or notification
+        alert(`Copy this link:\n\n${text}`)
+      }
+    }
   }
 
   const getStatusColor = (status: string) => {
@@ -68,6 +98,13 @@ export default function ExamsTable({ exams }: ExamsTableProps) {
 
   return (
     <div className="rounded-lg border border-border overflow-hidden bg-card">
+      <input
+        ref={hiddenInputRef}
+        type="text"
+        className="sr-only"
+        readOnly
+        aria-hidden="true"
+      />
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="border-b border-border bg-muted/50">
