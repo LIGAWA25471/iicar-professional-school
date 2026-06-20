@@ -33,7 +33,7 @@ export default async function HomePage() {
             </div>
           </Link>
           <nav className="hidden items-center gap-6 md:flex">
-            <Link href="#programs" className="text-sm text-primary-foreground/70 hover:text-accent transition-colors">Programs</Link>
+            <Link href="/programs" className="text-sm text-primary-foreground/70 hover:text-accent transition-colors">Programs</Link>
             <Link href="#how-it-works" className="text-sm text-primary-foreground/70 hover:text-accent transition-colors">How It Works</Link>
             <Link href="/verify" className="text-sm text-primary-foreground/70 hover:text-accent transition-colors">Verify Certificate</Link>
           </nav>
@@ -128,6 +128,10 @@ export default async function HomePage() {
           <div className="mb-14 text-center">
             <h2 className="text-3xl font-bold text-primary">Professional Programs</h2>
             <p className="mt-3 text-muted-foreground">Industry-aligned certifications built for working professionals</p>
+            <Link href="/programs" className="inline-flex items-center gap-2 mt-4 text-primary hover:text-primary/80 transition-colors text-sm font-medium">
+              Browse All Programs
+              <ChevronRight className="h-4 w-4" />
+            </Link>
           </div>
             {programs && programs.length > 0 ? (
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
