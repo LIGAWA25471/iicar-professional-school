@@ -3,7 +3,7 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Lock, Shield, CheckCircle } from 'lucide-react'
-import { EnrollmentPayment } from '@/components/enrollment-payment'
+import { CheckoutPaymentSection } from '@/components/checkout-payment-section'
 
 export default async function CheckoutPage({ params }: { params: Promise<{ id: string }> }) {
   try {
@@ -63,13 +63,10 @@ export default async function CheckoutPage({ params }: { params: Promise<{ id: s
           <div className="lg:col-span-2">
             <div className="rounded-xl border border-border bg-card p-8">
               <h2 className="text-xl font-semibold text-foreground mb-6">Payment Details</h2>
-              <EnrollmentPayment
+              <CheckoutPaymentSection
                 programId={program.id}
                 programTitle={program.title}
                 amount={program.price_cents / 100}
-                onSuccess={() => {
-                  // Redirect happens in the component
-                }}
               />
             </div>
           </div>
