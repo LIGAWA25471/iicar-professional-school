@@ -55,7 +55,11 @@ export default async function AdminProgramsPage() {
                   <Badge variant="secondary" className="capitalize text-xs">{p.level}</Badge>
                 </td>
                 <td className="px-6 py-4 text-foreground">
-                  {p.price_cents === 0 ? 'Free' : `KES ${(p.price_cents / 100).toLocaleString()}`}
+                  {(() => {
+                    const priceInUSD = p.price_cents === 0 ? 0 : Math.round((p.price_cents / 100) / 134)
+                    const priceInKES = p.price_cents / 100
+                    return p.price_cents === 0 ? 'Free' : `USD ${priceInUSD} / KES ${priceInKES.toLocaleString()}`
+                  })()}
                 </td>
                 <td className="px-6 py-4">
                   <Badge variant={p.is_published ? 'default' : 'outline'} className="text-xs">
