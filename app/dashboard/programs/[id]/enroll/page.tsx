@@ -48,10 +48,20 @@ export default async function EnrollPage({ params }: { params: Promise<{ id: str
         </div>
         <div className="flex items-center justify-between border-t border-border pt-4">
           <div>
-            <p className="text-2xl font-bold text-primary">
-              {program.price_cents === 0 ? 'Free' : `KES ${(program.price_cents / 100).toLocaleString()}`}
-            </p>
-            <p className="text-xs text-muted-foreground">one-time payment</p>
+            {(() => {
+              const priceInUSD = program.price_cents === 0 ? 0 : Math.round((program.price_cents / 100) / 134)
+              const priceInKES = program.price_cents / 100
+              return (
+                <>
+                  <p className="text-2xl font-bold text-primary">
+                    {program.price_cents === 0 ? 'Free' : `USD ${priceInUSD.toLocaleString()}`}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {program.price_cents === 0 ? '' : `≈ KES ${priceInKES.toLocaleString()} • one-time payment`}
+                  </p>
+                </>
+              )
+            })()}
           </div>
           <EnrollButton programId={program.id} price={program.price_cents} title={program.title} />
         </div>

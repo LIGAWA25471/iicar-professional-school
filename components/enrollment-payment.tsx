@@ -26,6 +26,10 @@ export function EnrollmentPayment({
   const [pollStatus, setPollStatus] = useState<'pending' | 'paid' | 'failed'>('pending')
   const [pollCount, setPollCount] = useState(0)
 
+  // Convert KES amount to USD for display (1 USD = 134 KES)
+  const amountInUSD = Math.round(amount / 134)
+  const amountInKES = amount
+
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -136,7 +140,7 @@ export function EnrollmentPayment({
             <h3 className="font-semibold text-foreground">M-Pesa Prompt Sent</h3>
             <p className="mt-1 text-sm text-muted-foreground">
               Check your phone <span className="font-mono font-semibold">{phoneNumber}</span> and enter your M-Pesa PIN to pay{' '}
-              <span className="font-semibold text-foreground">KES {amount.toLocaleString()}</span> for {programTitle}.
+              <span className="font-semibold text-foreground">USD {amountInUSD.toLocaleString()}</span> (KES {amountInKES.toLocaleString()}) for {programTitle}.
             </p>
           </div>
         </div>
@@ -161,7 +165,7 @@ export function EnrollmentPayment({
       <div>
         <h3 className="font-semibold text-foreground">Complete Enrollment</h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          Pay KES {amount.toLocaleString()} to enroll in {programTitle}
+          Pay USD {amountInUSD.toLocaleString()} (KES {amountInKES.toLocaleString()}) to enroll in {programTitle}
         </p>
       </div>
 
@@ -201,7 +205,7 @@ export function EnrollmentPayment({
             Sending M-Pesa Prompt...
           </>
         ) : (
-          `Pay KES ${amount.toLocaleString()} via M-Pesa`
+          `Pay USD ${amountInUSD.toLocaleString()} (KES ${amountInKES.toLocaleString()}) via M-Pesa`
         )}
       </Button>
     </form>
