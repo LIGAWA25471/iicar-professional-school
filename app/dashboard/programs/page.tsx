@@ -138,12 +138,19 @@ export default async function ProgramsPage({
                 </div>
                 <div className="flex items-center justify-between mt-auto pt-3 border-t border-border">
                   <div>
-                    <p className="text-sm font-bold text-primary">
-                      {p.price_cents === 0 ? 'Free' : `KES ${(p.price_cents / 100).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                      <Clock className="h-2.5 w-2.5" />{p.duration_weeks} weeks
-                    </p>
+                    {(() => {
+                      const priceInUSD = p.price_cents === 0 ? 0 : Math.round((p.price_cents / 100) / 134)
+                      return (
+                        <>
+                          <p className="text-sm font-bold text-primary">
+                            {p.price_cents === 0 ? 'Free' : `USD ${priceInUSD.toLocaleString()}`}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                            <Clock className="h-2.5 w-2.5" />{p.duration_weeks} weeks
+                          </p>
+                        </>
+                      )
+                    })()}
                   </div>
                   <Button asChild size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 text-xs">
                     <Link href={`/dashboard/programs/${p.id}/enroll`}>Enroll Now</Link>

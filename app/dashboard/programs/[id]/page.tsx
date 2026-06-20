@@ -75,7 +75,10 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
           <p className="text-sm text-muted-foreground">Enroll to access lessons and assessments</p>
           <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
             <Link href={`/dashboard/programs/${id}/enroll`}>
-              {program.price_cents === 0 ? 'Enroll Free' : `Enroll — KES ${(program.price_cents / 100).toLocaleString()}`}
+              {(() => {
+                const priceInUSD = program.price_cents === 0 ? 0 : Math.round((program.price_cents / 100) / 134)
+                return program.price_cents === 0 ? 'Enroll Free' : `Enroll — USD ${priceInUSD}`
+              })()}
             </Link>
           </Button>
         </div>
