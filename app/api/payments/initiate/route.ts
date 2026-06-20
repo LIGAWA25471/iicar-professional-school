@@ -14,6 +14,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
+    // Convert amount from KES (what comes from DB) to ensure proper handling
+    // amount is already in KES from the database
+    const amountInKES = Math.round(Number(amount))
+
     // Normalise phone to E.164 (+254...)
     const digits = String(phoneNumber).replace(/\D/g, '')
     let e164: string | null = null
@@ -50,7 +54,7 @@ export async function POST(request: Request) {
       .insert({
         student_id:   user.id,
         program_id:   programId,
-        amount_cents: Math.round(Number(amount) * 100),
+        amount_cents: Math.round(amountInKES * 100),
         currency:     'KES',
         status:       'pending',
         phone_number: e164,
@@ -72,12 +76,12 @@ export async function POST(request: Request) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://localhost:3000'
     const callbackUrl = `${appUrl}/api/payments/callback`
 
-    // Initiate STK push
+    // Initiate STK push with KES amount for Kopokopo/Paystack
     const result = await initiateSTKPush({
       firstName,
       lastName,
       phoneNumber: e164,
-      amount:      Math.round(Number(amount)),
+      amount:      amountInKES,
       callbackUrl,
       metadata: {
         payment_id: payment.id,

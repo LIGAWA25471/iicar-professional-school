@@ -33,7 +33,7 @@ export default async function HomePage() {
             </div>
           </Link>
           <nav className="hidden items-center gap-6 md:flex">
-            <Link href="#programs" className="text-sm text-primary-foreground/70 hover:text-accent transition-colors">Programs</Link>
+            <Link href="/programs" className="text-sm text-primary-foreground/70 hover:text-accent transition-colors">Programs</Link>
             <Link href="#how-it-works" className="text-sm text-primary-foreground/70 hover:text-accent transition-colors">How It Works</Link>
             <Link href="/verify" className="text-sm text-primary-foreground/70 hover:text-accent transition-colors">Verify Certificate</Link>
           </nav>
@@ -128,31 +128,33 @@ export default async function HomePage() {
           <div className="mb-14 text-center">
             <h2 className="text-3xl font-bold text-primary">Professional Programs</h2>
             <p className="mt-3 text-muted-foreground">Industry-aligned certifications built for working professionals</p>
+            <Link href="/programs" className="inline-flex items-center gap-2 mt-4 text-primary hover:text-primary/80 transition-colors text-sm font-medium">
+              Browse All Programs
+              <ChevronRight className="h-4 w-4" />
+            </Link>
           </div>
-          {programs && programs.length > 0 ? (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {programs.map((program, i) => (
-                <div key={program.id} className={`animate-fade-in-up animate-delay-${(i % 3) * 100} flex flex-col rounded-xl border border-border bg-card shadow-sm overflow-hidden hover:shadow-md hover-lift transition-all`}>
-                  <div className="flex items-center justify-between bg-primary/5 px-6 py-3 border-b border-border">
-                    <Badge variant="secondary" className="text-xs capitalize">{program.level}</Badge>
-                    {program.duration_weeks && (
-                      <span className="text-xs text-muted-foreground">{program.duration_weeks} weeks</span>
-                    )}
-                  </div>
-                  <div className="flex flex-1 flex-col gap-3 p-6">
-                    <h3 className="font-semibold text-foreground leading-snug">{program.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">{program.description}</p>
-                    <div className="mt-auto flex items-center justify-between pt-4 border-t border-border">
-                      <span className="text-lg font-bold text-primary">
-                        {program.price_cents === 0 ? 'Free' : `KES ${(program.price_cents / 100).toLocaleString()}`}
-                      </span>
-                      <Button asChild size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
-                        <Link href={`/auth/register?program=${program.id}`}>Enroll</Link>
+            {programs && programs.length > 0 ? (
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {programs.map((program, i) => {
+                  const priceInUSD = program.price_cents === 0 ? 0 : Math.round((program.price_cents / 100) / 134)
+                  return (
+                  <div key={program.id} className="group relative rounded-xl border border-border bg-card p-6 hover:border-primary/50 transition-colors">
+                    <h3 className="font-semibold text-foreground text-lg">{program.title}</h3>
+                    <p className="mt-2 text-sm text-muted-foreground line-clamp-2">{program.description}</p>
+                    <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
+                      <div>
+                        <p className="text-2xl font-bold text-primary">
+                          {program.price_cents === 0 ? 'Free' : `USD ${priceInUSD.toLocaleString()}`}
+                        </p>
+                        <p className="text-xs text-muted-foreground">one-time payment</p>
+                      </div>
+                      <Button asChild size="sm" className="group-hover:bg-primary/90">
+                        <Link href={`/dashboard/programs/${program.id}/enroll`}>Enroll</Link>
                       </Button>
                     </div>
                   </div>
-                </div>
-              ))}
+                )
+                })}
             </div>
           ) : (
             <div className="flex flex-col items-center gap-4 py-20 text-center text-muted-foreground">

@@ -49,9 +49,13 @@ export function Footer() {
               <Image src="/logo.jpg" alt="IICAR" width={40} height={40} className="rounded-lg" />
               <span className="font-bold text-lg">IICAR</span>
             </div>
-            <p className="text-slate-400 text-sm">
+            <p className="text-slate-400 text-sm mb-3">
               International Institute for Certified Administrative Resources — Professional certification programs recognised globally.
             </p>
+            <div className="bg-slate-800 rounded px-3 py-2 border border-slate-700">
+              <p className="text-xs text-blue-300 font-semibold">USA-Accredited Institution</p>
+              <p className="text-xs text-slate-400 mt-1">Registered in California, USA • Acclaim Academic Institute, Inc.</p>
+            </div>
           </div>
 
           {/* Quick Links */}
