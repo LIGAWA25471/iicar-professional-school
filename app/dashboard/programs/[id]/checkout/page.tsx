@@ -6,39 +6,44 @@ import { ArrowLeft, Lock, Shield, CheckCircle } from 'lucide-react'
 import { EnrollmentPayment } from '@/components/enrollment-payment'
 
 export default async function CheckoutPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id: programId } = await params
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  try {
+    const { id: programId } = await params
+    const supabase = await createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) redirect('/auth/login')
 
-  // Use service-role to bypass RLS when fetching the program
-  const adminDb = createAdminClient()
-  const { data: program } = await adminDb
-    .from('programs')
-    .select('id, title, description, price_cents, duration_weeks, level, passing_score')
-    .eq('id', programId)
-    .eq('is_published', true)
-    .single()
-  if (!program) notFound()
+    // Use service-role to bypass RLS when fetching the program
+    const adminDb = createAdminClient()
+    const { data: program, error: programError } = await adminDb
+      .from('programs')
+      .select('id, title, description, price_cents, duration_weeks, level, passing_score')
+      .eq('id', programId)
+      .eq('is_published', true)
+      .single()
+    
+    if (programError || !program) {
+      console.error('[v0] Program fetch error:', programError)
+      notFound()
+    }
 
-  // Redirect if already enrolled
-  const { data: existing } = await supabase
-    .from('enrollments')
-    .select('id, status')
-    .eq('student_id', user.id)
-    .eq('program_id', programId)
-    .single()
+    // Redirect if already enrolled
+    const { data: existing, error: enrollmentError } = await supabase
+      .from('enrollments')
+      .select('id, status')
+      .eq('student_id', user.id)
+      .eq('program_id', programId)
+      .maybeSingle()
 
-  if (existing && existing.status === 'active') {
-    redirect(`/dashboard/programs/${programId}`)
-  }
+    if (existing && existing.status === 'active') {
+      redirect(`/dashboard/programs/${programId}`)
+    }
 
-  // Don't allow free programs on checkout page
-  if (program.price_cents === 0) {
-    redirect(`/dashboard/programs/${programId}/enroll`)
-  }
+    // Don't allow free programs on checkout page
+    if (program.price_cents === 0) {
+      redirect(`/dashboard/programs/${programId}/enroll`)
+    }
 
-  return (
+    return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
       <div className="max-w-4xl mx-auto py-8 px-4">
         {/* Header */}
@@ -112,7 +117,7 @@ export default async function CheckoutPage({ params }: { params: Promise<{ id: s
                   <Shield className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
                   <div className="text-xs">
                     <p className="font-medium text-foreground">Secure Payment</p>
-                    <p className="text-muted-foreground">Processed via Paystack</p>
+                    <p className="text-muted-foreground">Industry-standard encryption</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -135,5 +140,9 @@ export default async function CheckoutPage({ params }: { params: Promise<{ id: s
         </div>
       </div>
     </div>
-  )
+    )
+  } catch (error) {
+    console.error('[v0] Checkout page error:', error)
+    throw error
+  }
 }
