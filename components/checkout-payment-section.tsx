@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { EnrollmentPayment } from '@/components/enrollment-payment'
+import { PaystackPayment } from '@/components/paystack-payment'
 
 interface CheckoutPaymentSectionProps {
   programId: string
@@ -22,7 +22,7 @@ export function CheckoutPaymentSection({
   }
 
   return (
-    <EnrollmentPayment
+    <PaystackPayment
       programId={programId}
       programTitle={programTitle}
       amount={amount}
