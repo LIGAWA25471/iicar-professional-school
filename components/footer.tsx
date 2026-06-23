@@ -85,11 +85,11 @@ export function Footer() {
             <ul className="space-y-3 text-sm">
               <li className="flex items-start gap-2">
                 <MapPin className="h-4 w-4 mt-1 flex-shrink-0 text-blue-400" />
-                <span className="text-slate-400">Kenya</span>
+                <span className="text-slate-400">California, USA</span>
               </li>
               <li className="flex items-center gap-2">
                 <Phone className="h-4 w-4 flex-shrink-0 text-blue-400" />
-                <a href="tel:+254" className="text-slate-400 hover:text-white transition">+254</a>
+                <a href="tel:0202225689" className="text-slate-400 hover:text-white transition">0202225689</a>
               </li>
               <li className="flex items-center gap-2">
                 <MailIcon className="h-4 w-4 flex-shrink-0 text-blue-400" />
