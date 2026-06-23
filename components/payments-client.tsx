@@ -31,8 +31,11 @@ export function PaymentsClient() {
   useEffect(() => {
     const fetchPayments = async () => {
       try {
+        console.log('[v0] Fetching payments from API...')
         const response = await fetch('/api/admin/payments')
         const data = await response.json()
+        console.log('[v0] API response:', data)
+        console.log('[v0] Payments count:', data.payments?.length || 0)
         setPayments(data.payments || [])
       } catch (error) {
         console.error('[v0] Failed to fetch payments:', error)

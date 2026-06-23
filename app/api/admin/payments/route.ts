@@ -23,30 +23,19 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // Fetch all payments with related program and student info
+    // Fetch all payments (without nested relations to avoid schema issues)
     const { data: payments, error } = await adminDb
       .from('payments')
-      .select(`
-        id,
-        student_id,
-        program_id,
-        amount_cents,
-        currency,
-        status,
-        created_at,
-        paid_at,
-        phone_number,
-        kopokopo_reference,
-        paystack_reference,
-        programs(title),
-        profiles(full_name, email)
-      `)
+      .select('*')
       .order('created_at', { ascending: false })
 
     if (error) {
       console.error('[v0] Error fetching payments:', error)
-      return NextResponse.json({ error: 'Failed to fetch payments' }, { status: 500 })
+      console.error('[v0] Error details:', error.message)
+      return NextResponse.json({ error: 'Failed to fetch payments', details: error.message }, { status: 500 })
     }
+
+    console.log('[v0] Fetched payments count:', payments?.length || 0)
 
     return NextResponse.json({ 
       payments: payments || [],
