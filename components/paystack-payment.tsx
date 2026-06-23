@@ -29,17 +29,38 @@ export function PaystackPayment({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success'>('idle')
+  const [scriptReady, setScriptReady] = useState(false)
 
   // Convert KES amount to USD for display (1 USD = 134 KES)
   const amountInUSD = Math.round(amount / 134)
   const amountInKES = amount
 
-  // Load Paystack script
+  // Load Paystack script with proper async handling
   useEffect(() => {
+    // Check if script already exists
+    if (window.PaystackPop) {
+      setScriptReady(true)
+      return
+    }
+
     const script = document.createElement('script')
     script.src = 'https://js.paystack.co/v1/inline.js'
     script.async = true
+    
+    script.onload = () => {
+      if (window.PaystackPop) {
+        setScriptReady(true)
+        console.log('[v0] Paystack script loaded successfully')
+      }
+    }
+    
+    script.onerror = () => {
+      console.error('[v0] Failed to load Paystack script')
+      setError('Failed to load payment system. Please refresh and try again.')
+    }
+    
     document.body.appendChild(script)
+    
     return () => {
       if (document.body.contains(script)) {
         document.body.removeChild(script)
@@ -56,8 +77,9 @@ export function PaystackPayment({
       return
     }
 
-    if (!window.PaystackPop) {
-      setError('Payment system loading. Please try again.')
+    // Wait for script to be ready
+    if (!scriptReady || !window.PaystackPop) {
+      setError('Payment system is loading. Please wait a moment and try again.')
       return
     }
 
@@ -83,18 +105,22 @@ export function PaystackPayment({
         throw new Error(data.error || 'Payment initialization failed')
       }
 
+      console.log('[v0] Opening Paystack checkout with reference:', data.reference)
+
       // Open Paystack checkout
-      window.PaystackPop.setup({
+      const handler = window.PaystackPop.setup({
         key: data.publicKey,
         email: email,
         amount: amountInKES * 100, // Paystack expects amount in kobo (cents)
         currency: 'KES',
         ref: data.reference,
         onClose: function () {
+          console.log('[v0] Paystack modal closed')
           setPaymentStatus('idle')
           setLoading(false)
         },
         onSuccess: function (transaction: any) {
+          console.log('[v0] Payment successful:', transaction)
           setPaymentStatus('success')
           if (onSuccess) onSuccess()
           setTimeout(() => {
@@ -103,8 +129,16 @@ export function PaystackPayment({
           }, 2000)
         },
       })
-      window.PaystackPop.openIframe()
+      
+      // Make sure handler has openIframe method
+      if (typeof handler.openIframe === 'function') {
+        handler.openIframe()
+      } else {
+        console.error('[v0] PaystackPop.openIframe is not available')
+        throw new Error('Payment system error. Please try again.')
+      }
     } catch (err) {
+      console.error('[v0] Payment error:', err)
       setError(err instanceof Error ? err.message : 'Payment failed')
       setPaymentStatus('idle')
     } finally {
@@ -177,10 +211,15 @@ export function PaystackPayment({
 
       <Button
         type="submit"
-        disabled={loading || !email.trim() || !fullName.trim()}
+        disabled={loading || !email.trim() || !fullName.trim() || !scriptReady}
         className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold py-2"
       >
-        {loading ? (
+        {!scriptReady ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Loading Payment System...
+          </>
+        ) : loading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Processing Payment...
