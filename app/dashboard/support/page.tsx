@@ -69,8 +69,8 @@ export default function SupportPage() {
               <div className="flex-1">
                 <h3 className="font-semibold text-foreground">Support Hours</h3>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  <strong>Monday - Friday:</strong> 9:00 AM - 5:00 PM EAT<br />
-                  <strong>Saturday:</strong> 10:00 AM - 2:00 PM EAT<br />
+                  <strong>Monday - Friday:</strong> 9:00 AM - 5:00 PM EST<br />
+                  <strong>Saturday:</strong> 10:00 AM - 2:00 PM EST<br />
                   <strong>Sunday:</strong> Closed
                 </p>
               </div>

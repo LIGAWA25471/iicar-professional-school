@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import Script from 'next/script'
 import { Inter, Lato } from 'next/font/google'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Footer } from '@/components/footer'
@@ -29,7 +30,23 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <Footer />
         </ThemeProvider>
 
-
+        {/* Zoho SalesIQ Chat Widget for Landing Page */}
+        <Script
+          id="zoho-siq-init"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.$zoho = window.$zoho || {};
+              window.$zoho.salesiq = window.$zoho.salesiq || { ready: function() {} };
+            `,
+          }}
+        />
+        <Script
+          id="zoho-siq-widget"
+          src="https://salesiq.zoho.com/widget"
+          strategy="afterInteractive"
+          async
+        />
       </body>
     </html>
   )
