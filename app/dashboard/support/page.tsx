@@ -1,11 +1,11 @@
+'use client'
+
 import { Mail, MessageCircle, AlertCircle, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 
-export const metadata = {
-  title: 'Support | IICAR Global College',
-  description: 'Get help from our support team',
-}
+const ZohoSalesIQChat = dynamic(() => import('@/components/zoho-salesiq-widget'), { ssr: false })
 
 export default function SupportPage() {
   return (
@@ -81,39 +81,11 @@ export default function SupportPage() {
         {/* Live Chat Widget */}
         <div className="rounded-lg border border-border bg-card p-6">
           <h2 className="text-xl font-semibold text-foreground mb-4">Chat with Us</h2>
-          <div className="bg-muted/30 rounded-lg p-8 text-center min-h-80 flex flex-col items-center justify-center">
-            <MessageCircle className="h-12 w-12 text-muted-foreground/30 mb-4" />
-            <p className="text-muted-foreground text-sm">Live chat widget will appear here</p>
-            <p className="text-muted-foreground text-xs mt-2">Our support team is ready to help</p>
+          <div className="min-h-96">
+            <ZohoSalesIQChat />
           </div>
         </div>
       </div>
-
-      {/* Zoho Sales IQ Script */}
-      <ZohoSalesIQWidget />
     </div>
-  )
-}
-
-function ZohoSalesIQWidget() {
-  return (
-    <script
-      dangerouslySetInnerHTML={{
-        __html: `
-          var $zfninit = window.$zfninit;
-          if (!$zfninit) {
-            window.$zfninit = true;
-          }
-          (function(w,d){
-            if(w.zf$rf) return;
-            var zfscr = d.createElement('script');
-            zfscr.type = 'text/javascript';
-            zfscr.id='ZohoSalesIQInit';
-            zfscr.src = "https://salesiq.zoho.com/widget";
-            d.head.appendChild(zfscr);
-          })(window,document);
-        `,
-      }}
-    />
   )
 }

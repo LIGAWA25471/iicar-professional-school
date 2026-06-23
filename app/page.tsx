@@ -35,6 +35,7 @@ export default async function HomePage() {
           <nav className="hidden items-center gap-6 md:flex">
             <Link href="/programs" className="text-sm text-primary-foreground/70 hover:text-accent transition-colors">Programs</Link>
             <Link href="#how-it-works" className="text-sm text-primary-foreground/70 hover:text-accent transition-colors">How It Works</Link>
+            <Link href="/faq" className="text-sm text-primary-foreground/70 hover:text-accent transition-colors">FAQ</Link>
             <Link href="/verify" className="text-sm text-primary-foreground/70 hover:text-accent transition-colors">Verify Certificate</Link>
           </nav>
           <div className="flex items-center gap-3">

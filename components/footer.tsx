@@ -63,7 +63,8 @@ export function Footer() {
             <h4 className="font-semibold mb-4">Quick Links</h4>
             <ul className="space-y-2 text-sm">
               <li><Link href="/" className="text-slate-400 hover:text-white transition">Home</Link></li>
-              <li><Link href="/dashboard/programs" className="text-slate-400 hover:text-white transition">Programs</Link></li>
+              <li><Link href="/programs" className="text-slate-400 hover:text-white transition">Programs</Link></li>
+              <li><Link href="/faq" className="text-slate-400 hover:text-white transition">FAQ</Link></li>
               <li><Link href="/verify" className="text-slate-400 hover:text-white transition">Verify Certificate</Link></li>
               <li><Link href="/auth/login" className="text-slate-400 hover:text-white transition">Sign In</Link></li>
             </ul>
