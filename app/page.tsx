@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { BookOpen, Award, Globe, Shield, ChevronRight, Star, CheckCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { ZohoLandingWidget } from '@/components/zoho-landing-widget'
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -404,6 +405,7 @@ export default async function HomePage() {
           </div>
         </div>
       </footer>
+      <ZohoLandingWidget />
     </div>
   )
 }
