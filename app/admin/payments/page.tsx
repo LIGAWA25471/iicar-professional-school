@@ -39,61 +39,61 @@ async function getPaymentStats(): Promise<PaymentStats> {
     .from('payments')
     .select('id, status, amount_cents, paid_at, created_at')
 
-  // Get payments from last week
+  // Get paid payments from this week (use created_at if paid_at is null)
   const { data: weekPayments } = await adminDb
     .from('payments')
-    .select('id, status, amount_cents, paid_at')
+    .select('id, status, amount_cents, paid_at, created_at')
     .eq('status', 'paid')
     .gte('paid_at', weekAgo.toISOString())
 
-  // Get payments from last month
+  // Get paid payments from this month
   const { data: monthPayments } = await adminDb
     .from('payments')
-    .select('id, status, amount_cents, paid_at')
+    .select('id, status, amount_cents, paid_at, created_at')
     .eq('status', 'paid')
     .gte('paid_at', monthAgo.toISOString())
 
-  // Get payments from previous month (for comparison)
+  // Get paid payments from previous month (for comparison)
   const { data: prevMonthPayments } = await adminDb
     .from('payments')
-    .select('id, status, amount_cents, paid_at')
+    .select('id, status, amount_cents, paid_at, created_at')
     .eq('status', 'paid')
     .gte('paid_at', twoMonthsAgo.toISOString())
     .lt('paid_at', monthAgo.toISOString())
 
-  // Get payments from previous week (for comparison)
+  // Get paid payments from previous week (for comparison)
   const { data: prevWeekPayments } = await adminDb
     .from('payments')
-    .select('id, status, amount_cents, paid_at')
+    .select('id, status, amount_cents, paid_at, created_at')
     .eq('status', 'paid')
     .gte('paid_at', eightDaysAgo.toISOString())
     .lt('paid_at', weekAgo.toISOString())
 
   const payments = allPayments || []
+  const paidPayments = payments.filter(p => p.status === 'paid')
+  const pendingPayments = payments.filter(p => p.status === 'pending')
   
   const stats: PaymentStats = {
     total: payments.length,
-    paid: payments.filter(p => p.status === 'paid').length,
-    pending: payments.filter(p => p.status === 'pending').length,
+    paid: paidPayments.length,
+    pending: pendingPayments.length,
     failed: payments.filter(p => p.status === 'failed').length,
-    totalAmountPaid: payments
-      .filter(p => p.status === 'paid')
-      .reduce((sum, p) => sum + p.amount_cents, 0) / 100,
-    totalAmountPending: payments
-      .filter(p => p.status === 'pending')
-      .reduce((sum, p) => sum + p.amount_cents, 0) / 100,
-    allTimeIncome: payments
-      .filter(p => p.status === 'paid')
-      .reduce((sum, p) => sum + p.amount_cents, 0) / 100,
-    monthIncome: (monthPayments || [])
-      .reduce((sum, p) => sum + p.amount_cents, 0) / 100,
-    weekIncome: (weekPayments || [])
-      .reduce((sum, p) => sum + p.amount_cents, 0) / 100,
-    lastMonthIncome: (prevMonthPayments || [])
-      .reduce((sum, p) => sum + p.amount_cents, 0) / 100,
-    lastWeekIncome: (prevWeekPayments || [])
-      .reduce((sum, p) => sum + p.amount_cents, 0) / 100,
+    totalAmountPaid: paidPayments.reduce((sum, p) => sum + (p.amount_cents || 0), 0) / 100,
+    totalAmountPending: pendingPayments.reduce((sum, p) => sum + (p.amount_cents || 0), 0) / 100,
+    allTimeIncome: paidPayments.reduce((sum, p) => sum + (p.amount_cents || 0), 0) / 100,
+    monthIncome: (monthPayments || []).reduce((sum, p) => sum + (p.amount_cents || 0), 0) / 100,
+    weekIncome: (weekPayments || []).reduce((sum, p) => sum + (p.amount_cents || 0), 0) / 100,
+    lastMonthIncome: (prevMonthPayments || []).reduce((sum, p) => sum + (p.amount_cents || 0), 0) / 100,
+    lastWeekIncome: (prevWeekPayments || []).reduce((sum, p) => sum + (p.amount_cents || 0), 0) / 100,
   }
+
+  console.log('[v0] Payment stats calculated:', {
+    allTimeIncome: stats.allTimeIncome,
+    monthIncome: stats.monthIncome,
+    weekIncome: stats.weekIncome,
+    paidCount: stats.paid,
+    pendingCount: stats.pending,
+  })
 
   return stats
 }
