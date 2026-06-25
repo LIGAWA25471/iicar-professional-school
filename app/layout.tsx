@@ -32,20 +32,17 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
 
         {/* Zoho SalesIQ Chat Widget */}
         <Script
-          id="zoho-salesiq"
-          strategy="lazyOnload"
+          id="zoho-init"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
-            __html: `
-              window.$zoho=window.$zoho||{};
-              window.$zoho.salesiq=window.$zoho.salesiq||{ready:function(){}};
-            `,
+            __html: `window.$zoho=window.$zoho || {};$zoho.salesiq=$zoho.salesiq||{ready:function(){}}`,
           }}
         />
         <Script
-          id="zoho-salesiq-widget"
-          src="https://salesiq.zoho.com/widget"
-          strategy="lazyOnload"
-          async
+          id="zsiqscript"
+          src="https://salesiq.zohopublic.com/widget?wc=siqd1a796ef77dd6088fd85fc9962bd1534"
+          strategy="afterInteractive"
+          defer
         />
       </body>
     </html>
