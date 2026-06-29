@@ -3,9 +3,6 @@
 import { Mail, MessageCircle, AlertCircle, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import dynamic from 'next/dynamic'
-
-const ZohoSalesIQChat = dynamic(() => import('@/components/zoho-salesiq-widget'), { ssr: false })
 
 export default function SupportPage() {
   return (
@@ -78,12 +75,13 @@ export default function SupportPage() {
           </div>
         </div>
 
-        {/* Live Chat Widget */}
+        {/* FAQ Link */}
         <div className="rounded-lg border border-border bg-card p-6">
-          <h2 className="text-xl font-semibold text-foreground mb-4">Chat with Us</h2>
-          <div className="min-h-96">
-            <ZohoSalesIQChat />
-          </div>
+          <h2 className="text-xl font-semibold text-foreground mb-4">Need Quick Answers?</h2>
+          <p className="text-sm text-muted-foreground mb-4">Browse our frequently asked questions for immediate help with common issues.</p>
+          <Button asChild className="w-full">
+            <Link href="/faq">View FAQ</Link>
+          </Button>
         </div>
       </div>
     </div>
