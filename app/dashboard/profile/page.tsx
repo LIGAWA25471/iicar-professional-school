@@ -63,6 +63,7 @@ export default function ProfilePage() {
       if (profileError) {
         console.error('[v0] Error loading profile:', profileError)
         setError('Failed to load profile')
+        setLoading(false)
         return
       }
 

@@ -31,17 +31,35 @@ export default function EnrollButton({ programId, price, title }: Props) {
         return
       }
 
-      await supabase.from('enrollments').upsert({
+      console.log('[v0] Enrolling student in free course:', { studentId: user.id, programId, title })
+
+      const { data, error } = await supabase.from('enrollments').insert({
         student_id: user.id,
         program_id: programId,
         status: 'active',
         enrolled_at: new Date().toISOString(),
-      }, { onConflict: 'student_id,program_id' })
+      })
 
+      console.log('[v0] Enrollment response:', { data, error })
+
+      if (error) {
+        // If enrollment exists, that's fine - they're already enrolled
+        if (error.code === '23505') {
+          console.log('[v0] Student already enrolled in this course')
+          router.push(`/dashboard/programs/${programId}`)
+          router.refresh()
+          return
+        }
+        throw error
+      }
+
+      console.log('[v0] Enrollment successful, redirecting...')
       router.push(`/dashboard/programs/${programId}`)
       router.refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Enrollment failed')
+      const errorMsg = err instanceof Error ? err.message : 'Enrollment failed'
+      setError(errorMsg)
+      console.error('[v0] Free enrollment error:', err)
       setLoading(false)
     }
   }
