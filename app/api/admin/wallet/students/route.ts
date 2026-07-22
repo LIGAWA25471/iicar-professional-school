@@ -14,11 +14,11 @@ export async function GET() {
     const adminDb = createAdminClient()
     const { data: profile } = await adminDb
       .from('profiles')
-      .select('is_admin')
+      .select('role')
       .eq('id', user.id)
       .single()
 
-    if (!profile?.is_admin) {
+    if (profile?.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -26,7 +26,7 @@ export async function GET() {
     const { data: profiles, error: profilesError } = await adminDb
       .from('profiles')
       .select('id, full_name, email')
-      .eq('is_admin', false)
+      .neq('role', 'admin')
       .order('full_name')
 
     if (profilesError) {

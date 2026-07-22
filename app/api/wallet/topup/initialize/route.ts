@@ -46,14 +46,10 @@ export async function POST(request: NextRequest) {
       wallet = newWallet
     }
 
-    // Get user email
-    const { data: profile } = await adminDb
-      .from('profiles')
-      .select('email')
-      .eq('id', user.id)
-      .single()
+    // Get user email from auth user
+    const userEmail = user.email
 
-    if (!profile?.email) {
+    if (!userEmail) {
       return NextResponse.json({ error: 'User email not found' }, { status: 400 })
     }
 
@@ -69,7 +65,7 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        email: profile.email,
+        email: userEmail,
         amount: amount_cents, // Amount in cents (Paystack expects kobo for NGN, cents for others)
         currency: 'KES',
         reference: reference,
@@ -118,7 +114,7 @@ export async function POST(request: NextRequest) {
         access_code: paystackData.data.access_code,
         reference: paystackData.data.reference,
         publicKey: process.env.NEXT_PUBLIC_PAYSTACK_KEY,
-        email: profile.email,
+        email: userEmail,
         amount: amount_cents,
         currency: 'KES',
       },
