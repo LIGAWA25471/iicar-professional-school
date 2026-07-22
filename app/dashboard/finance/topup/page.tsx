@@ -48,16 +48,6 @@ export default async function WalletTopupPage() {
             <li>Use your wallet balance to enroll in paid courses</li>
           </ul>
         </div>
-
-        {/* Singapore Entity Info */}
-        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
-          <p className="font-semibold text-blue-900 mb-2">Singapore Operations</p>
-          <p className="text-blue-800">
-            Our Singapore courses are offered through <strong>GLOBAL BW COLLEGE PTE. LTD.</strong><br />
-            UEN: 202327580E | SSIC: 85404<br />
-            Address: 482 Pasir Ris Drive 4, #08-393, Singapore 510482
-          </p>
-        </div>
       </div>
     </div>
   )

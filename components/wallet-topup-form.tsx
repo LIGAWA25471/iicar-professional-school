@@ -11,28 +11,37 @@ interface WalletTopupFormProps {
 }
 
 const PRESET_AMOUNTS = [
-  { usd: 10, kes: 1340 },
-  { usd: 25, kes: 3350 },
-  { usd: 50, kes: 6700 },
-  { usd: 100, kes: 13400 },
-  { usd: 250, kes: 33500 },
-  { usd: 500, kes: 67000 },
+  { usd: 10 },
+  { usd: 25 },
+  { usd: 50 },
+  { usd: 100 },
+  { usd: 250 },
+  { usd: 500 },
 ]
+
+const USD_TO_KES = 134 // 1 USD = 134 KES
 
 export function WalletTopupForm({ userId }: WalletTopupFormProps) {
   const router = useRouter()
-  const [selectedAmount, setSelectedAmount] = useState<number | null>(null)
-  const [customAmount, setCustomAmount] = useState('')
+  const [selectedAmountUSD, setSelectedAmountUSD] = useState<number | null>(null)
+  const [customAmountUSD, setCustomAmountUSD] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const amount = selectedAmount !== null ? selectedAmount : (customAmount ? parseInt(customAmount) * 100 : 0)
-  const amountKES = amount / 100
-  const amountUSD = Math.round(amount / 13400)
+  // Get USD amount (from preset or custom input)
+  const amountUSD = selectedAmountUSD !== null ? selectedAmountUSD : (customAmountUSD ? parseFloat(customAmountUSD) : 0)
+  
+  // Convert USD to KES (in cents) for API
+  const amountKESCents = Math.round(amountUSD * USD_TO_KES * 100)
 
   async function handleTopup() {
-    if (!amount || amount < 100) {
-      setError('Minimum amount is KES 100')
+    if (!amountUSD || amountUSD < 1) {
+      setError('Minimum amount is USD 1')
+      return
+    }
+
+    if (amountUSD > 10000) {
+      setError('Maximum amount is USD 10,000')
       return
     }
 
@@ -40,16 +49,19 @@ export function WalletTopupForm({ userId }: WalletTopupFormProps) {
     setError('')
 
     try {
+      console.log('[v0] Initiating wallet topup: USD', amountUSD, '-> KES cents:', amountKESCents)
+      
       const response = await fetch('/api/wallet/topup/initialize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount_cents: amount,
+          amount_cents: amountKESCents,
           user_id: userId,
         }),
       })
 
       const data = await response.json()
+      console.log('[v0] API Response:', data)
 
       if (!response.ok) {
         setError(data.error || 'Failed to initialize payment')
@@ -58,15 +70,15 @@ export function WalletTopupForm({ userId }: WalletTopupFormProps) {
       }
 
       // Redirect to Paystack checkout
-      if (data.authorization_url) {
-        window.location.href = data.authorization_url
+      if (data.data?.authorization_url) {
+        window.location.href = data.data.authorization_url
       } else if (window.PaystackPop) {
         window.PaystackPop.setup({
-          key: data.publicKey,
-          email: data.email,
-          amount: amount,
+          key: data.data?.publicKey,
+          email: data.data?.email,
+          amount: amountKESCents,
           currency: 'KES',
-          ref: data.reference,
+          ref: data.data?.reference,
           onClose: function() {
             setLoading(false)
           },
@@ -94,17 +106,16 @@ export function WalletTopupForm({ userId }: WalletTopupFormProps) {
             <button
               key={preset.usd}
               onClick={() => {
-                setSelectedAmount(preset.kes * 100)
-                setCustomAmount('')
+                setSelectedAmountUSD(preset.usd)
+                setCustomAmountUSD('')
               }}
               className={`p-3 rounded-lg border-2 transition-colors ${
-                selectedAmount === preset.kes * 100
+                selectedAmountUSD === preset.usd
                   ? 'border-primary bg-primary/10 text-primary'
                   : 'border-border hover:border-primary/50 text-foreground'
               }`}
             >
               <div className="font-semibold">${preset.usd}</div>
-              <div className="text-xs opacity-70">{preset.kes.toLocaleString()} KES</div>
             </button>
           ))}
         </div>
@@ -112,33 +123,35 @@ export function WalletTopupForm({ userId }: WalletTopupFormProps) {
 
       {/* Custom Amount */}
       <div>
-        <label className="text-sm font-medium text-foreground mb-2 block">Or Enter Custom Amount (KES)</label>
+        <label className="text-sm font-medium text-foreground mb-2 block">Or Enter Custom Amount (USD)</label>
         <div className="flex gap-2">
+          <span className="flex items-center px-3 bg-muted border border-border rounded-lg text-muted-foreground font-medium">$</span>
           <Input
             type="number"
-            placeholder="Enter amount in KES"
-            value={customAmount}
+            placeholder="Enter amount in USD"
+            value={customAmountUSD}
             onChange={(e) => {
-              setCustomAmount(e.target.value)
-              setSelectedAmount(null)
+              setCustomAmountUSD(e.target.value)
+              setSelectedAmountUSD(null)
             }}
-            min="100"
-            step="100"
+            min="1"
+            max="10000"
+            step="0.01"
             className="flex-1"
           />
         </div>
       </div>
 
       {/* Amount Summary */}
-      {amount > 0 && (
+      {amountUSD > 0 && (
         <div className="bg-muted/50 border border-border rounded-lg p-4 space-y-2">
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Amount (KES):</span>
-            <span className="font-semibold text-foreground">{amountKES.toLocaleString()}</span>
+            <span className="text-muted-foreground">Amount (USD):</span>
+            <span className="font-semibold text-foreground">${amountUSD.toFixed(2)}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Equivalent (USD):</span>
-            <span className="font-semibold text-foreground">${amountUSD}</span>
+            <span className="text-muted-foreground">In KES (approx):</span>
+            <span className="text-xs text-muted-foreground">≈ {(amountUSD * USD_TO_KES).toLocaleString(undefined, { maximumFractionDigits: 0 })} KES</span>
           </div>
         </div>
       )}
@@ -153,7 +166,7 @@ export function WalletTopupForm({ userId }: WalletTopupFormProps) {
       {/* Submit Button */}
       <Button
         onClick={handleTopup}
-        disabled={loading || amount < 100}
+        disabled={loading || amountUSD < 1}
         className="w-full"
         size="lg"
       >
@@ -163,15 +176,16 @@ export function WalletTopupForm({ userId }: WalletTopupFormProps) {
             Processing...
           </>
         ) : (
-          `Proceed to Payment - KES ${amountKES.toLocaleString()}`
+          `Proceed to Payment - $${amountUSD.toFixed(2)}`
         )}
       </Button>
 
       {/* Info */}
       <div className="text-xs text-muted-foreground space-y-1">
-        <p>• Payment processed by Paystack</p>
+        <p>• Amounts shown in USD, converted to KES for payment</p>
+        <p>• Payment processed by Paystack (KES)</p>
         <p>• Your wallet is credited immediately upon successful payment</p>
-        <p>• Minimum top-up: KES 100</p>
+        <p>• Minimum top-up: USD 1</p>
       </div>
     </div>
   )
