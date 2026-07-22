@@ -98,6 +98,20 @@ export function Footer() {
               </li>
             </ul>
           </div>
+
+          {/* Singapore Operations */}
+          <div>
+            <h4 className="font-semibold mb-4">Singapore Operations</h4>
+            <div className="text-sm space-y-2">
+              <p className="text-slate-400">Our Singapore courses are offered through:</p>
+              <p className="text-slate-300 font-medium">GLOBAL BW COLLEGE PTE. LTD.</p>
+              <ul className="text-slate-400 space-y-1 text-xs">
+                <li><strong>UEN:</strong> 202327580E</li>
+                <li><strong>SSIC:</strong> 85404</li>
+                <li className="break-words"><strong>Address:</strong> 482 Pasir Ris Drive 4, #08-393, Singapore 510482</li>
+              </ul>
+            </div>
+          </div>
         </div>
 
         {/* Social Links */}
