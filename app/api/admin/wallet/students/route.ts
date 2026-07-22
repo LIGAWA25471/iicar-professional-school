@@ -27,7 +27,7 @@ export async function GET() {
     // Get all students with their profiles
     const { data: profiles, error: profilesError } = await adminDb
       .from('profiles')
-      .select('id, full_name, phone')
+      .select('id, full_name, phone, country')
       .eq('is_admin', false)
       .order('full_name')
 

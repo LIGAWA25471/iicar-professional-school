@@ -11,9 +11,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify admin role (you can add role-based access control here)
-    const { studentId, amountCents, description, transactionType } = await request.json()
+    const body = await request.json()
+    const student_id = body.student_id || body.studentId
+    const amount_cents = body.amount_cents || body.amountCents
+    const description = body.reason || body.description
+    const transaction_type = body.transaction_type || body.transactionType
 
-    if (!studentId || !amountCents || amountCents <= 0) {
+    if (!student_id || !amount_cents || amount_cents <= 0) {
+      console.error('[v0] Credit API - Invalid params:', { student_id, amount_cents })
       return NextResponse.json(
         { error: 'Invalid request parameters' },
         { status: 400 }
@@ -26,7 +31,7 @@ export async function POST(request: NextRequest) {
     let { data: wallet, error: walletError } = await adminDb
       .from('student_wallets')
       .select('*')
-      .eq('student_id', studentId)
+      .eq('student_id', student_id)
       .single()
 
     if (walletError && walletError.code === 'PGRST116') {
@@ -34,9 +39,9 @@ export async function POST(request: NextRequest) {
       const { data: newWallet, error: createError } = await adminDb
         .from('student_wallets')
         .insert({
-          student_id: studentId,
-          balance_cents: amountCents,
-          total_credited_cents: amountCents,
+          student_id: student_id,
+          balance_cents: amount_cents,
+          total_credited_cents: amount_cents,
           total_spent_cents: 0,
         })
         .select()
@@ -59,14 +64,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const newBalance = wallet.balance_cents + amountCents
+    const newBalance = wallet.balance_cents + amount_cents
 
     // Update wallet balance
     const { error: updateError } = await adminDb
       .from('student_wallets')
       .update({
         balance_cents: newBalance,
-        total_credited_cents: wallet.total_credited_cents + amountCents,
+        total_credited_cents: wallet.total_credited_cents + amount_cents,
         updated_at: new Date().toISOString(),
       })
       .eq('id', wallet.id)
@@ -83,14 +88,12 @@ export async function POST(request: NextRequest) {
     const { error: transError } = await adminDb
       .from('wallet_transactions')
       .insert({
-        student_id: studentId,
-        wallet_id: wallet.id,
-        type: 'credit',
-        amount_cents: amountCents,
-        description,
-        reference_type: transactionType,
-        balance_after_cents: newBalance,
-        created_by: admin.id,
+        student_id: student_id,
+        transaction_type: transaction_type,
+        amount_cents: amount_cents,
+        description: description,
+        reference_id: wallet.id,
+        created_at: new Date().toISOString(),
       })
 
     if (transError) {
