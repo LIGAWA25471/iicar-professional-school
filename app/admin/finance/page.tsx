@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 interface Student {
   id: string
   full_name: string
-  email: string
+  phone?: string
 }
 
 interface Wallet {
@@ -36,6 +36,7 @@ export default function AdminFinancePage() {
     try {
       const response = await fetch('/api/admin/wallet/students')
       const data = await response.json()
+      console.log('[v0] Admin finance - fetched students:', { status: response.status, studentCount: data.students?.length, data })
       setStudents(data.students || [])
     } catch (error) {
       console.error('[v0] Failed to fetch students:', error)
@@ -83,7 +84,7 @@ export default function AdminFinancePage() {
 
   const filteredStudents = students.filter(s =>
     s.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.email.toLowerCase().includes(searchTerm.toLowerCase())
+    s.phone?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   if (loading) {
@@ -139,7 +140,7 @@ export default function AdminFinancePage() {
                     className="w-full text-left p-2 hover:bg-muted rounded text-sm"
                   >
                     <p className="font-medium">{student.full_name}</p>
-                    <p className="text-xs text-muted-foreground">{student.email}</p>
+                    <p className="text-xs text-muted-foreground">{student.phone || 'N/A'}</p>
                   </button>
                 ))}
               </div>
@@ -216,7 +217,7 @@ export default function AdminFinancePage() {
                   <td className="py-3 px-2">
                     <div>
                       <p className="font-medium text-foreground">{student.full_name}</p>
-                      <p className="text-xs text-muted-foreground">{student.email}</p>
+                      <p className="text-xs text-muted-foreground">{student.phone || 'N/A'}</p>
                     </div>
                   </td>
                   <td className="text-right py-3 px-2">
