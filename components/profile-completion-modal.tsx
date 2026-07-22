@@ -18,12 +18,20 @@ export function ProfileCompletionModal() {
   const [status, setStatus] = useState<CompletionStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [isOpen, setIsOpen] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     async function checkCompletion() {
       try {
+        console.log('[v0] Checking profile completion...')
         const response = await fetch('/api/profile/completion-status')
+        
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`)
+        }
+        
         const data = await response.json()
+        console.log('[v0] Profile completion status:', data)
 
         if (data.completion) {
           setStatus(data.completion)
@@ -34,12 +42,23 @@ export function ProfileCompletionModal() {
         }
       } catch (error) {
         console.error('[v0] Error checking profile completion:', error)
+        setError('Could not verify profile status')
       } finally {
         setLoading(false)
       }
     }
 
     checkCompletion()
+    
+    // Set a timeout to force stop loading after 5 seconds
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.warn('[v0] Profile check timeout - stopping loading')
+        setLoading(false)
+      }
+    }, 5000)
+    
+    return () => clearTimeout(timeout)
   }, [])
 
   if (loading || !status || !isOpen) {
