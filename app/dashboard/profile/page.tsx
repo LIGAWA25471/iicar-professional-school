@@ -15,17 +15,26 @@ interface Profile {
 }
 
 const COUNTRIES = [
-  'United States',
-  'United Kingdom',
-  'Canada',
-  'Australia',
-  'Kenya',
-  'Nigeria',
-  'Singapore',
-  'India',
-  'Germany',
-  'France',
-  'Other',
+  'Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola', 'Antigua and Barbuda', 'Argentina', 'Armenia', 'Australia', 'Austria',
+  'Azerbaijan', 'Bahamas', 'Bahrain', 'Bangladesh', 'Barbados', 'Belarus', 'Belgium', 'Belize', 'Benin', 'Bhutan',
+  'Bolivia', 'Bosnia and Herzegovina', 'Botswana', 'Brazil', 'Brunei', 'Bulgaria', 'Burkina Faso', 'Burundi', 'Cambodia', 'Cameroon',
+  'Canada', 'Cape Verde', 'Central African Republic', 'Chad', 'Chile', 'China', 'Colombia', 'Comoros', 'Congo', 'Costa Rica',
+  'Côte d\'Ivoire', 'Croatia', 'Cuba', 'Cyprus', 'Czech Republic', 'Denmark', 'Djibouti', 'Dominica', 'Dominican Republic', 'Ecuador',
+  'Egypt', 'El Salvador', 'Equatorial Guinea', 'Eritrea', 'Estonia', 'Eswatini', 'Ethiopia', 'Fiji', 'Finland', 'France',
+  'Gabon', 'Gambia', 'Georgia', 'Germany', 'Ghana', 'Greece', 'Grenada', 'Guatemala', 'Guinea', 'Guinea-Bissau',
+  'Guyana', 'Haiti', 'Honduras', 'Hungary', 'Iceland', 'India', 'Indonesia', 'Iran', 'Iraq', 'Ireland',
+  'Israel', 'Italy', 'Jamaica', 'Japan', 'Jordan', 'Kazakhstan', 'Kenya', 'Kiribati', 'Kuwait', 'Kyrgyzstan',
+  'Laos', 'Latvia', 'Lebanon', 'Lesotho', 'Liberia', 'Libya', 'Liechtenstein', 'Lithuania', 'Luxembourg', 'Madagascar',
+  'Malawi', 'Malaysia', 'Maldives', 'Mali', 'Malta', 'Marshall Islands', 'Mauritania', 'Mauritius', 'Mexico', 'Micronesia',
+  'Moldova', 'Monaco', 'Mongolia', 'Montenegro', 'Morocco', 'Mozambique', 'Myanmar', 'Namibia', 'Nauru', 'Nepal',
+  'Netherlands', 'New Zealand', 'Nicaragua', 'Niger', 'Nigeria', 'North Korea', 'North Macedonia', 'Norway', 'Oman', 'Pakistan',
+  'Palau', 'Palestine', 'Panama', 'Papua New Guinea', 'Paraguay', 'Peru', 'Philippines', 'Poland', 'Portugal', 'Qatar',
+  'Romania', 'Russia', 'Rwanda', 'Saint Kitts and Nevis', 'Saint Lucia', 'Saint Vincent and the Grenadines', 'Samoa', 'San Marino', 'Sao Tome and Principe', 'Saudi Arabia',
+  'Senegal', 'Serbia', 'Seychelles', 'Sierra Leone', 'Singapore', 'Slovakia', 'Slovenia', 'Solomon Islands', 'Somalia', 'South Africa',
+  'South Korea', 'South Sudan', 'Spain', 'Sri Lanka', 'Sudan', 'Suriname', 'Sweden', 'Switzerland', 'Syria', 'Taiwan',
+  'Tajikistan', 'Tanzania', 'Thailand', 'Timor-Leste', 'Togo', 'Tonga', 'Trinidad and Tobago', 'Tunisia', 'Turkey', 'Turkmenistan',
+  'Tuvalu', 'Uganda', 'Ukraine', 'United Arab Emirates', 'United Kingdom', 'United States', 'Uruguay', 'Uzbekistan', 'Vanuatu', 'Vatican City',
+  'Venezuela', 'Vietnam', 'Yemen', 'Zambia', 'Zimbabwe', 'Other',
 ]
 
 export default function ProfilePage() {
@@ -44,52 +53,54 @@ export default function ProfilePage() {
 
   useEffect(() => {
     async function loadProfile() {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      try {
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
 
-      if (!user) {
-        router.push('/auth/login')
-        return
-      }
+        if (!user) {
+          router.push('/auth/login')
+          return
+        }
 
-      setEmail(user.email || '')
+        setEmail(user.email || '')
 
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single()
 
-      if (profileError) {
-        console.error('[v0] Error loading profile:', profileError)
-        setError('Failed to load profile')
+        if (profileError) {
+          console.error('[v0] Error loading profile:', profileError)
+          setError('Failed to load profile')
+          setLoading(false)
+          return
+        }
+
+        setProfile(profileData)
+        setFormData({
+          full_name: profileData.full_name || '',
+          phone: profileData.phone || '',
+          country: profileData.country || '',
+        })
+      } catch (err) {
+        console.error('[v0] Profile load error:', err)
+        setError('Error loading profile')
+      } finally {
         setLoading(false)
-        return
       }
-
-      setProfile(profileData)
-      setFormData({
-        full_name: profileData.full_name || '',
-        phone: profileData.phone || '',
-        country: profileData.country || '',
-      })
-      setLoading(false)
     }
 
     loadProfile()
   }, [router])
 
   async function handleSave() {
-    // Validation
-    if (!formData.full_name.trim()) {
-      setError('Full name is required')
-      return
-    }
+    // Validate required fields
     if (!formData.phone.trim()) {
       setError('Phone number is required')
       return
     }
-    if (!formData.country.trim()) {
+    if (!formData.country) {
       setError('Country is required')
       return
     }
@@ -99,32 +110,42 @@ export default function ProfilePage() {
     setSuccess('')
 
     try {
+      if (!profile?.id) {
+        setError('Profile not found. Please refresh the page.')
+        setSaving(false)
+        return
+      }
+
+      console.log('[v0] Saving profile:', { profileId: profile.id, phone: formData.phone, country: formData.country })
+
       const supabase = createClient()
       const { error: updateError } = await supabase
         .from('profiles')
         .update({
-          full_name: formData.full_name,
+          full_name: formData.full_name || null,
           phone: formData.phone,
           country: formData.country,
           profile_completed: true,
           profile_completed_at: new Date().toISOString(),
         })
-        .eq('id', profile?.id)
+        .eq('id', profile.id)
 
       if (updateError) {
-        setError('Failed to save profile')
         console.error('[v0] Update error:', updateError)
+        setError(`Failed to save profile: ${updateError.message}`)
+        setSaving(false)
         return
       }
 
+      console.log('[v0] Profile saved successfully')
       setSuccess('Profile updated successfully!')
       setTimeout(() => {
         router.refresh()
-      }, 1000)
+      }, 1500)
     } catch (err) {
-      setError('An error occurred while saving')
+      const errorMsg = err instanceof Error ? err.message : 'An unknown error occurred'
+      setError(`Error saving profile: ${errorMsg}`)
       console.error('[v0] Save error:', err)
-    } finally {
       setSaving(false)
     }
   }
@@ -252,10 +273,7 @@ export default function ProfilePage() {
                 Saving...
               </>
             ) : (
-              <>
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                Save Changes
-              </>
+              'Save Profile'
             )}
           </Button>
         </div>
