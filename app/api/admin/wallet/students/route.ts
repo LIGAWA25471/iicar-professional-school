@@ -14,25 +14,32 @@ export async function GET() {
     const adminDb = createAdminClient()
     const { data: profile } = await adminDb
       .from('profiles')
-      .select('role')
+      .select('is_admin')
       .eq('id', user.id)
       .single()
 
-    if (profile?.role !== 'admin') {
+    console.log('[v0] Admin check:', { userId: user.id, isAdmin: profile?.is_admin })
+
+    if (!profile?.is_admin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     // Get all students with their profiles
     const { data: profiles, error: profilesError } = await adminDb
       .from('profiles')
-      .select('id, full_name, email')
-      .neq('role', 'admin')
+      .select('id, full_name, phone, country')
+      .eq('is_admin', false)
       .order('full_name')
+
+    console.log('[v0] Fetched profiles:', { count: profiles?.length, profilesError })
 
     if (profilesError) {
       console.error('[v0] Error fetching profiles:', profilesError)
-      return NextResponse.json({ error: 'Failed to fetch students' }, { status: 500 })
+      return NextResponse.json({ error: 'Failed to fetch students', details: profilesError.message }, { status: 500 })
     }
+
+    const students_list = profiles || []
+    console.log('[v0] Total students found:', students_list.length)
 
     // Get all wallets
     const { data: wallets, error: walletsError } = await adminDb
@@ -45,7 +52,7 @@ export async function GET() {
     }
 
     // Combine data
-    const students = (profiles || []).map(profile => {
+    const students = students_list.map(profile => {
       const wallet = (wallets || []).find(w => w.student_id === profile.id) || {
         student_id: profile.id,
         balance_cents: 0,
@@ -55,6 +62,7 @@ export async function GET() {
       return { ...profile, wallet }
     })
 
+    console.log('[v0] Returning students:', { count: students.length })
     return NextResponse.json({ students })
   } catch (error) {
     console.error('[v0] Error:', error)

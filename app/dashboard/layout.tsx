@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { LogOut, LayoutDashboard, BookOpen, Award, User, HelpCircle, CreditCard } from 'lucide-react'
 import { DashboardMobileNav } from '@/components/dashboard-mobile-nav'
 import { ThemeSelector } from '@/components/theme-selector'
+import { ProfileCompletionModal } from '@/components/profile-completion-modal'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -77,6 +78,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <div className="w-full md:ml-64 flex flex-1 flex-col">
         <main className="flex-1 px-4 py-6 md:px-8 md:py-8">{children}</main>
       </div>
+
+      {/* Profile Completion Modal */}
+      <ProfileCompletionModal />
     </div>
   )
 }
