@@ -106,15 +106,17 @@ export async function POST(request: Request) {
     // Create transaction record
     const { error: transactionError } = await adminDb
       .from('wallet_transactions')
-      .update({
-        transaction_type: 'topup_completed',
+      .insert({
+        student_id: user.id,
+        type: 'credit',
+        amount_cents: amountCents,
         description: `Wallet top-up via Paystack (Ref: ${reference})`,
+        reference_type: 'topup_payment',
+        reference_id: reference,
       })
-      .eq('student_id', user.id)
-      .eq('reference_id', reference)
 
     if (transactionError) {
-      console.warn('[IICAR] Transaction record update warning:', transactionError)
+      console.warn('[IICAR] Transaction record creation warning:', transactionError)
       // Don't fail the entire response if transaction record fails
     }
 

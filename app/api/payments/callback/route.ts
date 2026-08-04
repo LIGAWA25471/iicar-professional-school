@@ -111,7 +111,7 @@ async function updatePaymentById(
     })
     .eq('id', paymentId)
     .neq('status', 'paid') // don't overwrite already-paid records
-    .select('id, student_id, program_id, status')
+    .select('id, student_id, program_id, status, amount_cents')
     .single()
 
   if (error) {
@@ -121,6 +121,19 @@ async function updatePaymentById(
 
   if (isPaid && payment) {
     await activateEnrollment(adminDb, payment.student_id, payment.program_id)
+    // Create wallet transaction record
+    await adminDb
+      .from('wallet_transactions')
+      .insert({
+        student_id: payment.student_id,
+        type: 'credit',
+        amount_cents: payment.amount_cents || 0,
+        description: `Program enrollment payment via M-Pesa (Ref: ${reference})`,
+        reference_type: 'enrollment_payment',
+        reference_id: reference,
+      })
+      .then(() => console.log('[IICAR] Transaction record created for payment:', paymentId))
+      .catch((err) => console.warn('[IICAR] Transaction record creation warning:', err.message))
   }
   return true
 }
@@ -142,13 +155,26 @@ async function updatePaymentByLocation(
     })
     .eq('kopokopo_location', location)
     .neq('status', 'paid')
-    .select('id, student_id, program_id, status')
+    .select('id, student_id, program_id, status, amount_cents')
     .single()
 
   if (error || !payment) return false
 
   if (isPaid && payment) {
     await activateEnrollment(adminDb, payment.student_id, payment.program_id)
+    // Create wallet transaction record
+    await adminDb
+      .from('wallet_transactions')
+      .insert({
+        student_id: payment.student_id,
+        type: 'credit',
+        amount_cents: payment.amount_cents || 0,
+        description: `Program enrollment payment via M-Pesa (Ref: ${reference})`,
+        reference_type: 'enrollment_payment',
+        reference_id: reference,
+      })
+      .then(() => console.log('[IICAR] Transaction record created for payment:', payment.id))
+      .catch((err) => console.warn('[IICAR] Transaction record creation warning:', err.message))
   }
   return true
 }
@@ -172,7 +198,7 @@ async function updatePaymentByPhone(
     .eq('status', 'pending')
     .order('created_at', { ascending: false })
     .limit(1)
-    .select('id, student_id, program_id, status')
+    .select('id, student_id, program_id, status, amount_cents')
     .single()
 
   if (error) {
@@ -182,6 +208,19 @@ async function updatePaymentByPhone(
 
   if (isPaid && payment) {
     await activateEnrollment(adminDb, payment.student_id, payment.program_id)
+    // Create wallet transaction record
+    await adminDb
+      .from('wallet_transactions')
+      .insert({
+        student_id: payment.student_id,
+        type: 'credit',
+        amount_cents: payment.amount_cents || 0,
+        description: `Program enrollment payment via M-Pesa (Ref: ${reference})`,
+        reference_type: 'enrollment_payment',
+        reference_id: reference,
+      })
+      .then(() => console.log('[IICAR] Transaction record created for payment:', payment.id))
+      .catch((err) => console.warn('[IICAR] Transaction record creation warning:', err.message))
   }
 }
 

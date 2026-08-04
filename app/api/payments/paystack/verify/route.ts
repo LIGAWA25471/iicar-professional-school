@@ -96,6 +96,21 @@ export async function POST(request: Request) {
       )
     }
 
+    // Create wallet transaction record for audit trail
+    const amountCents = Math.round(verificationData.data.amount)
+    await adminDb
+      .from('wallet_transactions')
+      .insert({
+        student_id: payment.student_id,
+        type: 'credit',
+        amount_cents: amountCents,
+        description: `Program enrollment payment via Paystack (Ref: ${reference})`,
+        reference_type: 'enrollment_payment',
+        reference_id: reference,
+      })
+      .then(() => console.log('[IICAR] Transaction record created'))
+      .catch((err) => console.warn('[IICAR] Transaction record creation warning:', err.message))
+
     return NextResponse.json({
       status: 'success',
       message: 'Payment verified and enrollment completed',

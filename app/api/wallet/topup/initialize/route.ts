@@ -100,9 +100,10 @@ export async function POST(request: NextRequest) {
       .from('wallet_transactions')
       .insert({
         student_id: user.id,
-        transaction_type: 'topup_pending',
+        type: 'credit',
         amount_cents: amount_cents,
         description: 'Wallet top-up via Paystack',
+        reference_type: 'topup_pending',
         reference_id: paystackData.data.reference,
       })
 

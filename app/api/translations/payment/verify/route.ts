@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     if (transaction.status === 'success') {
       // Update payment record
-      await adminDb
+      const { data: paymentRecord } = await adminDb
         .from('translation_payments')
         .update({
           status: 'success',
@@ -47,6 +47,8 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString(),
         })
         .eq('paystack_reference', reference)
+        .select('amount_cents')
+        .single()
 
       // Update translation request
       const { data: updatedTranslation, error: updateError } = await adminDb
@@ -64,6 +66,20 @@ export async function POST(request: NextRequest) {
         console.error('[v0] Error updating translation request:', updateError)
         throw updateError
       }
+
+      // Create wallet transaction record for audit trail
+      await adminDb
+        .from('wallet_transactions')
+        .insert({
+          student_id: user.id,
+          type: 'credit',
+          amount_cents: paymentRecord?.amount_cents || transaction.amount,
+          description: `Translation payment via Paystack (Ref: ${reference})`,
+          reference_type: 'translation_payment',
+          reference_id: reference,
+        })
+        .then(() => console.log('[v0] Transaction record created for translation:', translation_id))
+        .catch((err) => console.warn('[v0] Transaction record creation warning:', err.message))
 
       console.log('[v0] Payment verified successfully for translation:', translation_id)
 
