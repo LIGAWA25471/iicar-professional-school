@@ -286,18 +286,4 @@ export function TranslationCheckout({ translation }: TranslationCheckoutProps) {
       </div>
     </div>
   )
-            </>
-          ) : (
-            `Pay $${amountInUSD.toFixed(2)} with Paystack`
-          )}
-        </Button>
-
-        <div className="text-xs text-muted-foreground space-y-1">
-          <p>• Secure payment via Paystack</p>
-          <p>• Receipt sent via email immediately</p>
-          <p>• Your card details are never stored</p>
-        </div>
-      </div>
-    </div>
-  )
 }
