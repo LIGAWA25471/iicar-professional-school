@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { Upload, FileText, DollarSign, Loader2, CheckCircle, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -48,6 +49,26 @@ export default function TranslationPortal() {
       prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]
     )
   }
+
+  // Load translation requests on component mount
+  const loadRequests = async () => {
+    setLoadingRequests(true)
+    try {
+      const response = await fetch('/api/translations/my-requests')
+      if (response.ok) {
+        const data = await response.json()
+        setRequests(data.requests || [])
+      }
+    } catch (err) {
+      console.error('[v0] Error loading requests:', err)
+    } finally {
+      setLoadingRequests(false)
+    }
+  }
+
+  React.useEffect(() => {
+    loadRequests()
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -269,6 +290,72 @@ export default function TranslationPortal() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Previous Requests Section */}
+      <div className="mt-12">
+        <h2 className="text-2xl font-bold text-foreground mb-6">Your Translation Requests</h2>
+        
+        {loadingRequests ? (
+          <div className="text-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+            <p className="text-muted-foreground mt-3">Loading your requests...</p>
+          </div>
+        ) : requests.length === 0 ? (
+          <div className="bg-card border border-border rounded-lg p-8 text-center">
+            <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+            <p className="text-muted-foreground">No translation requests yet</p>
+          </div>
+        ) : (
+          <div className="grid gap-4">
+            {requests.map((request: any) => (
+              <div key={request.id} className="bg-card border border-border rounded-lg p-4 hover:border-primary/50 transition-colors">
+                <div className="grid md:grid-cols-4 gap-4 items-start">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Document</p>
+                    <p className="font-medium text-foreground">{request.document_name}</p>
+                    <p className="text-sm text-muted-foreground">{request.total_pages} page{request.total_pages !== 1 ? 's' : ''}</p>
+                  </div>
+                  
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Languages</p>
+                    <p className="font-medium text-foreground">{request.languages_requested.length} language{request.languages_requested.length !== 1 ? 's' : ''}</p>
+                    <p className="text-sm text-muted-foreground">{request.languages_requested.map((l: string) => LANGUAGES.find(lang => lang.code === l)?.name).join(', ')}</p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Status</p>
+                    <div className="flex items-center gap-2">
+                      {request.status === 'paid' && <CheckCircle className="h-4 w-4 text-green-600" />}
+                      {request.status === 'pending' && <AlertCircle className="h-4 w-4 text-yellow-600" />}
+                      <span className="font-medium text-foreground capitalize">{request.status}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 justify-end">
+                    {request.status === 'pending' && (
+                      <Button
+                        onClick={() => router.push(`/dashboard/translations/${request.id}/checkout`)}
+                        className="text-sm"
+                      >
+                        Pay Now
+                      </Button>
+                    )}
+                    {request.status === 'paid' && (
+                      <Button
+                        variant="outline"
+                        onClick={() => router.push(`/dashboard/translations/${request.id}/receipt`)}
+                        className="text-sm"
+                      >
+                        View Receipt
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

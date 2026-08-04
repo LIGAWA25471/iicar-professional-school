@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { TranslationCheckout } from '@/components/translation-checkout'
 
@@ -8,8 +8,9 @@ export default async function CheckoutPage({ params }: { params: { id: string } 
   
   if (!user) redirect('/auth/login')
 
-  // Fetch translation request
-  const { data: translationRequest, error } = await supabase
+  // Fetch translation request using admin client to bypass RLS
+  const adminDb = createAdminClient()
+  const { data: translationRequest, error } = await adminDb
     .from('translation_requests')
     .select('*')
     .eq('id', params.id)
