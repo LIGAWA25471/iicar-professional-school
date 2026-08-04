@@ -119,14 +119,41 @@ export function PaystackPayment({
           setPaymentStatus('idle')
           setLoading(false)
         },
-        onSuccess: function (transaction: any) {
-          console.log('[v0] Payment successful:', transaction)
-          setPaymentStatus('success')
-          if (onSuccess) onSuccess()
-          setTimeout(() => {
-            router.push(`/dashboard/programs/${programId}`)
-            router.refresh()
-          }, 2000)
+        onSuccess: async function (transaction: any) {
+          console.log('[v0] Paystack transaction closed, verifying payment:', transaction)
+          setPaymentStatus('processing')
+          
+          try {
+            // Verify payment with backend to ensure it was actually successful
+            const verifyResponse = await fetch('/api/payments/paystack/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                reference: data.reference,
+              }),
+            })
+
+            const verifyData = await verifyResponse.json()
+            console.log('[v0] Payment verification result:', verifyData)
+
+            if (verifyData.status === 'success') {
+              console.log('[v0] Payment verified successfully')
+              setPaymentStatus('success')
+              if (onSuccess) onSuccess()
+              setTimeout(() => {
+                router.push(`/dashboard/programs/${programId}`)
+                router.refresh()
+              }, 1500)
+            } else {
+              console.error('[v0] Payment verification failed:', verifyData.message)
+              setError(verifyData.message || 'Payment verification failed. Please contact support.')
+              setPaymentStatus('idle')
+            }
+          } catch (err) {
+            console.error('[v0] Verification error:', err)
+            setError('Could not verify payment. Please contact support if you were charged.')
+            setPaymentStatus('idle')
+          }
         },
       })
       
