@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     const blobFileName = `translations/${user.id}/${timestamp}-${fileName}`
 
     const uploadedFile = await put(blobFileName, buffer, {
-      access: 'private',
+      access: 'public',
     })
 
     console.log('[v0] File uploaded to Blob:', uploadedFile.url)

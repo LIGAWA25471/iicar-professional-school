@@ -31,6 +31,8 @@ export function TranslationCheckout({ translation }: TranslationCheckoutProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [verificationTimeout, setVerificationTimeout] = useState(false)
+  const [verificationStatus, setVerificationStatus] = useState<'idle' | 'verifying' | 'success'>('idle')
 
   const amountInUSD = translation.total_cost_cents / 100
   const amountInKES = Math.round(amountInUSD * 134 * 100) // 1 USD = 134 KES
@@ -67,11 +69,22 @@ export function TranslationCheckout({ translation }: TranslationCheckoutProps) {
           currency: 'KES',
           ref: data.reference,
           onClose: function () {
-            setLoading(false)
+            console.log('[v0] Paystack modal closed by user')
+            if (verificationStatus !== 'verifying') {
+              setLoading(false)
+            }
           },
           onSuccess: async function (transaction: any) {
             console.log('[v0] Paystack payment closed, verifying:', transaction)
+            setVerificationStatus('verifying')
             setLoading(true)
+
+            // Set a 15-second timeout for verification
+            const timeoutId = setTimeout(() => {
+              console.warn('[v0] Payment verification timeout after 15 seconds')
+              setVerificationTimeout(true)
+              setVerificationStatus('idle')
+            }, 15000)
 
             try {
               const verifyResponse = await fetch('/api/translations/payment/verify', {
@@ -83,21 +96,31 @@ export function TranslationCheckout({ translation }: TranslationCheckoutProps) {
                 }),
               })
 
+              clearTimeout(timeoutId)
               const verifyData = await verifyResponse.json()
               console.log('[v0] Verification result:', verifyData)
 
               if (verifyData.status === 'success') {
                 console.log('[v0] Payment verified, redirecting to receipt')
-                router.push(`/dashboard/translations/${translation.id}/receipt`)
-                router.refresh()
+                setVerificationStatus('success')
+                setVerificationTimeout(false)
+                setTimeout(() => {
+                  router.push(`/dashboard/translations/${translation.id}/receipt`)
+                  router.refresh()
+                }, 2000)
               } else {
+                clearTimeout(timeoutId)
                 throw new Error(verifyData.message || 'Payment verification failed')
               }
             } catch (verifyError) {
+              clearTimeout(timeoutId)
               console.error('[v0] Verification error:', verifyError)
-              setError('Payment verification failed. Please contact support.')
+              setError('Payment verification failed. Please contact support if you were charged.')
+              setVerificationStatus('idle')
               setLoading(false)
             }
+          },
+        })
           },
         })
         window.PaystackPop.openIframe()
@@ -176,6 +199,46 @@ export function TranslationCheckout({ translation }: TranslationCheckoutProps) {
           </div>
         </div>
 
+        {verificationStatus === 'verifying' && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+            <Loader2 className="h-8 w-8 text-blue-600 mx-auto mb-3 animate-spin" />
+            <p className="text-sm font-medium text-blue-900">Verifying Payment</p>
+            <p className="text-xs text-blue-800">Please wait while we confirm your payment...</p>
+          </div>
+        )}
+
+        {verificationStatus === 'success' && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+            <FileText className="h-8 w-8 text-green-600 mx-auto mb-3" />
+            <p className="text-sm font-medium text-green-900">Payment Successful!</p>
+            <p className="text-xs text-green-800 mt-1">Preparing your receipt...</p>
+          </div>
+        )}
+
+        {verificationTimeout && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="flex gap-3">
+              <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-yellow-900 mb-2">Verifying Your Payment</h3>
+                <p className="text-sm text-yellow-800 mb-4">
+                  Your payment appears to be processing. Click the button below to verify and continue.
+                </p>
+                <Button
+                  onClick={() => {
+                    setVerificationTimeout(false)
+                    router.push(`/dashboard/translations/${translation.id}/receipt`)
+                    router.refresh()
+                  }}
+                  className="bg-yellow-600 hover:bg-yellow-700 text-white text-sm"
+                >
+                  Continue to Receipt
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-900">
           <p className="font-medium mb-2">Processing Time</p>
           <p>Your translated documents will be ready within 24-72 hours after payment is confirmed.</p>
@@ -184,20 +247,47 @@ export function TranslationCheckout({ translation }: TranslationCheckoutProps) {
         {error && (
           <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 text-sm text-destructive flex gap-2">
             <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-            {error}
+            <div>
+              {error}
+              <button
+                onClick={() => {
+                  setError('')
+                  setVerificationStatus('idle')
+                }}
+                className="block text-xs underline mt-2 hover:no-underline"
+              >
+                Try Again
+              </button>
+            </div>
           </div>
         )}
 
-        <Button
-          onClick={handlePayment}
-          disabled={loading}
-          size="lg"
-          className="w-full"
-        >
-          {loading ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Processing...
+        {!verificationTimeout && verificationStatus !== 'verifying' && verificationStatus !== 'success' && (
+          <Button
+            onClick={handlePayment}
+            disabled={loading}
+            size="lg"
+            className="w-full"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              `Pay $${amountInUSD.toFixed(2)} with Paystack`
+            )}
+          </Button>
+        )}
+
+        <div className="text-xs text-muted-foreground space-y-1">
+          <p>• Secure payment via Paystack</p>
+          <p>• Receipt sent via email immediately</p>
+          <p>• Your card details are never stored</p>
+        </div>
+      </div>
+    </div>
+  )
             </>
           ) : (
             `Pay $${amountInUSD.toFixed(2)} with Paystack`

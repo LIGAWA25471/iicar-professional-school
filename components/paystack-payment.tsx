@@ -28,8 +28,10 @@ export function PaystackPayment({
   const [fullName, setFullName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success'>('idle')
+  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success' | 'verifying'>('idle')
   const [scriptReady, setScriptReady] = useState(false)
+  const [verificationTimeout, setVerificationTimeout] = useState(false)
+  const [paystackHandler, setPaystackHandler] = useState<any>(null)
 
   // Convert KES amount to USD for display (1 USD = 134 KES)
   const amountInUSD = Math.round(amount / 134)
@@ -115,13 +117,24 @@ export function PaystackPayment({
         currency: 'KES',
         ref: data.reference,
         onClose: function () {
-          console.log('[v0] Paystack modal closed')
-          setPaymentStatus('idle')
-          setLoading(false)
+          console.log('[v0] Paystack modal closed by user')
+          // Only reset if we're not already verifying
+          if (paymentStatus !== 'verifying') {
+            setPaymentStatus('idle')
+            setLoading(false)
+          }
         },
         onSuccess: async function (transaction: any) {
-          console.log('[v0] Paystack transaction closed, verifying payment:', transaction)
-          setPaymentStatus('processing')
+          console.log('[v0] Paystack transaction successful, verifying payment:', transaction)
+          setPaymentStatus('verifying')
+          setLoading(true)
+          
+          // Set a 15-second timeout for verification
+          const timeoutId = setTimeout(() => {
+            console.warn('[v0] Payment verification timeout after 15 seconds')
+            setVerificationTimeout(true)
+            setPaymentStatus('processing')
+          }, 15000)
           
           try {
             // Verify payment with backend to ensure it was actually successful
@@ -133,29 +146,36 @@ export function PaystackPayment({
               }),
             })
 
+            clearTimeout(timeoutId)
             const verifyData = await verifyResponse.json()
             console.log('[v0] Payment verification result:', verifyData)
 
             if (verifyData.status === 'success') {
               console.log('[v0] Payment verified successfully')
+              setVerificationTimeout(false)
               setPaymentStatus('success')
               if (onSuccess) onSuccess()
               setTimeout(() => {
                 router.push(`/dashboard/programs/${programId}`)
                 router.refresh()
-              }, 1500)
+              }, 2000)
             } else {
+              clearTimeout(timeoutId)
               console.error('[v0] Payment verification failed:', verifyData.message)
               setError(verifyData.message || 'Payment verification failed. Please contact support.')
-              setPaymentStatus('idle')
+              setPaymentStatus('processing')
             }
           } catch (err) {
+            clearTimeout(timeoutId)
             console.error('[v0] Verification error:', err)
             setError('Could not verify payment. Please contact support if you were charged.')
-            setPaymentStatus('idle')
+            setPaymentStatus('processing')
           }
         },
       })
+      
+      // Store handler for potential manual retry
+      setPaystackHandler(handler)
       
       // Make sure handler has openIframe method
       if (typeof handler.openIframe === 'function') {
@@ -178,7 +198,61 @@ export function PaystackPayment({
       <div className="rounded-lg border border-green-200 bg-green-50 p-6 text-center">
         <CheckCircle2 className="h-12 w-12 text-green-600 mx-auto mb-4" />
         <h3 className="text-lg font-semibold text-green-900 mb-2">Payment Successful!</h3>
-        <p className="text-sm text-green-800 mb-4">Your enrollment is being processed. Redirecting...</p>
+        <p className="text-sm text-green-800 mb-4">Your enrollment is being processed. Redirecting to your program...</p>
+      </div>
+    )
+  }
+
+  if (paymentStatus === 'verifying') {
+    return (
+      <div className="rounded-lg border border-blue-200 bg-blue-50 p-6 text-center">
+        <Loader2 className="h-12 w-12 text-blue-600 mx-auto mb-4 animate-spin" />
+        <h3 className="text-lg font-semibold text-blue-900 mb-2">Verifying Payment</h3>
+        <p className="text-sm text-blue-800 mb-4">Please wait while we confirm your payment status...</p>
+      </div>
+    )
+  }
+
+  // Show timeout message with manual continue button
+  if (verificationTimeout && paymentStatus === 'processing') {
+    return (
+      <div className="space-y-4">
+        <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-6">
+          <div className="flex gap-3">
+            <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-yellow-900 mb-2">Verifying Your Payment</h3>
+              <p className="text-sm text-yellow-800 mb-4">
+                Your payment appears to be processing. If you've completed payment on Paystack, click the button below to verify and continue.
+              </p>
+              <Button
+                onClick={() => {
+                  setVerificationTimeout(false)
+                  router.push(`/dashboard/programs/${programId}`)
+                  router.refresh()
+                }}
+                className="bg-yellow-600 hover:bg-yellow-700 text-white"
+              >
+                Continue to Program
+              </Button>
+            </div>
+          </div>
+        </div>
+        <div className="text-center">
+          <p className="text-xs text-muted-foreground">
+            If you weren't charged, you can safely{' '}
+            <button
+              onClick={() => {
+                setPaymentStatus('idle')
+                setVerificationTimeout(false)
+                setError('')
+              }}
+              className="underline text-primary hover:text-primary/80"
+            >
+              try again
+            </button>
+          </p>
+        </div>
       </div>
     )
   }

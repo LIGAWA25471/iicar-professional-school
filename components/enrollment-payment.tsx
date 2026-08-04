@@ -23,8 +23,9 @@ export function EnrollmentPayment({
   const [error, setError] = useState('')
   const [promptSent, setPromptSent] = useState(false)
   const [paymentId, setPaymentId] = useState<string | null>(null)
-  const [pollStatus, setPollStatus] = useState<'pending' | 'paid' | 'failed'>('pending')
+  const [pollStatus, setPollStatus] = useState<'pending' | 'paid' | 'failed' | 'timeout'>('pending')
   const [pollCount, setPollCount] = useState(0)
+  const [manualCheckLoading, setManualCheckLoading] = useState(false)
 
   // Convert KES amount to USD for display (1 USD = 134 KES)
   const amountInUSD = Math.round(amount / 134)
@@ -73,17 +74,30 @@ export function EnrollmentPayment({
       if (data.status === 'paid') {
         setPollStatus('paid')
         if (onSuccess) onSuccess()
-        setTimeout(() => router.refresh(), 1500)
+        setTimeout(() => router.push(`/dashboard/programs/${programId}`) && router.refresh(), 1500)
       } else if (data.status === 'failed') {
         setPollStatus('failed')
       }
     } catch { /* silent */ }
-  }, [paymentId, onSuccess, router])
+  }, [paymentId, onSuccess, router, programId])
+
+  // Manual check payment status function
+  const handleManualCheck = async () => {
+    setManualCheckLoading(true)
+    try {
+      await checkStatus()
+    } finally {
+      setManualCheckLoading(false)
+    }
+  }
 
   useEffect(() => {
     if (!promptSent || !paymentId || pollStatus !== 'pending') return
-    // Poll up to 24 times (2 minutes)
-    if (pollCount >= 24) return
+    // Poll up to 72 times (6 minutes) - extended from 24 times
+    if (pollCount >= 72) {
+      setPollStatus('timeout')
+      return
+    }
     const timer = setTimeout(() => {
       checkStatus()
       setPollCount(c => c + 1)
@@ -126,6 +140,62 @@ export function EnrollmentPayment({
               Try Again
             </Button>
           </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (pollStatus === 'timeout') {
+    return (
+      <div className="space-y-4">
+        <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-6">
+          <div className="flex gap-3 items-start">
+            <Clock className="h-5 w-5 text-yellow-600 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="font-semibold text-yellow-900">Checking Payment Status</h3>
+              <p className="mt-1 text-sm text-yellow-800">
+                We've been waiting for several minutes. Your payment may have already gone through. Click the button below to check.
+              </p>
+              <div className="flex gap-2 mt-4">
+                <Button
+                  size="sm"
+                  onClick={handleManualCheck}
+                  disabled={manualCheckLoading}
+                  className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                >
+                  {manualCheckLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Checking...
+                    </>
+                  ) : (
+                    'Check Payment Status'
+                  )}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setPromptSent(false)
+                    setPaymentId(null)
+                    setPollStatus('pending')
+                    setPollCount(0)
+                    setError('')
+                  }}
+                >
+                  Try Different Number
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="text-center">
+          <p className="text-xs text-muted-foreground">
+            If you're having issues, please contact{' '}
+            <a href="mailto:support@example.com" className="underline hover:text-foreground">
+              support
+            </a>
+          </p>
         </div>
       </div>
     )
