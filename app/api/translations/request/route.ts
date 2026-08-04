@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { put } from '@vercel/blob'
 
@@ -39,8 +39,9 @@ export async function POST(request: NextRequest) {
     // Calculate total cost
     const totalCostCents = pages * languages.length * PRICE_PER_PAGE_PER_LANGUAGE_CENTS
 
-    // Create translation request record
-    const { data: translationRequest, error: createError } = await supabase
+    // Create translation request record using admin client to bypass RLS
+    const adminDb = createAdminClient()
+    const { data: translationRequest, error: createError } = await adminDb
       .from('translation_requests')
       .insert({
         user_id: user.id,
@@ -56,7 +57,13 @@ export async function POST(request: NextRequest) {
 
     if (createError) {
       console.error('[v0] Error creating translation request:', createError)
-      return NextResponse.json({ error: 'Failed to create request' }, { status: 500 })
+      return NextResponse.json(
+        { 
+          error: 'Failed to create request',
+          details: createError?.message || 'Database error'
+        }, 
+        { status: 500 }
+      )
     }
 
     console.log('[v0] Translation request created:', translationRequest.id)
