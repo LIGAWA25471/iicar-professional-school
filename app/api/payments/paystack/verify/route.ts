@@ -46,13 +46,14 @@ export async function POST(request: Request) {
 
     // Update payment record in database
     const adminDb = createAdminClient()
-    const { data: payment } = await adminDb
+    const { data: payment, error: paymentError } = await adminDb
       .from('payments')
       .select('id, student_id, program_id')
       .eq('paystack_reference', reference)
       .single()
 
-    if (!payment) {
+    if (paymentError || !payment) {
+      console.error('[v0] Payment lookup error:', paymentError)
       return NextResponse.json(
         { status: 'failed', message: 'Payment record not found' },
         { status: 404 }
@@ -64,6 +65,7 @@ export async function POST(request: Request) {
       .from('payments')
       .update({
         status: 'paid',
+        paid_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
       .eq('id', payment.id)
