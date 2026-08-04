@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { LogOut, LayoutDashboard, BookOpen, Award, User, HelpCircle, CreditCard } from 'lucide-react'
+import { LogOut, LayoutDashboard, BookOpen, Award, User, HelpCircle, CreditCard, FileText } from 'lucide-react'
 import { DashboardMobileNav } from '@/components/dashboard-mobile-nav'
 import { ThemeSelector } from '@/components/theme-selector'
 import { ProfileCompletionModal } from '@/components/profile-completion-modal'
@@ -22,6 +22,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/dashboard/programs', icon: BookOpen, label: 'My Programs' },
     { href: '/dashboard/finance', icon: CreditCard, label: 'Finance' },
+    { href: '/dashboard/translations', icon: FileText, label: 'Translations' },
     { href: '/dashboard/certificates', icon: Award, label: 'Certificates' },
     { href: '/dashboard/profile', icon: User, label: 'Profile' },
     { href: '/dashboard/support', icon: HelpCircle, label: 'Support' },

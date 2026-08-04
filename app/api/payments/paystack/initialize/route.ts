@@ -37,9 +37,8 @@ export async function POST(request: Request) {
         amount_cents: Math.round(amountInKES * 100),
         currency: 'KES',
         status: 'pending',
-        email: email,
-        full_name: fullName,
         paystack_reference: reference,
+        created_at: new Date().toISOString(),
       })
       .select('id')
       .single()
