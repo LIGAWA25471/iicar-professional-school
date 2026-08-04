@@ -121,8 +121,6 @@ export function TranslationCheckout({ translation }: TranslationCheckoutProps) {
             }
           },
         })
-          },
-        })
         window.PaystackPop.openIframe()
       } else {
         throw new Error('Paystack not loaded')
