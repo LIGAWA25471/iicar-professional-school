@@ -1,4 +1,4 @@
-export type CertificateLanguage = 'en' | 'ar' | 'fr' | 'pt'
+export type CertificateLanguage = 'en' | 'ar' | 'fr' | 'pt' | 'es' | 'de'
 
 export const certificateTranslations: Record<CertificateLanguage, {
   certificateTitle: string
@@ -65,6 +65,32 @@ export const certificateTranslations: Record<CertificateLanguage, {
     principal: 'مدير المدرسة، IICAR',
     recognitionStatement: 'تعترف هذه الشهادة بالتميز والكفاءة المهنية المثبتة في التطوير المهني.',
   },
+  es: {
+    certificateTitle: 'Certificado de Logro',
+    certificateSubtitle: 'Certificación Profesional',
+    awardedTo: 'Este prestigioso certificado se otorga a',
+    forSuccessfullyCompleting: 'por completar con éxito la certificación profesional en',
+    levelLabel: 'Nivel',
+    issuedLabel: 'Emitido',
+    verifyLabel: 'Verificar Certificado',
+    authorizedSignatory: 'Firmante Autorizado',
+    directorPrograms: 'Director, Programas',
+    principal: 'Director, IICAR',
+    recognitionStatement: 'Este certificado reconoce la excelencia demostrada y la competencia en el desarrollo profesional.',
+  },
+  de: {
+    certificateTitle: 'Leistungszertifikat',
+    certificateSubtitle: 'Berufliche Zertifizierung',
+    awardedTo: 'Dieses renommierte Zertifikat wird verliehen an',
+    forSuccessfullyCompleting: 'für das erfolgreiche Absolvieren der beruflichen Zertifizierung in',
+    levelLabel: 'Stufe',
+    issuedLabel: 'Ausgestellt',
+    verifyLabel: 'Zertifikat prüfen',
+    authorizedSignatory: 'Autorisiertes Signatars',
+    directorPrograms: 'Direktor, Programme',
+    principal: 'Schulleiter, IICAR',
+    recognitionStatement: 'Dieses Zertifikat würdigt nachgewiesene Exzellenz und Fachkompetenz in der beruflichen Entwicklung.',
+  },
 }
 
 export const levelNames: Record<CertificateLanguage, string[]> = {
@@ -72,4 +98,6 @@ export const levelNames: Record<CertificateLanguage, string[]> = {
   ar: ['أساسي', 'متوسط', 'متقدم', 'احترافي', 'خبير'],
   fr: ['Fondation', 'Intermédiaire', 'Avancé', 'Professionnel', 'Expert'],
   pt: ['Fundação', 'Intermediário', 'Avançado', 'Profissional', 'Especialista'],
+  es: ['Fundación', 'Intermedio', 'Avanzado', 'Profesional', 'Experto'],
+  de: ['Grundlage', 'Mittelstufe', 'Fortgeschritten', 'Professionell', 'Experte'],
 }
