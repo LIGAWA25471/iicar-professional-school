@@ -24,6 +24,8 @@ const LANGUAGES: { code: CertificateLanguage; label: string }[] = [
   { code: 'en', label: 'English' },
   { code: 'fr', label: 'Français' },
   { code: 'pt', label: 'Português' },
+  { code: 'es', label: 'Español' },
+  { code: 'de', label: 'Deutsch' },
 ]
 
 export default function CertificateCard({ cert }: CertificateCardProps) {
@@ -78,7 +80,7 @@ export default function CertificateCard({ cert }: CertificateCardProps) {
         <p className="mt-1 text-xs font-mono text-muted-foreground">{cert.cert_id}</p>
       </div>
       <div className="flex flex-wrap gap-2 text-xs text-muted-foreground border-t border-border pt-3">
-        <span>Issued: {new Date(cert.issued_at!).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+        <span>Issued: {cert.issued_at ? new Date(cert.issued_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : 'N/A'}</span>
         {cert.final_score && <span>Final Score: <strong className="text-foreground">{cert.final_score}%</strong></span>}
       </div>
       <div className="flex flex-wrap gap-2">
