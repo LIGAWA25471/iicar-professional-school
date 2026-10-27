@@ -68,7 +68,7 @@ export default function RegisterPageClient() {
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault()
     setError('')
-    const nameParts = fullName.trim().split(/\\s+/).filter(Boolean)
+    const nameParts = fullName.trim().split(/\s+/).filter(Boolean)
     if (nameParts.length < 2) {
       setError('Please enter your first and last name.')
       return
