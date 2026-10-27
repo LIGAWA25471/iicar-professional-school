@@ -225,12 +225,20 @@ export default function AdminTranslationsPage() {
                           <option value="completed">Completed</option>
                           <option value="failed">Failed</option>
                         </select>
+                        <Button asChild variant="outline" size="sm" title="Download uploaded document">
+                          <a href={req.document_file_url} target="_blank" rel="noreferrer" download>
+                            <Download className="h-3 w-3" />
+                            <span className="sr-only">Download document</span>
+                          </a>
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleSendEmail(req.id)}
+                          title="Email payment link or status update"
                         >
                           <Mail className="h-3 w-3" />
+                          <span className="sr-only">Email student</span>
                         </Button>
                       </div>
                     </td>

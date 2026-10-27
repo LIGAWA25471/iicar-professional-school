@@ -31,13 +31,21 @@ export default async function AdminStudentsPage({
   }
 
   const { data: students } = await query
+  const { data: authUsers } = await adminDb.auth.admin.listUsers({ perPage: 1000 })
+  const countryByUserId = new Map(
+    (authUsers.users ?? []).map((authUser) => [authUser.id, authUser.user_metadata?.country as string | undefined]),
+  )
+  const studentsWithCountry = (students ?? []).map((student) => ({
+    ...student,
+    country: student.country?.trim() || countryByUserId.get(student.id) || null,
+  }))
 
   return (
     <div className="flex flex-col gap-8">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold text-primary">Students</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{students?.length ?? 0} registered students</p>
+          <p className="mt-1 text-sm text-muted-foreground">{studentsWithCountry.length} registered students</p>
         </div>
         <form className="flex gap-2">
           <Input name="q" defaultValue={q} placeholder="Search by name…" className="w-64" />
@@ -56,7 +64,7 @@ export default async function AdminStudentsPage({
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {students?.map((s) => (
+            {studentsWithCountry.map((s) => (
               <tr key={s.id} className="hover:bg-muted/30 transition-colors">
                 <td className="px-6 py-4">
                   <p className="font-medium text-foreground">{s.full_name ?? '—'}</p>

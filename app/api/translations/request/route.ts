@@ -70,6 +70,20 @@ export async function POST(request: NextRequest) {
 
     console.log('[v0] Translation request created:', translationRequest.id)
 
+    const { data: account } = await adminDb.auth.admin.getUserById(user.id)
+    const paymentLink = `${process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin}/dashboard/translations/${translationRequest.id}/checkout`
+    if (account.user?.email) {
+      const { Resend } = await import('resend')
+      const resend = new Resend(process.env.RESEND_API_KEY)
+      const { error: emailError } = await resend.emails.send({
+        from: 'IICAR Translations <noreply@iicar.org>',
+        to: account.user.email,
+        subject: 'Payment required for your translation request',
+        html: `<h2>Complete payment for your translation request</h2><p>Document: ${fileName}</p><p>Amount due: <strong>$${(totalCostCents / 100).toFixed(2)}</strong></p><p><a href="${paymentLink}">Continue to secure payment</a></p>`,
+      }, { idempotencyKey: `translation-payment-request/${translationRequest.id}` })
+      if (emailError) console.error('[v0] Translation payment email error:', emailError)
+    }
+
     return NextResponse.json({
       success: true,
       requestId: translationRequest.id,

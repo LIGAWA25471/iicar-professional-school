@@ -98,12 +98,10 @@ export async function POST(
     }
 
     // Get translation request and user email
-    const { data: translation, error: fetchError } = await supabase
+    const adminDb = createAdminClient()
+    const { data: translation, error: fetchError } = await adminDb
       .from('translation_requests')
-      .select(`
-        *,
-        user:auth.users(email)
-      `)
+      .select('*')
       .eq('id', id)
       .single()
 
@@ -112,15 +110,27 @@ export async function POST(
     }
 
     // Determine email type based on status
-    const userEmail = translation.user?.email
+    const { data: account } = await adminDb.auth.admin.getUserById(translation.user_id)
+    const userEmail = account.user?.email
     if (!userEmail) {
       return NextResponse.json({ error: 'User email not found' }, { status: 400 })
     }
 
+    const paymentLink = `${process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin}/dashboard/translations/${translation.id}/checkout`
     let subject = ''
     let htmlContent = ''
 
-    if (translation.status === 'paid') {
+    if (translation.status === 'pending' || translation.status === 'payment_initiated') {
+      subject = 'Payment required for your translation request'
+      htmlContent = `
+        <h2>Complete payment for your translation request</h2>
+        <p>Document: ${translation.document_name}</p>
+        <p>Pages: ${translation.total_pages}</p>
+        <p>Languages: ${translation.languages_requested.join(', ')}</p>
+        <p><strong>Amount due: $${(translation.total_cost_cents / 100).toFixed(2)}</strong></p>
+        <p><a href="${paymentLink}">Continue to secure payment</a></p>
+      `
+    } else if (translation.status === 'paid') {
       subject = 'Translation Request Confirmation'
       htmlContent = `
         <h2>Your translation request has been confirmed</h2>
