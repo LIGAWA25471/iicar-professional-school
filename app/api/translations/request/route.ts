@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       dateStyle: 'medium',
       timeStyle: 'short',
       timeZone: 'UTC',
-    }) + ' EAT'
+    }) + ' UTC'
     if (account.user?.email) {
       const { Resend } = await import('resend')
       const resend = new Resend(process.env.RESEND_API_KEY)

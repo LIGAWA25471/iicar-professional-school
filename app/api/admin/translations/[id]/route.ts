@@ -128,7 +128,7 @@ export async function POST(
       dateStyle: 'medium',
       timeStyle: 'short',
       timeZone: 'UTC',
-    }) + ' EAT'
+    }) + ' UTC'
     let subject = ''
     let htmlContent = ''
 
