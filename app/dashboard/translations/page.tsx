@@ -327,18 +327,18 @@ export default function TranslationPortal() {
                     <p className="text-xs text-muted-foreground mb-1">Status</p>
                     <div className="flex items-center gap-2">
                       {request.status === 'paid' && <CheckCircle className="h-4 w-4 text-green-600" />}
-                      {request.status === 'pending' && <AlertCircle className="h-4 w-4 text-yellow-600" />}
-                      <span className="font-medium text-foreground capitalize">{request.status}</span>
+                      {(request.status === 'pending' || request.status === 'payment_initiated') && <AlertCircle className="h-4 w-4 text-yellow-600" />}
+                      <span className="font-medium text-foreground">{request.status === 'payment_initiated' ? 'Payment not completed' : request.status.replace('_', ' ')}</span>
                     </div>
                   </div>
 
                   <div className="flex gap-2 justify-end">
-                    {request.status === 'pending' && (
+                    {(request.status === 'pending' || request.status === 'payment_initiated') && (
                       <Button
                         onClick={() => router.push(`/dashboard/translations/${request.id}/checkout`)}
                         className="text-sm"
                       >
-                        Pay Now
+                        {request.status === 'payment_initiated' ? 'Try Payment Again' : 'Pay Now'}
                       </Button>
                     )}
                     {request.status === 'paid' && (
