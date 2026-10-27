@@ -31,18 +31,26 @@ export default function AdminTranslationsPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
+  const [error, setError] = useState('')
 
   useEffect(() => {
     fetchRequests()
   }, [])
 
   async function fetchRequests() {
+    setLoading(true)
+    setError('')
     try {
-      const response = await fetch('/api/admin/translations/list')
+      const response = await fetch('/api/admin/translations/list', { cache: 'no-store' })
       const data = await response.json()
-      setRequests(data.requests || [])
+      if (!response.ok) {
+        throw new Error(data.error || `Request failed (${response.status})`)
+      }
+      setRequests(Array.isArray(data.requests) ? data.requests : [])
     } catch (error) {
       console.error('[v0] Error fetching translations:', error)
+      setError(error instanceof Error ? error.message : 'Failed to load translation requests')
+      setRequests([])
     } finally {
       setLoading(false)
     }
@@ -58,7 +66,7 @@ export default function AdminTranslationsPage() {
 
   const handleStatusChange = async (requestId: string, newStatus: string) => {
     try {
-      const response = await fetch(`/api/admin/translations/${requestId}/status`, {
+      const response = await fetch(`/api/admin/translations/${requestId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
@@ -76,7 +84,7 @@ export default function AdminTranslationsPage() {
 
   const handleSendEmail = async (requestId: string) => {
     try {
-      const response = await fetch(`/api/admin/translations/${requestId}/send-email`, {
+      const response = await fetch(`/api/admin/translations/${requestId}`, {
         method: 'POST',
       })
 
@@ -129,6 +137,12 @@ export default function AdminTranslationsPage() {
           </div>
         </div>
       </div>
+
+      {error && (
+        <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+          {error}
+        </div>
+      )}
 
       {/* Requests Table */}
       <div className="bg-card border border-border rounded-lg overflow-hidden">
