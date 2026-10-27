@@ -7,7 +7,7 @@ async function sendEmail(to: string, subject: string, html: string) {
     const resend = new Resend(process.env.RESEND_API_KEY)
     
     return await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL ?? 'IICAR <info@iicar.org>',
+      from: 'IICAR <info@iicar.org>',
       to,
       subject,
       html,
@@ -178,7 +178,9 @@ export async function POST(
 
     if (emailResponse.error) {
       console.error('[v0] Email send error:', emailResponse.error)
-      return NextResponse.json({ error: 'Failed to send email' }, { status: 500 })
+      return NextResponse.json({
+        error: emailResponse.error.message || 'Failed to send email',
+      }, { status: 502 })
     }
 
     console.log('[v0] Email sent successfully:', emailResponse.data?.id)
