@@ -122,7 +122,7 @@ export function Footer() {
             <a href="#" className="text-slate-400 hover:text-white transition"><Linkedin className="h-5 w-5" /></a>
             <a href="#" className="text-slate-400 hover:text-white transition"><Instagram className="h-5 w-5" /></a>
           </div>
-          <p className="text-slate-500 text-sm">© 2024 IICAR. All rights reserved.</p>
+          <p className="text-slate-500 text-sm">© 2026 IICAR. All rights reserved.</p>
         </div>
       </div>
     </footer>
