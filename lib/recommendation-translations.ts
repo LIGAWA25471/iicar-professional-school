@@ -72,3 +72,64 @@ export const recommendationTranslations = {
       `Através da conclusão desses programas de certificação profissional, ${studentName} demonstrou proficiência técnica excepcional e domínio de práticas relevantes para a indústria.`,
   },
   ar: {
+    recommendationTitle: 'خطاب توصية',
+    endorsementTitle: 'تأييد مهني',
+    toWhomItMayConcern: 'إلى من يهمه الأمر،',
+    recommendationBody: (studentName: string, programTitle: string) =>
+      `يسعدني تقديم خطاب التوصية هذا لـ ${studentName}، الذي أكمل بنجاح شهادة مهنية في ${programTitle} في مدرسة IICAR المهنية. خلال البرنامج، أظهر ${studentName} التزاماً استثنائياً بالتعلم وكفاءة تقنية متميزة وفهماً شاملاً لمحتوى الدورة.`,
+    endorsementBody: (studentName: string, programTitle: string) =>
+      `نشهد بموجب هذا أن ${studentName} أكمل بنجاح وأظهر كفاءة مهنية وإتقاناً في برنامج شهادة ${programTitle} الذي تقدمه مدرسة IICAR المهنية.`,
+    conclusion: 'أنا واثق من أن هذا الشخص سيقدم مساهمة قيّمة لأي مؤسسة، ويسعدني مناقشة مؤهلاته بمزيد من التفصيل عند الطلب.',
+    sincerely: 'مع خالص التحية،',
+    registrar: 'مكتب التسجيل',
+    directorPrograms: 'مدير البرامج المهنية',
+    icarAcademy: 'مدرسة IICAR المهنية',
+    generatedDate: 'تاريخ الإنشاء:',
+    multipleRecommendationIntro: (studentName: string) =>
+      `يُقدّم خطاب التوصية هذا لـ ${studentName}، الذي أكمل بنجاح برامج الشهادات المهنية التالية في كلية IICAR العالمية:`,
+    multipleEndorsementIntro: (studentName: string) =>
+      `يُقدّم هذا التأييد المهني لـ ${studentName}، الذي أكمل بنجاح وأثبت كفاءته في برامج الشهادات المهنية التالية في كلية IICAR العالمية:`,
+    multipleRecommendationBody: (studentName: string) =>
+      `خلال هذه البرامج، أظهر ${studentName} التزاماً استثنائياً بالتعلم وكفاءة تقنية متميزة وفهماً شاملاً للموضوع.`,
+    multipleEndorsementBody: (studentName: string) =>
+      `من خلال إكمال هذه البرامج، أظهر ${studentName} كفاءة تقنية استثنائية وإتقاناً للممارسات ذات الصلة بالصناعة.`,
+  },
+  es: {
+    recommendationTitle: 'Carta de Recomendación',
+    endorsementTitle: 'Aval Profesional',
+    toWhomItMayConcern: 'A quien corresponda,',
+    recommendationBody: (studentName: string, programTitle: string) =>
+      `Me complace proporcionar esta carta de recomendación para ${studentName}, quien completó con éxito la certificación profesional en ${programTitle} en IICAR Professional School.`,
+    endorsementBody: (studentName: string, programTitle: string) =>
+      `Por medio de la presente certificamos que ${studentName} completó con éxito y demostró competencia profesional en el programa de certificación ${programTitle} ofrecido por IICAR Professional School.`,
+    conclusion: 'Confío en que esta persona contribuirá valiosamente a cualquier organización y estoy disponible para ampliar información sobre sus cualificaciones.',
+    sincerely: 'Atentamente,',
+    registrar: 'Oficina del Registrador',
+    directorPrograms: 'Director de Programas Profesionales',
+    icarAcademy: 'IICAR Professional School',
+    generatedDate: 'Fecha de generación:',
+    multipleRecommendationIntro: (studentName: string) => `Esta carta se proporciona para ${studentName}, quien completó los siguientes programas de certificación profesional:`,
+    multipleEndorsementIntro: (studentName: string) => `Este aval profesional se proporciona para ${studentName}, quien demostró competencia en los siguientes programas:`,
+    multipleRecommendationBody: (studentName: string) => `Durante estos programas, ${studentName} demostró un compromiso excepcional con el aprendizaje y sólidas competencias profesionales.`,
+    multipleEndorsementBody: (studentName: string) => `Al completar estos programas, ${studentName} demostró una competencia técnica excepcional.`,
+  },
+  de: {
+    recommendationTitle: 'Empfehlungsschreiben',
+    endorsementTitle: 'Berufliche Bestätigung',
+    toWhomItMayConcern: 'Sehr geehrte Damen und Herren,',
+    recommendationBody: (studentName: string, programTitle: string) =>
+      `Gerne stelle ich dieses Empfehlungsschreiben für ${studentName} aus, der die berufliche Zertifizierung in ${programTitle} an der IICAR Professional School erfolgreich abgeschlossen hat.`,
+    endorsementBody: (studentName: string, programTitle: string) =>
+      `Hiermit bestätigen wir, dass ${studentName} das Zertifizierungsprogramm ${programTitle} an der IICAR Professional School erfolgreich abgeschlossen und berufliche Kompetenz bewiesen hat.`,
+    conclusion: 'Ich bin überzeugt, dass diese Person für jede Organisation einen wertvollen Beitrag leisten wird.',
+    sincerely: 'Mit freundlichen Grüßen,',
+    registrar: 'Registratur',
+    directorPrograms: 'Direktor, Berufliche Programme',
+    icarAcademy: 'IICAR Professional School',
+    generatedDate: 'Erstellungsdatum:',
+    multipleRecommendationIntro: (studentName: string) => `Dieses Empfehlungsschreiben wird für ${studentName} ausgestellt, der folgende berufliche Zertifizierungsprogramme abgeschlossen hat:`,
+    multipleEndorsementIntro: (studentName: string) => `Diese berufliche Bestätigung wird für ${studentName} ausgestellt, der in folgenden Programmen Kompetenz bewiesen hat:`,
+    multipleRecommendationBody: (studentName: string) => `Während dieser Programme zeigte ${studentName} außergewöhnliches Engagement und starke berufliche Kompetenzen.`,
+    multipleEndorsementBody: (studentName: string) => `Durch den Abschluss dieser Programme bewies ${studentName} außergewöhnliche technische Kompetenz.`,
+  },
+}
