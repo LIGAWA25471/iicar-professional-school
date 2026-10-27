@@ -30,8 +30,10 @@ export async function POST(request: NextRequest) {
     const timestamp = Date.now()
     const blobFileName = `translations/${user.id}/${timestamp}-${fileName}`
 
+    // This project is connected to a public Blob store. Keep only the pathname in
+    // the database so the storage implementation can be changed without rewriting requests.
     const uploadedFile = await put(blobFileName, buffer, {
-      access: 'private',
+      access: 'public',
     })
 
     console.log('[v0] File uploaded to Blob:', uploadedFile.url)

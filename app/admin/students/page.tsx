@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Users, ChevronRight } from 'lucide-react'
 import IssueCertificateModal from '@/components/admin/issue-certificate-modal'
+import { DeleteUserButton } from '@/components/admin/delete-user-button'
 
 export default async function AdminStudentsPage({
   searchParams,
@@ -71,6 +72,7 @@ export default async function AdminStudentsPage({
                   <Button asChild variant="ghost" size="sm" className="text-xs">
                     <Link href={`/admin/students/${s.id}`}><ChevronRight className="h-4 w-4" /></Link>
                   </Button>
+                  <DeleteUserButton userId={s.id} userName={s.full_name ?? 'this student'} />
                 </td>
               </tr>
             ))}

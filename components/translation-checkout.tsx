@@ -61,11 +61,11 @@ export function TranslationCheckout({ translation }: TranslationCheckoutProps) {
       // Open Paystack modal
       if (window.PaystackPop) {
         window.PaystackPop.setup({
-          key: process.env.NEXT_PUBLIC_PAYSTACK_KEY,
-          email: data.email,
+          key: data.data.public_key,
+          email: data.data.email,
           amount: amountInKES,
           currency: 'KES',
-          ref: data.reference,
+          ref: data.data.reference,
           onClose: function () {
             setLoading(false)
           },
@@ -78,7 +78,7 @@ export function TranslationCheckout({ translation }: TranslationCheckoutProps) {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                  reference: data.reference,
+                  reference: data.data.reference,
                   translation_id: translation.id,
                 }),
               })
