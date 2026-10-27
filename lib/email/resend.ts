@@ -15,7 +15,7 @@ export async function sendEnrollmentEmail(email: string, studentName: string, pr
   
   try {
     await resend.emails.send({
-      from: 'noreply@iicar.org',
+      from: 'info@iicar.org',
       to: email,
       subject: `Welcome to ${programTitle} at IICAR!`,
       html: `
@@ -61,7 +61,7 @@ export async function sendExamCompletionEmail(email: string, studentName: string
   try {
     const passed = score >= 70
     await resend.emails.send({
-      from: 'noreply@iicar.org',
+      from: 'info@iicar.org',
       to: email,
       subject: passed ? `Congratulations! You Passed ${programTitle}` : `Final Exam Results for ${programTitle}`,
       html: `
@@ -109,7 +109,7 @@ export async function sendCertificateEmail(email: string, studentName: string, p
   
   try {
     await resend.emails.send({
-      from: 'noreply@iicar.org',
+      from: 'info@iicar.org',
       to: email,
       subject: `Your ${programTitle} Certificate from IICAR`,
       html: `

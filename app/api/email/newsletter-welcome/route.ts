@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     }
 
     await resend.emails.send({
-      from: 'noreply@iicar.org',
+      from: 'info@iicar.org',
       to: email,
       subject: 'Welcome to IICAR Newsletter!',
       html: `

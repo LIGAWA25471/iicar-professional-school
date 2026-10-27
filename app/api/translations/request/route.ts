@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       const { Resend } = await import('resend')
       const resend = new Resend(process.env.RESEND_API_KEY)
       const { error: emailError } = await resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL ?? 'IICAR <onboarding@resend.dev>',
+        from: process.env.RESEND_FROM_EMAIL ?? 'IICAR <info@iicar.org>',
         to: account.user.email,
         subject: 'Payment required for your translation request',
         html: `<h2>Complete payment for your translation request</h2><p>Document: ${fileName}</p><p>Amount due: <strong>$${(totalCostCents / 100).toFixed(2)}</strong></p><p><a href="${paymentLink}">Continue to secure payment</a></p>`,

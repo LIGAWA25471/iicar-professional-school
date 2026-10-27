@@ -7,7 +7,7 @@ async function sendEmail(to: string, subject: string, html: string) {
     const resend = new Resend(process.env.RESEND_API_KEY)
     
     return await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL ?? 'IICAR <onboarding@resend.dev>',
+      from: process.env.RESEND_FROM_EMAIL ?? 'IICAR <info@iicar.org>',
       to,
       subject,
       html,
