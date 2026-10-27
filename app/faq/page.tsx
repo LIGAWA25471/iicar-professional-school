@@ -31,7 +31,7 @@ export default function FAQPage() {
       id: 'payment-methods',
       category: 'Payments',
       question: 'What payment methods do you accept?',
-      answer: 'We accept multiple payment methods through Paystack: Credit/Debit Cards, M-Pesa, Airtel Money, and Bank Transfers. All prices are displayed in USD with KES conversion shown for reference. You can pay from anywhere in the world.'
+      answer: 'We accept multiple payment methods through Paystack: Credit/Debit Cards, M-Pesa, Airtel Money, and Bank Transfers. All prices are displayed in USD. You can pay from anywhere in the world.'
     },
     {
       id: 'payment-processing',

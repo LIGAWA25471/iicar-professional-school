@@ -62,7 +62,7 @@ export function CheckoutPaymentSection({
         className="w-full p-4 border-2 border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors text-left"
       >
         <div className="font-semibold text-foreground">Pay with Card</div>
-        <div className="text-sm text-muted-foreground">Credit or debit card via Paystack</div>
+        <div className="text-sm text-muted-foreground">Secure online payment</div>
       </button>
     </div>
   )

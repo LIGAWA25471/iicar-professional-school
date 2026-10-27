@@ -202,8 +202,7 @@ export function TranslationCheckout({ translation }: TranslationCheckoutProps) {
         <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
           <p className="text-xs text-muted-foreground mb-1">Total Amount (USD)</p>
           <p className="text-2xl font-bold text-foreground">${amountInUSD.toFixed(2)}</p>
-          <p className="text-xs text-muted-foreground mt-2">≈ {(amountInUSD * 134).toLocaleString()} KES</p>
-        </div>
+          </div>
       </div>
 
       {/* Payment Section */}
