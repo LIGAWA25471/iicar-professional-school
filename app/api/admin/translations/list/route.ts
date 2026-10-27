@@ -10,19 +10,24 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check if user is admin
-    const { data: profile } = await supabase
+    // Check admin status with the service-role client so RLS cannot hide the profile.
+    const adminDb = createAdminClient()
+    const { data: profile, error: profileError } = await adminDb
       .from('profiles')
       .select('is_admin')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
 
-    if (!profile?.is_admin) {
+    if (profileError) {
+      console.error('[v0] Admin profile lookup error:', profileError)
+      return NextResponse.json({ error: 'Failed to verify administrator access' }, { status: 500 })
+    }
+
+    if (!profile?.is_admin && user.user_metadata?.is_admin !== true) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // Fetch all translation requests
-    const adminDb = createAdminClient()
+    // Fetch every translation request with the service-role client.
     const { data: requests, error } = await adminDb
       .from('translation_requests')
       .select('*')
