@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -14,6 +14,20 @@ const COUNTRIES = [
   'South Africa', 'Egypt', 'United Kingdom', 'United States', 'Canada',
   'Australia', 'India', 'Other',
 ]
+
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (container: HTMLElement, options: { sitekey: string; callback: (token: string) => void; 'expired-callback': () => void; 'error-callback': () => void }) => string
+      reset: (widgetId?: string) => void
+    }
+  }
+}
+
+function isLikelyGibberishName(name: string) {
+  const normalized = name.trim().toLowerCase()
+  return /^(.)\\1+$/.test(normalized) || /^[a-z]{1,3}[0-9]{0,3}$/.test(normalized) || (/^[a-z]{6,}$/.test(normalized) && !/[aeiou]/.test(normalized))
+}
 
 export default function RegisterPageClient() {
   const searchParams = useSearchParams()
@@ -27,11 +41,62 @@ export default function RegisterPageClient() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState('')
+  const [turnstileWidgetId, setTurnstileWidgetId] = useState<string>()
+
+  useEffect(() => {
+    const script = document.createElement('script')
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
+    script.async = true
+    script.defer = true
+    script.onload = () => {
+      const container = document.getElementById('turnstile-container')
+      const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
+      if (!container || !siteKey || !window.turnstile) return
+      const widgetId = window.turnstile.render(container, {
+        sitekey: siteKey,
+        callback: setTurnstileToken,
+        'expired-callback': () => setTurnstileToken(''),
+        'error-callback': () => setTurnstileToken(''),
+      })
+      setTurnstileWidgetId(widgetId)
+    }
+    document.head.appendChild(script)
+    return () => script.remove()
+  }, [])
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+    const nameParts = fullName.trim().split(/\\s+/).filter(Boolean)
+    if (nameParts.length < 2) {
+      setError('Please enter your first and last name.')
+      return
+    }
+    if (isLikelyGibberishName(fullName)) {
+      setError('Please enter a realistic full name.')
+      return
+    }
+    if (!turnstileToken) {
+      setError('Please complete the captcha verification.')
+      return
+    }
     setLoading(true)
+
+    const captchaResponse = await fetch('/api/auth/turnstile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: turnstileToken }),
+    })
+    if (!captchaResponse.ok) {
+      const data = await captchaResponse.json().catch(() => null)
+      setError(data?.error ?? 'Captcha verification failed. Please try again.')
+      if (turnstileWidgetId && window.turnstile) window.turnstile.reset(turnstileWidgetId)
+      setTurnstileToken('')
+      setLoading(false)
+      return
+    }
+
     const supabase = createClient()
     const redirectTo = typeof window !== 'undefined'
       ? `${window.location.origin}/auth/confirm${programId ? `?program=${programId}` : ''}`
@@ -122,6 +187,8 @@ export default function RegisterPageClient() {
               <Input id="password" type="password" placeholder="Min. 8 characters" value={password}
                 onChange={e => setPassword(e.target.value)} required minLength={8} />
             </div>
+
+            <div id="turnstile-container" className="min-h-[65px]" aria-label="Captcha verification" />
 
             {error && <p className="rounded-lg bg-destructive/10 px-4 py-2 text-xs text-destructive">{error}</p>}
 
