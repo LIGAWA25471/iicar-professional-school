@@ -14,7 +14,7 @@ export default async function CheckoutPage({ params }: { params: Promise<{ id: s
   const { data: translationRequest, error } = await adminDb
     .from('translation_requests')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('user_id', user.id)
     .single()
 
