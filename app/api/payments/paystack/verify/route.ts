@@ -60,7 +60,8 @@ export async function POST(request: Request) {
       )
     }
 
-    // Update payment status to paid
+    // Mark payment paid. Enrollment is intentionally upserted below so a
+    // retry also repairs accounts where payment succeeded before enrollment.
     const { error: updateError } = await adminDb
       .from('payments')
       .update({
