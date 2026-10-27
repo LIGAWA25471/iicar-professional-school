@@ -210,7 +210,7 @@ export function EnrollmentPayment({
             <h3 className="font-semibold text-foreground">M-Pesa Prompt Sent</h3>
             <p className="mt-1 text-sm text-muted-foreground">
               Check your phone <span className="font-mono font-semibold">{phoneNumber}</span> and enter your M-Pesa PIN to pay{' '}
-              <span className="font-semibold text-foreground">USD {amountInUSD.toLocaleString()}</span> (KES {amountInKES.toLocaleString()}) for {programTitle}.
+              <span className="font-semibold text-foreground">USD {amountInUSD.toLocaleString()}</span> for {programTitle}.
             </p>
           </div>
         </div>
@@ -275,7 +275,7 @@ export function EnrollmentPayment({
             Sending M-Pesa Prompt...
           </>
         ) : (
-          `Pay USD ${amountInUSD.toLocaleString()} (KES ${amountInKES.toLocaleString()}) via M-Pesa`
+          `Pay USD ${amountInUSD.toLocaleString()}`
         )}
       </Button>
     </form>

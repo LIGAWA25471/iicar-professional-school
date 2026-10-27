@@ -138,7 +138,7 @@ export default async function ReceiptPage({ params }: { params: { id: string } }
               <span className="text-3xl font-bold text-primary">${amountUSD.toFixed(2)}</span>
             </div>
             <div className="text-sm text-muted-foreground">
-              <p>Payment Method: Paystack (KES)</p>
+              <p>Payment Method: Online payment</p>
               <p>Reference: {translation.paystack_reference}</p>
             </div>
           </div>

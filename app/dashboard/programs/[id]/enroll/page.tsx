@@ -57,7 +57,7 @@ export default async function EnrollPage({ params }: { params: Promise<{ id: str
                     {program.price_cents === 0 ? 'Free' : `USD ${priceInUSD.toLocaleString()}`}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {program.price_cents === 0 ? '' : `≈ KES ${priceInKES.toLocaleString()} • one-time payment`}
+                    {program.price_cents === 0 ? '' : 'One-time payment'}
                   </p>
                 </>
               )

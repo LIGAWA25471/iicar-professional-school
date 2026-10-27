@@ -284,7 +284,7 @@ export default function TranslationPortal() {
             </div>
 
             <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground space-y-1">
-              <p>• Payment processed via Paystack</p>
+              <p>• Secure online payment</p>
               <p>• Receipt sent immediately</p>
               <p>• Translations ready in 24-72 hours</p>
             </div>
