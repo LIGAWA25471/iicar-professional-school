@@ -297,13 +297,13 @@ export function TranslationCheckout({ translation }: TranslationCheckoutProps) {
                 {loading ? 'Processing...' : 'Loading Paystack...'}
               </>
             ) : (
-              `Pay $${amountInUSD.toFixed(2)} with Paystack`
+              `Pay $${amountInUSD.toFixed(2)}`
             )}
           </Button>
         )}
 
         <div className="text-xs text-muted-foreground space-y-1">
-          <p>• Secure payment via Paystack</p>
+          <p>• Secure online payment</p>
           <p>• Receipt sent via email immediately</p>
           <p>• Your card details are never stored</p>
         </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { Fragment, useState, useEffect } from 'react'
 import { FileText, CheckCircle, Clock, AlertCircle, Download, Mail } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -56,13 +56,19 @@ export default function AdminTranslationsPage() {
     }
   }
 
-  const filteredRequests = requests.filter(req => {
+  const filteredRequests = requests
+    .filter(req => {
     const matchesSearch = 
       req.document_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       req.user_id.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = !filterStatus || req.status === filterStatus
     return matchesSearch && matchesStatus
-  })
+    })
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+
+  const formatRequestDate = (value: string) => new Intl.DateTimeFormat(undefined, {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+  }).format(new Date(value))
 
   const handleStatusChange = async (requestId: string, newStatus: string) => {
     try {
@@ -164,8 +170,19 @@ export default function AdminTranslationsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {filteredRequests.map((req) => (
-                  <tr key={req.id} className="hover:bg-muted/30 transition-colors">
+                {filteredRequests.map((req, index) => {
+                  const requestDate = formatRequestDate(req.created_at)
+                  const previousDate = index > 0 ? formatRequestDate(filteredRequests[index - 1].created_at) : null
+                  return (
+                    <Fragment key={req.id}>
+                      {requestDate !== previousDate && (
+                        <tr key={`${req.id}-date`} className="bg-muted/30 border-t border-border">
+                          <td colSpan={6} className="px-6 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            {requestDate}
+                          </td>
+                        </tr>
+                      )}
+                      <tr key={req.id} className="hover:bg-muted/30 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <FileText className="h-4 w-4 text-muted-foreground" />
@@ -217,8 +234,10 @@ export default function AdminTranslationsPage() {
                         </Button>
                       </div>
                     </td>
-                  </tr>
-                ))}
+                      </tr>
+                    </Fragment>
+                  )
+                })}
               </tbody>
             </table>
           </div>
