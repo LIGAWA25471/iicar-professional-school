@@ -26,7 +26,7 @@ declare global {
 
 function isLikelyGibberishName(name: string) {
   const normalized = name.trim().toLowerCase()
-  return /^(.)\\1+$/.test(normalized) || /^[a-z]{1,3}[0-9]{0,3}$/.test(normalized) || (/^[a-z]{6,}$/.test(normalized) && !/[aeiou]/.test(normalized))
+  return /^(.)\1+$/.test(normalized) || /^[a-z]{1,3}[0-9]{0,3}$/.test(normalized) || (/^[a-z]{6,}$/.test(normalized) && !/[aeiou]/.test(normalized))
 }
 
 export default function RegisterPageClient() {
