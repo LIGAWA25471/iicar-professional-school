@@ -32,6 +32,8 @@ export default function AdminTranslationsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [error, setError] = useState('')
+  const [actionMessage, setActionMessage] = useState('')
+  const [sendingEmailId, setSendingEmailId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchRequests()
@@ -71,34 +73,45 @@ export default function AdminTranslationsPage() {
   }).format(new Date(value))
 
   const handleStatusChange = async (requestId: string, newStatus: string) => {
+    setError('')
+    setActionMessage('')
     try {
       const response = await fetch(`/api/admin/translations/${requestId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
       })
+      const data = await response.json().catch(() => null)
+      if (!response.ok) throw new Error(data?.error || 'Failed to update status')
 
-      if (response.ok) {
-        setRequests(requests.map(r => 
-          r.id === requestId ? { ...r, status: newStatus } : r
-        ))
+      setRequests(current => current.map(r => r.id === requestId ? { ...r, status: newStatus } : r))
+      const emailResponse = await fetch(`/api/admin/translations/${requestId}`, { method: 'POST' })
+      const emailData = await emailResponse.json().catch(() => null)
+      if (!emailResponse.ok) {
+        setActionMessage(`Status updated, but email failed: ${emailData?.error || 'unknown error'}`)
+      } else {
+        setActionMessage('Status updated and notification email sent.')
       }
     } catch (error) {
       console.error('[v0] Error updating status:', error)
+      setError(error instanceof Error ? error.message : 'Failed to update status')
     }
   }
 
   const handleSendEmail = async (requestId: string) => {
+    setSendingEmailId(requestId)
+    setError('')
+    setActionMessage('')
     try {
-      const response = await fetch(`/api/admin/translations/${requestId}`, {
-        method: 'POST',
-      })
-
-      if (response.ok) {
-        alert('Email sent successfully')
-      }
+      const response = await fetch(`/api/admin/translations/${requestId}`, { method: 'POST' })
+      const data = await response.json().catch(() => null)
+      if (!response.ok) throw new Error(data?.error || 'Failed to send email')
+      setActionMessage('Payment link email sent successfully.')
     } catch (error) {
       console.error('[v0] Error sending email:', error)
+      setError(error instanceof Error ? error.message : 'Failed to send email')
+    } finally {
+      setSendingEmailId(null)
     }
   }
 
@@ -106,6 +119,8 @@ export default function AdminTranslationsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-foreground mb-2">Translation Requests</h1>
+        {actionMessage && <p className="mt-2 text-sm text-emerald-600">{actionMessage}</p>}
+        {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
         <p className="text-muted-foreground">Manage and process document translation requests</p>
       </div>
 
@@ -235,10 +250,11 @@ export default function AdminTranslationsPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleSendEmail(req.id)}
-                          title="Email payment link or status update"
+                          title="Send payment link or status update"
+                          disabled={sendingEmailId === req.id}
                         >
                           <Mail className="h-3 w-3" />
-                          <span className="sr-only">Email student</span>
+                          <span className="sr-only">{sendingEmailId === req.id ? 'Sending email' : 'Send payment link or status update'}</span>
                         </Button>
                       </div>
                     </td>

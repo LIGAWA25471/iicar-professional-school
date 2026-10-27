@@ -11,7 +11,7 @@ async function sendEmail(to: string, subject: string, html: string) {
       to,
       subject,
       html,
-    })
+    }, { idempotencyKey: `translation-notification/${to}/${subject}/${Date.now()}` })
   } catch (error) {
     console.error('[v0] Resend error:', error)
     throw error
