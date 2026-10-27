@@ -33,6 +33,27 @@ export function TranslationCheckout({ translation }: TranslationCheckoutProps) {
   const [error, setError] = useState('')
   const [verificationTimeout, setVerificationTimeout] = useState(false)
   const [verificationStatus, setVerificationStatus] = useState<'idle' | 'verifying' | 'success'>('idle')
+  const [paystackReady, setPaystackReady] = useState(false)
+
+  useEffect(() => {
+    if (window.PaystackPop) {
+      setPaystackReady(true)
+      return
+    }
+
+    const existingScript = document.querySelector('script[src="https://js.paystack.co/v1/inline.js"]')
+    if (existingScript) {
+      existingScript.addEventListener('load', () => setPaystackReady(true), { once: true })
+      return
+    }
+
+    const script = document.createElement('script')
+    script.src = 'https://js.paystack.co/v1/inline.js'
+    script.async = true
+    script.onload = () => setPaystackReady(true)
+    script.onerror = () => setError('Unable to load Paystack. Please refresh and try again.')
+    document.body.appendChild(script)
+  }, [])
 
   const amountInUSD = translation.total_cost_cents / 100
   const amountInKES = Math.round(amountInUSD * 134 * 100) // 1 USD = 134 KES
@@ -61,7 +82,7 @@ export function TranslationCheckout({ translation }: TranslationCheckoutProps) {
       }
 
       // Open Paystack modal
-      if (window.PaystackPop) {
+      if (window.PaystackPop && paystackReady) {
         window.PaystackPop.setup({
           key: data.data.public_key,
           email: data.data.email,
@@ -263,14 +284,14 @@ export function TranslationCheckout({ translation }: TranslationCheckoutProps) {
         {!verificationTimeout && verificationStatus !== 'verifying' && verificationStatus !== 'success' && (
           <Button
             onClick={handlePayment}
-            disabled={loading}
+            disabled={loading || !paystackReady}
             size="lg"
             className="w-full"
           >
-            {loading ? (
+            {loading || !paystackReady ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Processing...
+                {loading ? 'Processing...' : 'Loading Paystack...'}
               </>
             ) : (
               `Pay $${amountInUSD.toFixed(2)} with Paystack`
