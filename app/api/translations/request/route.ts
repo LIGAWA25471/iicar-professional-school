@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     const deadlineLabel = paymentDeadline.toLocaleString('en-US', {
       dateStyle: 'medium',
       timeStyle: 'short',
-      timeZone: 'Africa/Nairobi',
+      timeZone: 'UTC',
     }) + ' EAT'
     if (account.user?.email) {
       const { Resend } = await import('resend')

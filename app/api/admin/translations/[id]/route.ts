@@ -127,7 +127,7 @@ export async function POST(
     const deadlineLabel = paymentDeadline.toLocaleString('en-US', {
       dateStyle: 'medium',
       timeStyle: 'short',
-      timeZone: 'Africa/Nairobi',
+      timeZone: 'UTC',
     }) + ' EAT'
     let subject = ''
     let htmlContent = ''
