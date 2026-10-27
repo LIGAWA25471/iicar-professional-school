@@ -7,7 +7,7 @@ async function sendEmail(to: string, subject: string, html: string) {
     const resend = new Resend(process.env.RESEND_API_KEY)
     
     return await resend.emails.send({
-      from: 'IICAR Translations <noreply@iicar.org>',
+      from: process.env.RESEND_FROM_EMAIL ?? 'IICAR <onboarding@resend.dev>',
       to,
       subject,
       html,
@@ -19,13 +19,19 @@ async function sendEmail(to: string, subject: string, html: string) {
 }
 
 async function checkAdminAccess(user: any) {
-  const supabase = await createClient()
-  const { data: profile } = await supabase
+  const adminDb = createAdminClient()
+  const { data: profile, error } = await adminDb
     .from('profiles')
     .select('is_admin')
     .eq('id', user.id)
-    .single()
-  return profile?.is_admin
+    .maybeSingle()
+
+  if (error) {
+    console.error('[v0] Admin profile lookup error:', error)
+    return false
+  }
+
+  return profile?.is_admin === true || user.user_metadata?.is_admin === true
 }
 
 // PATCH - Update translation status
