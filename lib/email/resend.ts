@@ -40,7 +40,7 @@ export async function sendEnrollmentEmail(email: string, studentName: string, pr
               If you have any questions, please contact our support team.
             </p>
             <p style="color: #999; font-size: 12px; margin-top: 40px;">
-              © 2024 IICAR. All rights reserved.
+              © 2026 IICAR. All rights reserved.
             </p>
           </div>
         </div>
@@ -142,7 +142,7 @@ export async function sendCertificateEmail(email: string, studentName: string, p
               </a>
             </div>
             <p style="color: #999; font-size: 12px; margin-top: 40px;">
-              © 2024 IICAR. All rights reserved.
+              © 2026 IICAR. All rights reserved.
             </p>
           </div>
         </div>

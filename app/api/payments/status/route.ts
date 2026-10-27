@@ -19,13 +19,25 @@ export async function GET(request: NextRequest) {
     const adminDb = createAdminClient()
     const { data: payment, error } = await adminDb
       .from('payments')
-      .select('id, status, paid_at, kopokopo_reference')
+      .select('id, status, paid_at, kopokopo_reference, program_id')
       .eq('id', paymentId)
       .eq('student_id', user.id)
       .single()
 
     if (error || !payment) {
       return NextResponse.json({ error: 'Payment not found' }, { status: 404 })
+    }
+
+    if (payment.status === 'paid') {
+      const { error: enrollmentError } = await adminDb
+        .from('enrollments')
+        .upsert({
+          student_id: user.id,
+          program_id: payment.program_id,
+          status: 'active',
+          enrolled_at: payment.paid_at ?? new Date().toISOString(),
+        }, { onConflict: 'student_id,program_id' })
+      if (enrollmentError) console.error('[IICAR] Enrollment recovery error:', enrollmentError.message)
     }
 
     return NextResponse.json({

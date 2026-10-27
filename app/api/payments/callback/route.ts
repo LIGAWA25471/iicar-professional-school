@@ -45,9 +45,10 @@ export async function POST(request: NextRequest) {
     // Status strings from KopoKopo:
     // STK Push result: "Success" | "Failed" | "Cancelled"
     // Buygoods webhook: "Received" (treat as Success)
-    const rawStatus = (resource?.status ?? '') as string
-    const isPaid   = rawStatus === 'Success' || rawStatus === 'Received'
-    const isFailed = rawStatus === 'Failed' || rawStatus === 'Cancelled'
+    const rawStatus = String(resource?.status ?? '')
+    const normalizedStatus = rawStatus.trim().toLowerCase()
+    const isPaid   = normalizedStatus === 'success' || normalizedStatus === 'received'
+    const isFailed = normalizedStatus === 'failed' || normalizedStatus === 'cancelled'
 
     // M-Pesa transaction reference e.g. "OEI2AK4408"
     const reference = resource?.reference as string | undefined
