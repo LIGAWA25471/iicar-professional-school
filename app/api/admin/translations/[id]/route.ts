@@ -31,9 +31,10 @@ async function checkAdminAccess(user: any) {
 // PATCH - Update translation status
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -61,7 +62,7 @@ export async function PATCH(
         ...(status === 'processing' && { processing_started_at: new Date().toISOString() }),
         ...(status === 'completed' && { completed_at: new Date().toISOString() }),
       })
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
       .single()
 
@@ -80,9 +81,10 @@ export async function PATCH(
 // POST - Send email notification
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -102,7 +104,7 @@ export async function POST(
         *,
         user:auth.users(email)
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (fetchError || !translation) {
