@@ -81,9 +81,10 @@ export function TranslationCheckout({ translation }: TranslationCheckoutProps) {
         throw new Error(data.error || 'Payment initialization failed')
       }
 
-      // Open Paystack modal
+      // Paystack setup returns the checkout handler. openIframe belongs to
+      // that handler, not to the PaystackPop constructor itself.
       if (window.PaystackPop && paystackReady) {
-        window.PaystackPop.setup({
+        const handler = window.PaystackPop.setup({
           key: data.data.public_key,
           email: data.data.email,
           amount: amountInKES,
@@ -91,20 +92,18 @@ export function TranslationCheckout({ translation }: TranslationCheckoutProps) {
           ref: data.data.reference,
           onClose: function () {
             console.log('[v0] Paystack modal closed by user')
-            if (verificationStatus !== 'verifying') {
-              setLoading(false)
-            }
+            setLoading(false)
           },
           onSuccess: async function (transaction: any) {
             console.log('[v0] Paystack payment closed, verifying:', transaction)
             setVerificationStatus('verifying')
             setLoading(true)
 
-            // Set a 15-second timeout for verification
             const timeoutId = setTimeout(() => {
               console.warn('[v0] Payment verification timeout after 15 seconds')
               setVerificationTimeout(true)
               setVerificationStatus('idle')
+              setLoading(false)
             }, 15000)
 
             try {
@@ -130,7 +129,6 @@ export function TranslationCheckout({ translation }: TranslationCheckoutProps) {
                   router.refresh()
                 }, 2000)
               } else {
-                clearTimeout(timeoutId)
                 throw new Error(verifyData.message || 'Payment verification failed')
               }
             } catch (verifyError) {
@@ -142,7 +140,12 @@ export function TranslationCheckout({ translation }: TranslationCheckoutProps) {
             }
           },
         })
-        window.PaystackPop.openIframe()
+
+        if (typeof handler?.openIframe !== 'function') {
+          throw new Error('Payment system error. Please refresh and try again.')
+        }
+
+        handler.openIframe()
       } else {
         throw new Error('Paystack not loaded')
       }
